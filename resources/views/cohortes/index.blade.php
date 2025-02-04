@@ -7,7 +7,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Cohortes</h3>
                 <div class="card-tools">
                     <a href="{{ route('cohortes.create') }}" class="btn btn-light btn-sm"><i class="fas fa-plus"></i> Crear
@@ -17,19 +17,19 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="cohortes">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Maestría</th>
-                                <th>Periodo Académico</th>
-                                <th>Aula</th>
-                                <th>Aforo</th>
-                                <th>Modalidad</th>
-                                <th>Inicio</th>
-                                <th>Fin</th>
-                                <th>Acciones</th>
-                            </tr>
+                                <th><i class="fas fa-hashtag"></i> ID</th>
+                                <th><i class="fas fa-user"></i> Nombre</th>
+                                <th><i class="fas fa-graduation-cap"></i> Maestría</th>
+                                <th><i class="fas fa-calendar-alt"></i> Periodo Académico</th>
+                                <th><i class="fas fa-door-open"></i> Aula</th>
+                                <th><i class="fas fa-users"></i> Aforo</th>
+                                <th><i class="fas fa-chalkboard-teacher"></i> Modalidad</th>
+                                <th><i class="fas fa-calendar-day"></i> Inicio</th>
+                                <th><i class="fas fa-calendar-check"></i> Fin</th>
+                                <th class="text-center"><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>                            
                         </thead>
                         <tbody></tbody>
                     </table>

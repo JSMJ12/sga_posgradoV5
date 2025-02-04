@@ -21,7 +21,7 @@
 @if ($register_url)
     <p class="my-0 text-end">
         <a href="{{ route('postulaciones.create') }}" class="font-weight-bold"
-            style="position: absolute; right: 15px; top: 10px; color: rgb(22, 81, 28); font-size: 30px;">
+            style="position: absolute; right: 15px; top: 10px; color: rgb(22, 81, 28); font-size: 30px; text-decoration: none;">
             {{ __('Postularse') }}
         </a>
     </p>

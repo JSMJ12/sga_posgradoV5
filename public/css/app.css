@@ -7,6 +7,17 @@
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
 
+ /* resources/css/app.css */
+
+.bg-green-036f1b {
+  background-color: #036f1b !important;
+}
+
+.user-menu-header-text-white-green {
+  color: white !important;
+}
+
+
 :root {
   --blue: #3490dc;
   --indigo: #6574cd;
@@ -2426,7 +2437,7 @@ textarea.form-control.is-valid {
 
 .was-validated .custom-control-input:valid:focus ~ .custom-control-label::before,
 .custom-control-input.is-valid:focus ~ .custom-control-label::before {
-  box-shadow: 0 0 0 0.2rem rgba(56, 193, 114, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(62, 213, 125, 0.25);
 }
 
 .was-validated .custom-control-input:valid:focus:not(:checked) ~ .custom-control-label::before,

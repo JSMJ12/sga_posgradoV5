@@ -6,7 +6,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Periodos Académicos</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#createPeriodoModal">
@@ -17,14 +17,14 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="periodos_academicos">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Estado</th>
-                                <th>Fecha Inicio</th>
-                                <th>Fecha Fin</th>
-                                <th>Acciones</th>
+                                <th><i class="fas fa-id-badge"></i> ID</th>
+                                <th><i class="fas fa-user"></i> Nombre</th>
+                                <th><i class="fas fa-toggle-on"></i> Estado</th>
+                                <th><i class="fas fa-calendar-alt"></i> Fecha Inicio</th>
+                                <th><i class="fas fa-calendar-check"></i> Fecha Fin</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
                             </tr>
                         </thead>
                         <tbody>

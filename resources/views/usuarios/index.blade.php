@@ -3,6 +3,7 @@
 @section('content_header')
     <h1><i class="fas fa-users"></i> Gestión de Usuarios</h1>
 @stop
+
 @section('css')
     <style>
         .send-message {
@@ -10,10 +11,11 @@
         }
     </style>
 @stop
+
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Usuarios</h3>
                 <div class="card-tools">
                     <a href="{{ route('usuarios.create') }}" class="btn btn-light btn-sm"><i class="fas fa-plus"></i> Agregar
@@ -23,26 +25,32 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="usuarios">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>#</th>
-                                <th>Foto</th>
-                                <th>Nombre</th>
-                                <th>Apellido</th>
-                                <th>Email</th>
+                                <th><i class="fas fa-hashtag"></i> #</th>
+                                <th><i class="fas fa-image"></i> Foto</th>
+                                <th><i class="fas fa-user"></i> Nombre</th>
+                                <th><i class="fas fa-user-tag"></i> Apellido</th>
+                                <th><i class="fas fa-envelope"></i> Email</th>
                                 @can('admin.usuarios.disable')
-                                    <th>Estatus</th>
-                                    <th>Roles</th>
-                                    <th>Acciones</th>
+                                    <th><i class="fas fa-check-circle"></i> Estatus</th>
+                                    <th><i class="fas fa-user-shield"></i> Roles</th>
+                                    <th><i class="fas fa-cogs"></i> Acciones</th>
                                 @endcan
-                                <th>Mensajería</th>
+                                <th><i class="fas fa-comments"></i> Mensajería</th>
                             </tr>
+
                         </thead>
                     </table>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Modales de mensajería -->
+    @foreach ($users as $user)
+        @include('modales.enviar_mensaje_modal', ['user' => $user])
+    @endforeach
 @stop
 
 @section('js')

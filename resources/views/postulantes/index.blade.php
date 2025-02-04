@@ -8,22 +8,22 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Postulantes</h3>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="postulantes">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>Cedula</th>
-                                <th>Nombre</th>
-                                <th>Correo Electrónico</th>
-                                <th>Celular</th>
-                                <th>Título Profesional</th>
-                                <th>Maestría</th>
-                                <th>PDFs</th>
-                                <th>Acciones</th>
+                                <th><i class="fas fa-id-card"></i> Cedula</th>
+                                <th><i class="fas fa-user"></i> Nombre</th>
+                                <th><i class="fas fa-envelope"></i> Correo Electrónico</th>
+                                <th><i class="fas fa-mobile-alt"></i> Celular</th>
+                                <th><i class="fas fa-user-graduate"></i> Título Profesional</th>
+                                <th><i class="fas fa-university"></i> Maestría</th>
+                                <th><i class="fas fa-file-pdf"></i> PDFs</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -124,7 +124,6 @@
         $('#postulantes').DataTable({
             lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
             pageLength: {{ $perPage }},
-            responsive: true,
             colReorder: true,
             keys: true,
             autoFill: true,

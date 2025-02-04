@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Alumnos</h3>
                 <div class="card-tools">
                     <a href="{{ route('alumnos.create') }}" class="btn btn-light btn-sm">
@@ -20,15 +20,15 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="alumnos">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>Cédula / Pasaporte</th>
-                                <th>Foto</th>
-                                <th>Nombre Completo</th>
-                                <th>Maestría</th>
-                                <th>Email Institucional</th>
-                                <th>Sexo</th>
-                                <th>Acciones</th>
+                                <th><i class="fas fa-id-card"></i> Cédula / Pasaporte</th>
+                                <th><i class="fas fa-user-circle"></i> Foto</th>
+                                <th><i class="fas fa-user"></i> Nombre Completo</th>
+                                <th><i class="fas fa-graduation-cap"></i> Maestría</th>
+                                <th><i class="fas fa-envelope"></i> Email Institucional</th>
+                                <th><i class="fas fa-venus-mars"></i> Sexo</th>
+                                <th class="text-center"><i class="fas fa-cogs"></i> Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -83,7 +83,7 @@
                     },
                 ],
                 responsive: true, // Habilitar el diseño responsivo
-                
+
                 columnDefs: [{
                         targets: [1, 6], // Aplica estilo especial a las columnas de foto y acciones
                         className: 'text-center'
@@ -114,20 +114,20 @@
                                         <span aria-hidden="true" style="color: white;">&times;</span>
                                     </button>
                                 </div>
-                                <div class="modal-body">
+                                <div class="modal-body" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
                                     ${matriculas.length > 0 
-                                        ? `<table class="table">
-                                                          <thead>
-                                                              <tr>
-                                                                  <th>Asignatura</th>
-                                                                  <th>Docente</th>
-                                                                  <th>Cohorte</th>
-                                                                  <th>Aula</th>
-                                                                  <th>Paralelo</th>
-                                                              </tr>
-                                                          </thead>
-                                                          <tbody>
-                                                              ${matriculas.map(m => `
+                                        ? `<table class="table table-bordered">
+                                                              <thead>
+                                                                  <tr>
+                                                                      <th>Asignatura</th>
+                                                                      <th>Docente</th>
+                                                                      <th>Cohorte</th>
+                                                                      <th>Aula</th>
+                                                                      <th>Paralelo</th>
+                                                                  </tr>
+                                                              </thead>
+                                                              <tbody>
+                                                                  ${matriculas.map(m => `
                                                       <tr>
                                                           <td>${m.asignatura}</td>
                                                           <td>${m.docente}</td>
@@ -135,8 +135,8 @@
                                                           <td>${m.aula}</td>
                                                           <td>${m.paralelo}</td>
                                                       </tr>`).join('')}
-                                                          </tbody>
-                                                      </table>` 
+                                                              </tbody>
+                                                          </table>` 
                                         : '<div class="alert alert-info">El estudiante no tiene matrículas registradas.</div>'
                                     }
                                 </div>

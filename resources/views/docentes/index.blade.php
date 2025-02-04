@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Docentes</h3>
                 <div class="card-tools">
                     <a href="{{ route('docentes.create') }}" class="btn btn-light btn-sm">
@@ -20,14 +20,14 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="docentes">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>Cédula / Pasaporte</th>
-                                <th>Foto</th>
-                                <th>Nombre completo</th>
-                                <th>Email</th>
-                                <th>Tipo</th>
-                                <th>Acciones</th>
+                                <th><i class="fas fa-id-card"></i> Cédula / Pasaporte</th>
+                                <th><i class="fas fa-user-circle"></i> Foto</th>
+                                <th><i class="fas fa-user"></i> Nombre completo</th>
+                                <th><i class="fas fa-envelope"></i> Email</th>
+                                <th><i class="fas fa-user-tag"></i> Tipo</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
                             </tr>
                         </thead>
                     </table>

@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #036f1b;">
                 <h3 class="card-title">Listado de Secciones</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#createModal">
@@ -20,13 +20,13 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="secciones">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #003366; color: white;">
                             <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Maestrías</th>
-                                <th>Acciones</th>
-                            </tr>
+                                <th><i class="fas fa-hashtag"></i> ID</th>
+                                <th><i class="fas fa-user"></i> Nombre</th>
+                                <th><i class="fas fa-graduation-cap"></i> Maestrías</th>
+                                <th class="text-center"><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>                            
                         </thead>
                         <tbody>
                             @foreach ($secciones as $seccion)
@@ -38,34 +38,7 @@
                                             data-target="#maestriasModal{{ $seccion->id }}">
                                             Ver Maestrías
                                         </button>
-                                        <!-- Modal Maestrías -->
-                                        <div class="modal fade" id="maestriasModal{{ $seccion->id }}" tabindex="-1"
-                                            role="dialog" aria-labelledby="maestriasModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="maestriasModalLabel">Maestrías de
-                                                            {{ $seccion->nombre }}</h5>
-                                                        <button type="button" class="close" data-dismiss="modal"
-                                                            aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        @foreach ($seccion->maestrias as $maestria)
-                                                            {{ $maestria->nombre }}
-                                                            @if (!$loop->last)
-                                                                ,
-                                                            @endif
-                                                        @endforeach
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-dismiss="modal">Cerrar</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        @include('modales.maestrias_seccion_modal')
                                     </td>
                                     <td>
                                         <div class="btn-group">

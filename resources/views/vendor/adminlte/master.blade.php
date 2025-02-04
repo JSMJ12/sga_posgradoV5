@@ -78,6 +78,9 @@
             color: black;
             font-family: "Times New Roman", Times, serif;
         }
+        body {
+            background-color: white;
+        }
     </style>
 
 </head>

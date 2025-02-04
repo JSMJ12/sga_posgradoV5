@@ -18,6 +18,7 @@ class UsuarioController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);
+        $users = User::all();
 
         if ($request->ajax()) {
             $data = User::with('roles')->select('users.*');
@@ -31,65 +32,29 @@ class UsuarioController extends Controller
                     })->implode(', ');
                 })
                 ->addColumn('mensajeria', function ($row) {
-                    return '<i class="fas fa-envelope send-message" data-toggle="modal" data-target="#sendMessageModal' . $row->id . '" title="Enviar mensaje"></i>
-                            <!-- Modal de mensajes -->
-                            <div class="modal fade" id="sendMessageModal' . $row->id . '" tabindex="-1" role="dialog" aria-labelledby="sendMessageModalLabel' . $row->id . '" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="sendMessageModalLabel' . $row->id . '">Enviar mensaje a ' . $row->name . '</h5>
-                                            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-                                                <span aria-hidden="true">&times;</span>
-                                            </button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <!-- Formulario de envío de mensaje aquí -->
-                                            <form id="sendMessageForm' . $row->id . '" action="' . route('messages.store') . '" method="POST" enctype="multipart/form-data">
-                                                ' . csrf_field() . '
-                                                <!-- Campos del formulario -->
-                                                <div class="form-group">
-                                                    <label for="message">Mensaje</label>
-                                                    <textarea class="form-control" id="message" name="message" rows="3"></textarea>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="attachment">Adjunto</label>
-                                                    <input type="file" class="form-control-file" id="attachment" name="attachment">
-                                                </div>
-                                                <!-- Campo oculto para receiver_id -->
-                                                <input type="hidden" name="receiver_id" value="' . $row->id . '">
-                                                <!-- Fin de campos del formulario -->
-                                                <button type="submit" class="btn btn-primary">Enviar</button>
-                                            </form>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Fin del modal -->';
+                    return '<i class="fas fa-envelope send-message" data-toggle="modal" data-target="#sendMessageModal' . $row->id . '" title="Enviar mensaje"></i>';
                 })
                 ->addColumn('action', function ($row) {
                     $btn = '<a href="' . route('usuarios.edit', $row->id) . '" class="btn btn-outline-primary btn-sm" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>';
+                            <i class="fas fa-edit"></i>
+                        </a>';
 
                     if ($row->status == 'ACTIVO') {
                         $btn .= '<form action="' . route('usuarios.disable', $row->id) . '" method="POST" style="display: inline;">
-                                    ' . csrf_field() . '
-                                    ' . method_field('PUT') . '
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Deshabilitar">
-                                        <i class="fas fa-ban"></i>
-                                    </button>
-                                </form>';
+                                ' . csrf_field() . '
+                                ' . method_field('PUT') . '
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Deshabilitar">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </form>';
                     } else {
                         $btn .= '<form action="' . route('usuarios.enable', $row->id) . '" method="POST" style="display: inline;">
-                                    ' . csrf_field() . '
-                                    ' . method_field('PUT') . '
-                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Reactivar">
-                                        <i class="fas fa-check-circle"></i>
-                                    </button>
-                                </form>';
+                                ' . csrf_field() . '
+                                ' . method_field('PUT') . '
+                                <button type="submit" class="btn btn-outline-success btn-sm" title="Reactivar">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                            </form>';
                     }
 
                     return $btn;
@@ -98,7 +63,7 @@ class UsuarioController extends Controller
                 ->make(true);
         }
 
-        return view('usuarios.index', compact('perPage'));
+        return view('usuarios.index', compact('perPage', 'users'));
     }
 
     public function create()

@@ -11,8 +11,17 @@
         <div class="card-body">
             <div class="container-fluid">
                 @if (count($notas) > 0)
+                    <!-- Información del Alumno -->
+                    <div class="card mb-3">
+                        <div class="card-header text-white" style="background-color: #003366">Información del Alumno</div>
+                        <div class="card-body">
+                            <p><strong>Nombre:</strong> {{ $notas[0]->alumno->nombre1 }} {{ $notas[0]->alumno->nombre2 }} {{ $notas[0]->alumno->apellidop }} {{ $notas[0]->alumno->apellidom }}</p>
+                            <p><strong>DNI:</strong> {{ $notas[0]->alumno->dni }}</p>
+                        </div>
+                    </div>
+                    
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="notas">
+                        <table class="table table-striped table-hover table-bordered" id="notas">
                             <thead class="thead-dark">
                                 <tr>
                                     <th>Asignatura</th>
@@ -21,8 +30,6 @@
                                     <th>Periodo</th>
                                     <th>Cohorte</th>
                                     <th>Docente</th>
-                                    <th>Alumno</th>
-                                    <th>DNI</th>
                                     <th>Actividades de Aprendizaje (2.5)</th>
                                     <th>Componentes de Prácticas (2.5)</th>
                                     <th>Componente de Aprendizaje Autónomo (2.5)</th>
@@ -39,32 +46,20 @@
                                         <td>{{ $nota->cohorte->aula->paralelo ?? 'Sin paralelo' }}</td>
                                         <td>{{ $nota->cohorte->periodo_academico->nombre }}</td>
                                         <td>{{ $nota->cohorte->nombre }}</td>
-                                        <td>
-                                            {{ $nota->docente->nombre1 }}<br>
-                                            {{ $nota->docente->nombre2 }}<br>
-                                            {{ $nota->docente->apellidop }}<br>
-                                            {{ $nota->docente->apellidom }}
-                                        </td>
-                                        <td>
-                                            {{ $nota->alumno->nombre1 }}<br>
-                                            {{ $nota->alumno->nombre2 }}<br>
-                                            {{ $nota->alumno->apellidop }}<br>
-                                            {{ $nota->alumno->apellidom }}
-                                        </td>
-                                        <td>{{ $nota->alumno->dni }}</td>
+                                        <td>{{ $nota->docente->nombre1 }} {{ $nota->docente->nombre2 }} {{ $nota->docente->apellidop }} {{ $nota->docente->apellidom }}</td>
                                         <td>{{ number_format($nota->nota_actividades, 2) }}</td>
                                         <td>{{ number_format($nota->nota_practicas, 2) }}</td>
                                         <td>{{ number_format($nota->nota_autonomo, 2) }}</td>
                                         <td>{{ number_format($nota->examen_final, 2) }}</td>
                                         <td>{{ number_format($nota->recuperacion, 2) }}</td>
-                                        <td>{{ number_format($nota->total, 2) }}</td>
+                                        <td class="font-weight-bold text-primary">{{ number_format($nota->total, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 @else
-                    <p class="text-center">No hay notas registradas</p>
+                    <p class="text-center text-danger font-weight-bold">No hay notas registradas</p>
                 @endif
             </div>
         </div>
