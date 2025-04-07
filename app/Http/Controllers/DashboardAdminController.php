@@ -15,6 +15,7 @@ use App\Models\Docente;
 
 use App\Models\User;
 use App\Models\Postulante;
+use App\Events\UserLoggedIn;
 
 
 class DashboardAdminController extends Controller

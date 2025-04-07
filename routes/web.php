@@ -119,7 +119,9 @@ Route::resource('aulas', AulaController::class)->middleware(['can:dashboard_secr
 Route::resource('periodos_academicos', PeriodoAcademicoController::class)->middleware(['can:dashboard_secretario']);
 
 //COHORTES
-Route::resource('cohortes', CohorteController::class)->middleware(['can:dashboard_secretario']);
+Route::resource('cohortes', CohorteController::class)->middleware('can:secretario_coordinador');
+Route::get('/cohortes/{cohorte_id}/exportar-alumnos', [CohorteController::class, 'exportarAlumnos'])
+    ->name('cohortes.exportarAlumnos')->middleware('can:secretario_coordinador');
 
 //Postulaciones
 Route::resource('postulaciones', PostulanteController::class);
@@ -144,6 +146,7 @@ Route::get('mensajes/buzon', [MessageController::class, 'index'])->name('message
 Route::delete('/mensajes/{id_message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
 //Pagos
+Route::get('/pagos/pdf/{cohorte}', [DashboardSecretarioEpsuController::class, 'generarPdf'])->name('pagos.pdf')->middleware('can:secretario_coordinador');
 Route::middleware(['can:dashboard_secretario_epsu'])->group(function () {
     // Listar todos los pagos (equivalente a index)
     Route::get('/pagos/dashboard', [PagoController::class, 'index'])->name('pagos.index');
@@ -164,13 +167,13 @@ Route::middleware(['can:dashboard_secretario_epsu'])->group(function () {
 });
 
 //Matriculas
-Route::get('/matriculas/create/{alumno_id}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
-Route::get('/matriculas/create/{alumno_id}/{cohorte_id}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
+Route::get('/matriculas/create/{alumno_dni}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
+Route::get('/matriculas/create/{alumno_dni}/{cohorte_id}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
 Route::resource('matriculas', MatriculaController::class)->middleware('can:dashboard_secretario');
 
 //NOTAS ADMINISTRADOR
-Route::get('/notas/create/{alumno_id}', [NotaController::class, 'create'])->middleware('can:dashboard_secretario');
-Route::resource('notas', NotaController::class)->middleware('can:dashboard_admin');
+Route::get('/notas/create/{alumno_dni}', [NotaController::class, 'create'])->name('notas.create')->middleware('can:dashboard_secretario');
+Route::resource('notas', NotaController::class)->except(['create'])->middleware('can:dashboard_admin');
 
 //PDFS ASIGNATURAS NOTAS
 Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [NotasAsignaturaController::class, 'show'])
@@ -182,8 +185,8 @@ Route::resource('record', RecordController::class)->middleware('can:dashboard_se
 
 //CALIFICACIONES DOCENTES
 Route::get('/calificaciones/create/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'create'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.create1');
-Route::get('/calificaciones/show/{alumno_id}/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'show'])->where('alumno_id', '.*')->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.show1');
-Route::get('/calificaciones/edit/{alumno_id}/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'edit'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.edit1');
+Route::get('/calificaciones/show/{alumno_dni}/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'show'])->where('alumno_dni', '.*')->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.show1');
+Route::get('/calificaciones/edit/{alumno_dni}/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'edit'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.edit1');
 Route::resource('calificaciones', CalificacionController::class)->middleware('can:dashboard_docente');
 
 //EXCEL LISTA DE ALUMNOS
@@ -192,7 +195,25 @@ Route::get('/exportar-excel/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{pa
 
 //NOTIFICACIONES
 Route::resource('notificaciones', NotificacionesController::class)->only(['index', 'destroy']);
-Route::get('/cantidad-notificaciones', [NotificacionesController::class, 'contador']);
+Route::post('/notificaciones/sistema/leidas', function () {
+    auth()->user()
+        ->unreadNotifications
+        // Filtrar las notificaciones que no sean del tipo 'NewMessageNotification'
+        ->reject(fn($n) => str_contains($n->type, 'App\\Notifications\\NewMessageNotification2'))
+        ->each->markAsRead();
+
+    return response()->json(['success' => true]);
+})->name('notificaciones.sistema.leidas');
+
+Route::post('/notificaciones/mensajes/leidas', function () {
+    auth()->user()
+        ->unreadNotifications
+        // Filtrar solo las notificaciones de tipo 'NewMessageNotification2'
+        ->filter(fn($n) => str_contains($n->type, 'App\\Notifications\\NewMessageNotification2'))
+        ->each->markAsRead();
+
+    return response()->json(['success' => true]);
+})->name('notificaciones.mensajes.leidas');
 
 
 // Mostrar el formulario para descuento
@@ -261,3 +282,4 @@ Route::get('/tasa-titulacion/export/estudiantes/{maestria_id}/{cohorte_id}', [Ta
 
 //DOCUMENTOS POSTULANTES
 Route::post('/postulantes/{id}/verificar', [DocumentoPostulanteController::class, 'verificar'])->name('documentos.verificar');
+Route::get('pagos/matricula', [DocumentoPostulanteController::class, 'pagosMatricula'])->name('pagos.matricula');

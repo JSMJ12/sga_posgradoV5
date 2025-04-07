@@ -4,9 +4,7 @@
             <!-- Encabezado del modal -->
             <div class="modal-header" style="background-color: #003366; color: white;">
                 <h5 class="modal-title" id="editModalLabel{{ $seccion->id }}">Editar Sección</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <!-- Cuerpo del modal -->
             <div class="modal-body">

@@ -36,7 +36,8 @@
                             <div id="asignaturas-container">
                                 @foreach ($asignaturas as $asignatura)
                                     <div class="form-check asignatura-container maestria-{{ $asignatura->maestria_id }}">
-                                        <input class="form-check-input" type="checkbox" id="asignatura_{{ $asignatura->id }}" name="asignaturas[]" value="{{ $asignatura->id }}">
+                                        <input class="form-check-input" type="checkbox" id="asignatura_{{ $asignatura->id }}" name="asignaturas[]" value="{{ $asignatura->id }}"
+                                            @if(in_array($asignatura->id, $asignaturasAsignadas)) checked @endif>
                                         <label class="form-check-label" for="asignatura_{{ $asignatura->id }}">{{ $asignatura->nombre }}</label>
                                     </div>
                                 @endforeach
@@ -50,7 +51,6 @@
         </div>
     </div>
 </div>
-
 @stop
 
 @section('js')

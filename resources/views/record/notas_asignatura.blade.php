@@ -12,18 +12,18 @@
             <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ $asignatura->maestria->nombre }}</span>
+            <span class="coordinator">COORDINACIÓN DE LA {{ strtoupper($asignatura->maestria->nombre) }}</span>
         </div>
         <div class="divider"></div>
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
         <div style="text-align: center; font-size: 12px; margin-bottom: 20px;">
-            <strong>Información de la Asignatura</strong>
+            <strong>Información de la </strong>
             <strong>Asignatura:</strong> {{ $asignatura->nombre }}
             @if($aula)
                 <strong>Aula:</strong> {{ $aula->nombre }}
             @endif
             @if($paralelo)
-                <strong>Paralelo:</strong> {{ $paralelo->nombre }}
+                <strong>Paralelo:</strong> {{ $paralelo }}
             @endif
             <strong>Periodo:</strong> {{ $periodo_academico->nombre }}
             <strong>Cohorte:</strong> {{ $cohorte->nombre }}
@@ -36,10 +36,10 @@
                     <!-- Encabezados de la tabla -->
                     <th>Alumno</th>
                     <th>Ced./Pas</th>
-                    <th>Actividades de Aprendizaje (2.5)</th>
-                    <th>Prácticas de Apli. y Exp. (2.5)</th>
-                    <th>Aprendizaje Autónomo (2.5)</th>
-                    <th>Examen Final (2.5)</th>
+                    <th>Actividades de Aprendizaje</th>
+                    <th>Prácticas de Apli. y Exp.</th>
+                    <th>Aprendizaje Autónomo</th>
+                    <th>Examen Final</th>
                     <th>Recuperación</th>
                     <th>Total</th>
                 </tr>

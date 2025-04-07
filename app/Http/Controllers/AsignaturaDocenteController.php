@@ -19,27 +19,37 @@ class AsignaturaDocenteController extends Controller
     public function create($docente_dni)
     {
         $docente = Docente::findOrFail($docente_dni);
-        $asignaturas = Asignatura::all();
         $user = auth()->user();
+
+        // Inicializamos las asignaturas y maestrías
+        $asignaturas = Asignatura::all();
+        $maestrias = Maestria::where('status', 'ACTIVO')->get();
 
         if ($user->hasRole('Secretario')) {
             $secretario = Secretario::where('nombre1', $user->name)
                 ->where('apellidop', $user->apellido)
                 ->where('email', $user->email)
                 ->firstOrFail();
-            //
+
+            // Obtener las maestrías a las que el secretario tiene acceso
             $maestriasIds = $secretario->seccion->maestrias->pluck('id');
             $maestrias = Maestria::whereIn('id', $maestriasIds)
                 ->where('status', 'ACTIVO')
                 ->get();
+
+            // Obtener las asignaturas correspondientes a esas maestrías
             $asignaturas = Asignatura::whereIn('maestria_id', $maestriasIds)->get();
-        } else {
-            $asignaturas = Asignatura::all();
-            $maestrias = Maestria::where('status', 'ACTIVO')->get();
         }
 
-        return view('asignaturas_docentes.create', compact('docente', 'asignaturas', 'maestrias'));
+        // Obtener las asignaturas ya asignadas al docente
+        $asignaturasAsignadas = AsignaturaDocente::where('docente_dni', $docente_dni)
+            ->pluck('asignatura_id')
+            ->toArray();
+
+        // Pasar la información de las asignaturas ya asignadas
+        return view('asignaturas_docentes.create', compact('docente', 'asignaturas', 'maestrias', 'asignaturasAsignadas'));
     }
+
 
     public function store(Request $request)
     {

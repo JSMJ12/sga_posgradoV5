@@ -31,13 +31,13 @@
                                     ],
                                     [
                                         'archivo' => $postulante->pdf_papelvotacion,
-                                        'titulo' => 'Papel Votación',
+                                        'titulo' => 'Papel de Votación',
                                         'color' => 'success',
                                         'verificado' => $postulante->papel_votacion_verificado,
                                     ],
                                     [
                                         'archivo' => $postulante->pdf_titulouniversidad,
-                                        'titulo' => 'Título Universidad',
+                                        'titulo' => 'Título de Universidad',
                                         'color' => 'warning',
                                         'verificado' => $postulante->titulo_verificado,
                                     ],
@@ -93,11 +93,12 @@
                                         <td>
                                             <div class="form-check">
                                                 <input type="checkbox" class="form-check-input"
-                                                    name="documentos_verificados[{{ $documento['titulo'] }}]"
-                                                    value="1"
-                                                    {{ $docVerificado && $docVerificado->verificado ? 'checked' : '' }}>
+                                                       name="documentos_verificados[{{ $documento['titulo'] }}]"
+                                                       value="1"
+                                                       {{ $docVerificado && $docVerificado->verificado ? 'checked' : '' }}
+                                                       {{ $documento['titulo'] == 'Comprobante de Pago' ? 'disabled' : '' }}>
                                             </div>
-                                        </td>
+                                        </td>                                        
                                     </tr>
                                 @endif
                             @endforeach

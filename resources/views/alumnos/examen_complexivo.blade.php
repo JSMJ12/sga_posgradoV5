@@ -9,21 +9,21 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #3007b8;">
                 <h3 class="card-title">Listado de Alumnos</h3>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="alumnos">
-                        <thead style="background-color: #003366; color: white;">
+                        <thead style="background-color: #28a745; color: white;">
                             <tr>
-                                <th><i class="fas fa-id-card"></i> Cédula / Pasaporte</th>
-                                <th><i class="fas fa-camera"></i> Foto</th>
-                                <th><i class="fas fa-user"></i> Nombre Completo</th>
-                                <th><i class="fas fa-graduation-cap"></i> Maestría</th>
-                                <th><i class="fas fa-envelope"></i> Email Institucional</th>
-                                <th><i class="fas fa-venus-mars"></i> Sexo</th>
-                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                                <th>Cédula / Pasaporte</th>
+                                <th>Foto</th>
+                                <th>Nombre Completo</th>
+                                <th>Maestría</th>
+                                <th>Email Institucional</th>
+                                <th>Sexo</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>

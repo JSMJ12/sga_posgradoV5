@@ -19,14 +19,14 @@ class DashboardDocenteController extends Controller
     {
         $this->middleware('auth');
     }
-    
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);
         $user = auth()->user();
         $docente = Docente::where('email', $user->email)->firstOrFail();
         $asignaturas = $docente->asignaturas;
-    
+
         $data = $asignaturas->map(function ($asignatura) use ($docente) {
             return [
                 'nombre' => $asignatura->nombre,
@@ -35,27 +35,27 @@ class DashboardDocenteController extends Controller
                 'cohortes' => $asignatura->cohortes->sortBy('periodo_academico.fecha_fin')->map(function ($cohorte) use ($docente, $asignatura) {
                     $fechaFinCohorte = $cohorte->periodo_academico->fecha_fin;
                     $fechaLimite = $fechaFinCohorte->addWeek();
-        
+
                     // Obtener las notas existen array
                     $notasExisten = [];
-        
+
                     $notasExisten[$cohorte->id] = Nota::where([
                         'docente_dni' => $docente->dni,
                         'asignatura_id' => $asignatura->id,
                         'cohorte_id' => $cohorte->id,
                     ])->exists();
-        
+
                     $calificacionVerificacion = CalificacionVerificacion::where([
                         'docente_dni' => $docente->dni,
                         'asignatura_id' => $asignatura->id,
                         'cohorte_id' => $cohorte->id,
                     ])->first();
-        
+
                     $editar = $calificacionVerificacion ? $calificacionVerificacion->editar : false;
-        
+
                     $aulaId = $cohorte->aula ? $cohorte->aula->id : null;
                     $paraleloId = $cohorte->aula && $cohorte->aula->paralelo ? $cohorte->aula->paralelo : null;
-        
+
                     return [
                         'nombre' => $cohorte->nombre,
                         'aula' => $cohorte->aula ? $cohorte->aula->nombre : 'Sin aula',
@@ -149,7 +149,7 @@ class DashboardDocenteController extends Controller
                 ->where('cohorte_id', $cohorteId)
                 ->where('docente_dni', $docenteId);
         })
-        ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente']);
+            ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente']);
 
         if ($aulaId !== null) {
             $query->whereHas('matriculas.cohorte.aula', function ($q) use ($aulaId) {
@@ -157,23 +157,23 @@ class DashboardDocenteController extends Controller
             });
         }
 
-        if ($paraleloId !== null) {
-            $query->whereHas('matriculas.cohorte.aula.paralelo', function ($q) use ($paraleloId) {
-                $q->where('id', $paraleloId);
-            });
-        }
-
         $alumnosMatriculados = $query->get();
 
         $primerAlumno = $alumnosMatriculados->first();
         $nombreCohorte = $primerAlumno ? ($primerAlumno->matriculas->first()->cohorte->nombre ?? 'sin_cohorte') : 'sin_cohorte';
-        $asignatura = $primerAlumno ? $primerAlumno->matriculas->first()->asignatura->nombre : 'sin_asignatura';
+        $asignatura = $primerAlumno ? ($primerAlumno->matriculas->first()->asignatura->nombre ?? 'sin_asignatura') : 'sin_asignatura';
 
-        $aula = $aulaId ? Aula::find($aulaId)->nombre : 'sin_aula';
-        $paralelo =  $aulaId ? Aula::find($aulaId)->nombre->paralelo: 'sin_paralelo';
+        // Obtener el nombre del aula y el paralelo si existe
+        if ($aulaId) {
+            $aula = Aula::find($aulaId);
+            $nombreAula = $aula ? $aula->nombre : 'sin_aula';
+            $paralelo = $aula ? $aula->paralelo : 'sin_paralelo';
+        } else {
+            $nombreAula = 'sin_aula';
+            $paralelo = 'sin_paralelo';
+        }
 
-        return Excel::download(new AlumnosExport($alumnosMatriculados), "alumnos_{$nombreCohorte}_{$asignatura}_{$aula}_{$paralelo}.xlsx");
+        // Generar el archivo de Excel con el nombre correcto
+        return Excel::download(new AlumnosExport($alumnosMatriculados), "alumnos_{$nombreCohorte}_{$asignatura}_{$nombreAula}_{$paralelo}.xlsx");
     }
-
-
 }

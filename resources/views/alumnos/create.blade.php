@@ -19,7 +19,7 @@
                             <select class="form-control" id="maestria_id" name="maestria_id" required>
                                 <option value="">Seleccione una maestría</option>
                                 @foreach ($maestrias as $maestria)
-                                    <option value="{{ $maestria->id }}">{{ $maestria->nombre }}</option>
+                                    <option value="{{ $maestria->id }}">{{ $maestria->nombre }} {{ $maestria->codigo }}</option>
                                 @endforeach
                             </select>
                         </div>

@@ -6,22 +6,27 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Models\User;
+use App\Models\Postulante;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
 
-class PostulanteAceptadoNotification extends Notification implements ShouldQueue
+class PostulanteAceptadoNotification extends Notification implements ShouldQueue, ShouldBroadcast
 {
     use Queueable;
 
     protected $postulante;
+    protected $userId;
 
-    /**
-     * Crear una nueva instancia de notificación.
-     *
-     * @param  mixed  $postulante
-     */
-    public function __construct($postulante)
+    public function __construct(Postulante $postulante)
     {
         $this->postulante = $postulante;
+
+        // Buscar al usuario por su email y extraer el DNI
+        $user = User::where('email', $postulante->correo_electronico)->first();
+        $this->userId = $user ? $user->id : null;
     }
+
 
     /**
      * Canales de entrega de la notificación.
@@ -31,7 +36,7 @@ class PostulanteAceptadoNotification extends Notification implements ShouldQueue
      */
     public function via($notifiable)
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', 'broadcast']; 
     }
 
     /**
@@ -61,6 +66,20 @@ class PostulanteAceptadoNotification extends Notification implements ShouldQueue
     {
         return [
             'type' => 'PostulanteAceptadoNotification',
+            'message' => '¡Felicidades! Tu solicitud ha sido aceptada y ahora eres oficialmente un alumno. Para completar tu proceso de ingreso, te pedimos que realices el pago de la matrícula.',
+        ];
+    }
+    public function broadcastOn()
+    {
+        return new PrivateChannel('user.' . $this->userId);
+    }
+    public function broadcastAs()
+    {
+        return 'postulante.aceptado';
+    }
+    public function broadcastWith()
+    {
+        return [
             'message' => '¡Felicidades! Tu solicitud ha sido aceptada y ahora eres oficialmente un alumno. Para completar tu proceso de ingreso, te pedimos que realices el pago de la matrícula.',
         ];
     }

@@ -6,7 +6,8 @@ use App\Notifications\NewMessageNotification2;
 
 use Illuminate\Http\Request;
 use App\Models\Message;
-
+use Yajra\DataTables\DataTables;
+use Illuminate\Support\Str;
 
 class MessageController extends Controller
 {
@@ -16,19 +17,79 @@ class MessageController extends Controller
     }
     public function index(Request $request)
     {
+        $user = auth()->user();
+
+        // Marca como leída todas las notificaciones del tipo especificado
+        $user->unreadNotifications->where('type', 'App\Notifications\NewMessageNotification2')->each(function ($notification) {
+            $notification->markAsRead();
+        });
         $perPage = $request->input('perPage', 5);
+
+        // Si es una solicitud AJAX, retornamos los datos en formato DataTable
+        if ($request->ajax()) {
+            $messages = auth()->user()->receivedMessages()
+                ->orderBy('created_at', 'desc')
+                ->with('sender', 'receiver')
+                ->paginate($perPage);
+
+            $data = $messages->map(function ($message) {
+                // Generamos el HTML para las acciones y el botón de mensajería
+                $accionesHtml = '
+                <form action="' . route('messages.destroy', $message->id) . '" method="POST" style="display:inline">
+                    ' . csrf_field() . '
+                    ' . method_field('DELETE') . '
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'¿Estás seguro?\')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            ';
+
+                // Agregar columna de "mensajería" (botón de enviar mensaje)
+                $mensajeriaHtml = '
+                <button type="button" 
+                        class="btn btn-outline-info btn-sm btn-message"  
+                        data-id="' . $message->sender->id . '" 
+                        data-nombre="' . $message->sender->name . ' ' . $message->sender->apellido . '" 
+                        data-toggle="modal" 
+                        data-target="#sendMessageModal" 
+                        title="Enviar mensaje">
+                    <i class="fas fa-envelope"></i>
+                </button>
+            ';
+
+                return [
+                    'de' => $message->sender->name . ' ' . $message->sender->apellido,
+                    'para' => $message->receiver->name . ' ' . $message->receiver->apellido,
+                    'mensaje' => $message->message,
+                    'adjunto' => $message->attachment ?
+                        '<a href="' . asset('storage/' . $message->attachment) . '" target="_blank" class="btn btn-outline-info btn-sm"><i class="fas fa-paperclip"></i> Ver adjunto</a>' :
+                        '<span class="badge badge-secondary">Sin adjunto</span>',
+                    'fecha' => $message->created_at->format('d-m-Y H:i:s'),
+                    'acciones' => $accionesHtml,  // Las acciones de responder y eliminar
+                    'mensajeria' => $mensajeriaHtml  // El botón de mensajería
+                ];
+            });
+
+            return DataTables::of($data)
+                ->escapeColumns([]) // Evitar que los datos HTML sean escapados
+                ->make(true);
+        }
+
+        // Si no es una solicitud AJAX, retornamos la vista normal
         $messages = auth()->user()->receivedMessages()
-            ->orderBy('created_at', 'desc') // Ordenar por fecha de envío en orden descendente
-            ->with('sender', 'receiver') // Cargar las relaciones sender y receiver
-            ->paginate($perPage); // Paginar los resultados
+            ->orderBy('created_at', 'desc')
+            ->with('sender', 'receiver')
+            ->paginate($perPage);
 
         return view('messages.index', compact('messages', 'perPage'));
     }
+
 
     public function create()
     {
         return view('messages.create');
     }
+
 
     public function store(Request $request)
     {

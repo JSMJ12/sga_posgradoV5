@@ -51,7 +51,9 @@
                 <ul class="list-group">
                     @foreach ($alumnosPendientes as $pendiente)
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ $pendiente->alumno->nombre1 }} {{ $pendiente->alumno->nombre2 }} {{ $pendiente->alumno->apellidop }} {{ $pendiente->alumno->apellidom }} (Cedula-Pasaporte: {{ $pendiente->alumno->dni }})
+                            {{ $pendiente->alumno->nombre1 }} {{ $pendiente->alumno->nombre2 }}
+                            {{ $pendiente->alumno->apellidop }} {{ $pendiente->alumno->apellidom }} (Cedula-Pasaporte:
+                            {{ $pendiente->alumno->dni }})
                             <span class="badge bg-danger text-white">Pendiente</span>
                         </li>
                     @endforeach
@@ -59,56 +61,77 @@
             </div>
         </div>
 
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h5>Resumen de Pagos por Cohorte</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Cohorte</th>
-                            <th>Total Monto</th>
-                            <th>Cantidad de Pagos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($montoPorCohorte as $cohorte => $monto)
-                            <tr>
-                                <td>{{ $cohorte }}</td>
-                                <td>${{ number_format($monto, 2) }}</td>
-                                <td>{{ $cantidadPorCohorte[$cohorte] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
         <!-- Resumen por maestría -->
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h5>Resumen de Pagos por Maestría</h5>
             </div>
             <div class="card-body">
-                <table class="table table-bordered">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Maestría</th>
-                            <th>Total Monto</th>
-                            <th>Cantidad de Pagos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($montoPorMaestria as $maestria => $monto)
-                            <tr>
-                                <td>{{ $maestria }}</td>
-                                <td>${{ number_format($monto, 2) }}</td>
-                                <td>{{ $cantidadPorMaestria[$maestria] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <div class="accordion" id="maestriasAccordion">
+                    @foreach ($maestriasConCohortes as $maestria => $cohortes)
+                        <div class="accordion-item mb-2">
+                            <h2 class="accordion-header" id="heading{{ Str::slug($maestria) }}">
+                                <button
+                                    class="accordion-button collapsed w-100 d-flex justify-content-between align-items-center text-start fw-semibold bg-light border-0 rounded-0 px-4 py-3"
+                                    type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse{{ Str::slug($maestria) }}" aria-expanded="false"
+                                    aria-controls="collapse{{ Str::slug($maestria) }}"
+                                    style="font-size: 1.1rem; box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);">
+
+                                    <div class="me-auto">
+                                        <i class="bi bi-journal-richtext me-2 text-primary"></i>
+                                        {{ $maestria }}
+                                    </div>
+                                    <div class="text-muted small text-end">
+                                        Total: <span
+                                            class="fw-bold text-success">${{ number_format(collect($cohortes)->sum('monto'), 2) }}</span><br>
+                                        Pagos: <span
+                                            class="fw-bold text-info">{{ collect($cohortes)->sum('cantidad') }}</span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ Str::slug($maestria) }}" class="accordion-collapse collapse"
+                                aria-labelledby="heading{{ Str::slug($maestria) }}" data-bs-parent="#maestriasAccordion">
+                                <div class="accordion-body">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Cohorte</th>
+                                                <th>Total Monto</th>
+                                                <th>Cantidad</th>
+                                                <th>PDF</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($cohortes as $cohorteNombre => $datos)
+                                                <tr>
+                                                    <td>{{ $cohorteNombre }}</td>
+                                                    <td>${{ number_format($datos['monto'], 2) }}</td>
+                                                    <td>{{ $datos['cantidad'] }}</td>
+                                                    <td>
+                                                        <a href="{{ route('pagos.pdf', ['cohorte' => $cohorteNombre]) }}"
+                                                            class="btn btn-danger btn-sm" target="_blank">
+                                                            Descargar PDF
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
+
     </div>
+
+@stop
+
+@section('js')
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
 @stop

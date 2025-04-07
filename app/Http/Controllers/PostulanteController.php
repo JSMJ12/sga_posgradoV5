@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Notification;
 use App\Notifications\NuevoUsuarioNotification;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\PostulanteAceptadoNotification;
+use Illuminate\Support\Facades\Session;
+
 
 class PostulanteController extends Controller
 {
@@ -37,7 +39,6 @@ class PostulanteController extends Controller
 
         return view('postulantes.index', compact('postulantes', 'perPage'));
     }
-
 
     public function create()
     {
@@ -96,6 +97,7 @@ class PostulanteController extends Controller
 
         return view('postulantes.create', compact('maestrias', 'provincias', 'tipo_colegio', 'ingreso_hogar', 'formacion_padre', 'origen_recursos'));
     }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -166,13 +168,9 @@ class PostulanteController extends Controller
 
         Notification::route('mail', $usuario->email)
             ->notify(new NuevoUsuarioNotification($usuario, $request->input('dni'), $usuario->name));
-
-
         Auth::login($usuario);
-
         return redirect()->route('inicio')->with('success', 'Postulación realizada exitosamente.');
     }
-
 
     public function show($dni)
     {
@@ -225,6 +223,14 @@ class PostulanteController extends Controller
 
         if (!$postulante) {
             return redirect()->back()->with('error', 'El postulante no existe.');
+        }
+        $usuario = User::where('email', $postulante->correo_electronico)->first();
+
+        if ($usuario && Auth::check() && Auth::user()->id === $usuario->id) {
+            // Si el usuario está logueado y es el mismo que el del postulante
+            Auth::logout();  // Cerrar sesión del usuario logueado
+            Session::invalidate(); // Invalidar la sesión
+            Session::regenerateToken(); // Regenerar el token de sesión
         }
 
         $rutaDirectorio = 'public/alumnos/pdf';
@@ -291,7 +297,6 @@ class PostulanteController extends Controller
                 ->first();
 
             if ($user) {
-                \Log::info('Usuario encontrado', ['usuario' => $user->toArray()]);
                 $user->assignRole('Alumno');
                 $user->removeRole('Postulante');
 
@@ -299,7 +304,7 @@ class PostulanteController extends Controller
                 $user->save();
 
                 Notification::route('mail', $user->email)
-                    ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni));
+                    ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
             }
 
             $postulante->delete();

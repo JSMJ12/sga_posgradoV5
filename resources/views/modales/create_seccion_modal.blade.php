@@ -52,9 +52,6 @@
                         <button type="submit" class="btn btn-primary">
                             {{ __('Guardar') }}
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            {{ __('Cancelar') }}
-                        </button>
                     </div>
                 </form>
             </div>

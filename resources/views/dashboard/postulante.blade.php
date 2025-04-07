@@ -91,8 +91,8 @@
                         
                                         @foreach ([
                                             'Cédula' => $postulante->pdf_cedula,
-                                            'Papel Votación' => $postulante->pdf_papelvotacion,
-                                            'Título Universidad' => $postulante->pdf_titulouniversidad,
+                                            'Papel de Votación' => $postulante->pdf_papelvotacion,
+                                            'Título de Universidad' => $postulante->pdf_titulouniversidad,
                                             'Hoja de Vida' => $postulante->pdf_hojavida,
                                             'Carta de Aceptación' => $postulante->carta_aceptacion,
                                         ] as $titulo => $archivo)

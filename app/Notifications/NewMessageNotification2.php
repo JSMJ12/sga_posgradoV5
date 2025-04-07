@@ -6,16 +6,20 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Carbon\Carbon;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
 
-class NewMessageNotification2 extends Notification
+class NewMessageNotification2 extends Notification implements ShouldBroadcast
 {
     use Queueable;
 
     public $message;
+    protected $userId;
 
     public function __construct($message)
     {
         $this->message = $message;
+        $this->userId = $message->receiver->id; // El ID del receptor
     }
 
     /**
@@ -23,7 +27,7 @@ class NewMessageNotification2 extends Notification
      */
     public function via($notifiable)
     {
-        return ['mail', 'database']; // Se envía solo por email y se guarda en la base de datos.
+        return ['mail', 'database', 'broadcast']; // Se envía por correo, base de datos y Pusher.
     }
 
     /**
@@ -51,6 +55,42 @@ class NewMessageNotification2 extends Notification
             'receiver' => [
                 'name' => $this->message->receiver->name,
             ],
+            'time' => Carbon::now()->toDateTimeString(),
+            'url' => route('messages.index'), 
+        ];
+    }
+
+    /**
+     * El canal de transmisión para Pusher.
+     *
+     * @return PrivateChannel
+     */
+    public function broadcastOn()
+    {
+        return new PrivateChannel('user.' . $this->userId); // Canal privado del receptor
+    }
+
+    /**
+     * Nombre del evento para Pusher.
+     *
+     * @return string
+     */
+    public function broadcastAs()
+    {
+        return 'new.message'; // Evento para Pusher
+    }
+
+    /**
+     * Datos que se enviarán a través de Pusher.
+     *
+     * @return array
+     */
+    public function broadcastWith()
+    {
+        return [
+            'message' => $this->message->message,
+            'sender' => $this->message->sender->name,
+            'receiver' => $this->message->receiver->name,
             'time' => Carbon::now()->toDateTimeString(),
         ];
     }

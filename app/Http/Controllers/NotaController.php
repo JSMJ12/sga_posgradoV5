@@ -46,88 +46,92 @@ class NotaController extends Controller
         $recuperaciones = $request->input('recuperacion');
         $totales = $request->input('total');
 
-        foreach ($notas_actividades as $asignatura_id => $nota_actividades) {
-            $alumno = Alumno::findOrFail($alumno_dni);
-            $asignatura = Asignatura::findOrFail($asignatura_id);
-            $docente_dni = $asignatura->docentes->first()->dni;
+        try {
+            foreach ($notas_actividades as $asignatura_id => $nota_actividades) {
+                $alumno = Alumno::findOrFail($alumno_dni);
+                $asignatura = Asignatura::findOrFail($asignatura_id);
+                $docente_dni = optional($asignatura->docentes->first())->dni;
 
-            $matricula = Matricula::where('alumno_dni', $alumno_dni)
-                ->where('asignatura_id', $asignatura_id)
-                ->whereHas('cohorte', function ($query) use ($docente_dni) {
-                    $query->where('docente_dni', $docente_dni);
-                })
-                ->firstOrFail();
-
-            $cohorte = $matricula->cohorte;
-
-            // Usar updateOrCreate para actualizar o crear la nota
-            Nota::updateOrCreate(
-                [
-                    'alumno_dni' => $alumno_dni,
-                    'asignatura_id' => $asignatura_id,
-                    'cohorte_id' => $cohorte->id,
-                    'docente_dni' => $docente_dni,
-                ],
-                [
-                    'nota_actividades' => $nota_actividades,
-                    'nota_practicas' => $notas_practicas[$asignatura_id],
-                    'nota_autonomo' => $notas_autonomo[$asignatura_id],
-                    'examen_final' => $examenes_finales[$asignatura_id],
-                    'recuperacion' => $recuperaciones[$asignatura_id],
-                    'total' => $totales[$asignatura_id],
-                ]
-            );
-        }
-        if (
-            $alumno->notas->count() > 0 &&
-            $alumno->maestria->asignaturas->count() > 0 &&
-            $alumno->notas->count() == $alumno->maestria->asignaturas->count() &&
-            $alumno->notas->every(function ($nota) {
-                return $nota->total >= 7;
-            })
-        ) {
-            // Buscar el usuario asociado al alumno por email institucional
-            $usuario = User::where('email', $alumno->email_institucional)->first();
-            $matricula = $alumno->matriculas()->first();
-            if (!$matricula) {
-                return redirect()->back()->with('error', 'Matrícula no encontrada');
-            }
-
-            // Obtener el cohorte y la maestría
-            $cohorteId = $matricula->cohorte_id;
-            $maestriaId = $alumno->maestria_id;
-
-            // Buscar o crear la tasa de titulación para el cohorte y la maestría
-            $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorteId)
-                ->where('maestria_id', $maestriaId)
-                ->first();
-
-            if ($tasaTitulacion) {
-                $tasaTitulacion->numero_maestrantes_aprobados += 1; 
-                $tasaTitulacion->save(); 
-
-
-            } else {
-                // Si no existe, lo creamos con valores iniciales
-                TasaTitulacion::create([
-                    'cohorte_id' => $cohorteId,
-                    'maestria_id' => $maestriaId,
-                    'numero_maestrantes_aprobados' => 1,
-                ]);
-            }
-
-            if ($usuario) {
-                if (!$usuario->hasRole('Titulado_proceso')) {
-                    $usuario->assignRole('Titulado_proceso');
+                if (!$docente_dni) {
+                    return redirect(route('notas.create', ['alumno_dni' => $alumno_dni]))->with('error', "No se encontró un docente asignado a la asignatura ID: $asignatura_id");
                 }
-            } else {
-                // Opcional: manejar el caso en que no se encuentre el usuario
-                \Log::warning("Usuario con email {$alumno->email_institucional} no encontrado.");
+
+                $matricula = Matricula::where('alumno_dni', $alumno_dni)
+                    ->where('asignatura_id', $asignatura_id)
+                    ->whereHas('cohorte', function ($query) use ($docente_dni) {
+                        $query->where('docente_dni', $docente_dni);
+                    })
+                    ->first();
+
+                if (!$matricula) {
+                    return redirect(route('notas.create', ['alumno_dni' => $alumno_dni]))->with('error', "No se encontró matrícula para la asignatura ID: $asignatura_id del alumno DNI: $alumno_dni");
+                }
+
+                $cohorte = $matricula->cohorte;
+
+                Nota::updateOrCreate(
+                    [
+                        'alumno_dni' => $alumno_dni,
+                        'asignatura_id' => $asignatura_id,
+                        'cohorte_id' => $cohorte->id,
+                        'docente_dni' => $docente_dni,
+                    ],
+                    [
+                        'nota_actividades' => $nota_actividades,
+                        'nota_practicas' => $notas_practicas[$asignatura_id],
+                        'nota_autonomo' => $notas_autonomo[$asignatura_id],
+                        'examen_final' => $examenes_finales[$asignatura_id],
+                        'recuperacion' => $recuperaciones[$asignatura_id],
+                        'total' => $totales[$asignatura_id],
+                    ]
+                );
             }
+
+            // Evaluar si el alumno ha aprobado todas las asignaturas
+            if (
+                $alumno->notas->count() > 0 &&
+                $alumno->maestria->asignaturas->count() > 0 &&
+                $alumno->notas->count() == $alumno->maestria->asignaturas->count() &&
+                $alumno->notas->every(fn($nota) => $nota->total >= 7)
+            ) {
+                $usuario = User::where('email', $alumno->email_institucional)->first();
+                $matricula = $alumno->matriculas()->first();
+
+                if (!$matricula) {
+                    return redirect(route('notas.create', ['alumno_dni' => $alumno_dni]))->with('error', 'Matrícula no encontrada para el alumno.');
+                }
+
+                $cohorteId = $matricula->cohorte_id;
+                $maestriaId = $alumno->maestria_id;
+
+                $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorteId)
+                    ->where('maestria_id', $maestriaId)
+                    ->first();
+
+                if ($tasaTitulacion) {
+                    $tasaTitulacion->numero_maestrantes_aprobados += 1;
+                    $tasaTitulacion->save();
+                } else {
+                    TasaTitulacion::create([
+                        'cohorte_id' => $cohorteId,
+                        'maestria_id' => $maestriaId,
+                        'numero_maestrantes_aprobados' => 1,
+                    ]);
+                }
+
+                if ($usuario) {
+                    if (!$usuario->hasRole('Titulado_proceso')) {
+                        $usuario->assignRole('Titulado_proceso');
+                    }
+                } else {
+                    return redirect(route('notas.create', ['alumno_dni' => $alumno_dni]))->with('warning', 'Notas guardadas, pero no se encontró el usuario para asignar el rol.');
+                }
+            }
+
+            return redirect()->route('notas.show', $alumno_dni)->with('success', 'Notas guardadas exitosamente.');
+        } catch (\Exception $e) {
+            return redirect(route('notas.create', ['alumno_dni' => $alumno_dni]))->with('error', 'Ocurrió un error al guardar las notas. Por favor, revisa los datos ingresados.');
         }
-
-
-        return redirect()->route('notas.show', $alumno_dni)->with('success', 'Notas guardadas exitosamente');
     }
 
     public function destroy($id)

@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Traits\HasRoles;
+
 
 class LoginController extends Controller
 {
@@ -41,8 +39,8 @@ class LoginController extends Controller
 
         // Buscar al usuario por correo electrónico y estado
         $user = User::where('email', $request->email)
-                    ->where('status', 'ACTIVO')
-                    ->first();
+            ->where('status', 'ACTIVO')
+            ->first();
 
         // Verificar si se encontró un usuario activo
         if (!$user) {
@@ -53,29 +51,30 @@ class LoginController extends Controller
 
         // Intentar autenticar al usuario con las credenciales proporcionadas
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->remember)) {
-            // Redirigir al usuario a la página correcta según su rol
-            if (auth()->user()->hasRole('Administrador')) {
-                return redirect()->route('dashboard_admin');
-            } elseif (auth()->user()->hasRole('Docente')) {
-                return redirect()->route('dashboard_docente');
-            } elseif (auth()->user()->hasRole('Secretario')) {
-                return redirect()->route('dashboard_secretario');
-            } elseif (auth()->user()->hasRole('Alumno')) {
-                return redirect()->route('dashboard_alumno');
-            }elseif (auth()->user()->hasRole('Postulante')) {
-                return redirect()->route('dashboard_postulante');
-            }elseif (auth()->user()->hasRole('Secretario/a EPSU')) {
-                return redirect()->route('dashboard_secretario_epsu');
+            // Mapear roles a rutas
+            $routes = [
+                'Administrador' => 'dashboard_admin',
+                'Docente' => 'dashboard_docente',
+                'Secretario' => 'dashboard_secretario',
+                'Alumno' => 'dashboard_alumno',
+                'Postulante' => 'dashboard_postulante',
+                'Secretario/a EPSU' => 'dashboard_secretario_epsu',
+            ];
+
+            // Redirigir al dashboard correspondiente según el rol
+            foreach ($routes as $role => $route) {
+                if (auth()->user()->hasRole($role)) {
+                    return redirect()->route($route);
+                }
             }
-            
         }
 
-        
         // Si la autenticación falla, mostrar un mensaje de error y volver a la página de inicio de sesión
         return redirect()->route('login')->withErrors([
             'email' => 'Las credenciales proporcionadas no son válidas.'
         ]);
     }
+
 
     /**
      * Create a new controller instance.

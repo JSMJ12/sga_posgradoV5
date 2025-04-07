@@ -55,7 +55,7 @@ class Alumno extends Model
         'monto_total',
         'documento',
         'registro',
-
+        'sexo',
     ];
     public function notas()
     {

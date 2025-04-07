@@ -8,6 +8,9 @@ use App\Models\Maestria;
 use App\Models\Secretario;
 use App\Models\PeriodoAcademico;
 use App\Models\Aula;
+use App\Models\Docente;
+use App\Exports\CohorteAlumnosExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CohorteController extends Controller
 {
@@ -23,8 +26,24 @@ class CohorteController extends Controller
         if ($user->hasRole('Administrador')) {
             // Si el usuario es administrador, muestra todos los cohortes
             $cohortes = Cohorte::with(['maestria', 'periodo_academico', 'aula']);
+        } elseif ($user->hasRole('Coordinador')) {
+            // Si el usuario es coordinador, busca la maestría asociada al docente
+            $docente = Docente::where('email', $user->email)->first();
+
+            if (!$docente || !$docente->maestria()->exists()) {
+                return $request->ajax()
+                    ? response()->json(['error' => 'No estás asignado a ninguna maestría.'], 403)
+                    : redirect()->back()->withErrors(['error' => 'No estás asignado a ninguna maestría.']);
+            }
+
+            $maestria = $docente->maestria()->first();
+            $maestriaId = $maestria->id;
+
+            // Filtra los cohortes de la maestría del coordinador
+            $cohortes = Cohorte::with(['maestria', 'periodo_academico', 'aula'])
+                ->where('maestria_id', $maestriaId);
         } else {
-            // Si el usuario no es administrador, asume que es un secretario
+            // Si el usuario no es administrador ni coordinador, asume que es un secretario
             $secretario = Secretario::where('nombre1', $user->name)
                 ->where('apellidop', $user->apellido)
                 ->where('email', $user->email)
@@ -43,26 +62,32 @@ class CohorteController extends Controller
                 ->addColumn('aula_nombre', function ($cohorte) {
                     return $cohorte->aula && $cohorte->aula->nombre ? $cohorte->aula->nombre : 'No asignada';
                 })
+                ->addColumn('alumnos', function ($cohorte) {
+                    return '
+                    <a href="' . route('cohortes.exportarAlumnos', $cohorte->id) . '" class="btn btn-success btn-sm" title="Listado de alumnos">
+                        <i class="fas fa-file-excel"></i>
+                    </a>';
+                })
                 ->addColumn('acciones', function ($cohorte) {
                     return '
-                        <a href="' . route('cohortes.edit', $cohorte->id) . '" class="btn btn-outline-primary btn-sm" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <form action="' . route('cohortes.destroy', $cohorte->id) . '" method="POST" style="display: inline-block;">
-                            ' . csrf_field() . '
-                            ' . method_field('DELETE') . '
-                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar" onclick="return confirm(\'¿Estás seguro de que deseas eliminar este cohorte?\');">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>';
-                })                
-                
-                ->rawColumns(['acciones'])
+                    <a href="' . route('cohortes.edit', $cohorte->id) . '" class="btn btn-outline-primary btn-sm" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form action="' . route('cohortes.destroy', $cohorte->id) . '" method="POST" style="display: inline-block;">
+                        ' . csrf_field() . '
+                        ' . method_field('DELETE') . '
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar" onclick="return confirm(\'¿Estás seguro de que deseas eliminar este cohorte?\');">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>';
+                })
+                ->rawColumns(['acciones', 'alumnos'])
                 ->toJson();
-        }        
+        }
 
         return view('cohortes.index', compact('perPage'));
     }
+
 
     public function create()
     {
@@ -78,7 +103,22 @@ class CohorteController extends Controller
             $maestrias = Maestria::whereIn('id', $maestriasIds)
                 ->where('status', 'ACTIVO')
                 ->get();
-        } else {
+        }elseif ($user->hasRole('Coordinador')) {
+            // Si el usuario es coordinador, busca la maestría asociada al docente
+            $docente = Docente::where('email', $user->email)->first();
+
+            if (!$docente || !$docente->maestria()->exists()) {
+                return $request->ajax()
+                    ? response()->json(['error' => 'No estás asignado a ninguna maestría.'], 403)
+                    : redirect()->back()->withErrors(['error' => 'No estás asignado a ninguna maestría.']);
+            }
+
+            $maestria = $docente->maestria()->first();
+            $maestrias = Maestria::where('id', $maestria->id)
+            ->where('status', 'ACTIVO')
+            ->get();
+        }
+        else {
             $maestrias = Maestria::where('status', 'ACTIVO')->get();
         }
         $periodos_academicos = PeriodoAcademico::all();
@@ -165,5 +205,19 @@ class CohorteController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('cohortes.index')->with('error', 'Error al eliminar el cohorte: ' . $e->getMessage());
         }
+    }
+    public function exportarAlumnos($cohorte_id)
+    {
+        // Obtener la cohorte con su relación a la maestría
+        $cohorte = Cohorte::with('maestria')->findOrFail($cohorte_id);
+
+        // Obtener el nombre de la maestría y la cohorte
+        $maestriaNombre = str_replace(' ', '_', $cohorte->maestria->nombre);
+        $cohorteNombre = str_replace(' ', '_', $cohorte->nombre);
+
+        // Generar el nombre del archivo con la maestría y la cohorte
+        $fileName = "Alumnos_{$maestriaNombre}_{$cohorteNombre}_" . now()->format('Y-m-d') . ".xlsx";
+
+        return Excel::download(new CohorteAlumnosExport($cohorte_id), $fileName);
     }
 }

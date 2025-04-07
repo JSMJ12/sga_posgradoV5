@@ -28,55 +28,56 @@ class DocenteController extends Controller
             return datatables()->eloquent($docentes)
                 ->addColumn('foto', function ($docente) {
                     return '<img src="' . asset('storage/' . $docente->image) . '" 
-                        alt="Imagen de ' . $docente->nombre1 . '" 
-                        style="max-width: 60px; border-radius: 50%;">';
+                    alt="Imagen de ' . $docente->nombre1 . '" 
+                    style="max-width: 60px; border-radius: 50%;">';
                 })
                 ->addColumn('nombre_completo', function ($docente) {
                     return $docente->nombre1 . '<br>' . $docente->nombre2 . '<br>' .
                         $docente->apellidop . '<br>' . $docente->apellidom;
                 })
-                ->addColumn('acciones', function ($docente) {
-                    $acciones = '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">';
-                    $acciones .= '<a href="' . route('docentes.edit', $docente->dni) . '" 
-                                     class="btn btn-outline-primary btn-sm" 
-                                     style="display: flex; align-items: center; gap: 5px;" 
-                                     title="Editar">
-                                     <i class="fas fa-edit"></i><span>Editar</span>
-                                 </a>';
-                    $acciones .= '<a href="' . route('asignaturas_docentes.create1', $docente->dni) . '" 
-                                     class="btn btn-outline-success btn-sm" 
-                                     style="display: flex; align-items: center; gap: 5px;" 
-                                     title="Agregar Asignaturas">
-                                     <i class="fas fa-plus"></i><span>Asignaturas</span>
-                                 </a>';
-                    $acciones .= '<a href="' . route('cohortes_docentes.create1', $docente->dni) . '" 
-                                     class="btn btn-outline-warning btn-sm" 
-                                     style="display: flex; align-items: center; gap: 5px;" 
-                                     title="Agregar Cohortes">
-                                     <i class="fas fa-plus"></i><span>Cohortes</span>
-                                 </a>';
-                    $acciones .= '<button type="button" 
-                                           class="btn btn-outline-secondary btn-sm btn-modal-asignatura" 
-                                           style="display: flex; align-items: center; gap: 5px;" 
-                                           data-id="' . $docente->dni . '" 
-                                           data-type="asignaturas" 
-                                           title="Ver Asignaturas">
-                                           <i class="fas fa-eye"></i><span>Ver Asignaturas</span>
-                                       </button>';
-                    $acciones .= '<button type="button" 
-                                           class="btn btn-outline-info btn-sm btn-modal-cohortes" 
-                                           style="display: flex; align-items: center; gap: 5px;" 
-                                           data-dni="' . $docente->dni . '" 
-                                           data-type="cohortes" 
-                                           title="Ver Cohortes">
-                                           <i class="fas fa-eye"></i><span>Ver Cohortes</span>
-                                       </button>';
-                    $acciones .= '</div>';
-
-                    return $acciones;
+                ->addColumn('asignaturas', function ($docente) {
+                    return '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <a href="' . route('asignaturas_docentes.create1', $docente->dni) . '" 
+                                class="btn btn-outline-success btn-sm btn-action"  
+                                title="Agregar Asignaturas">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                            <button type="button" 
+                                class="btn btn-outline-secondary btn-sm btn-modal-asignatura btn-action"  
+                                data-id="' . $docente->dni . '" 
+                                data-toggle="modal" 
+                                data-target="#asignaturasModal" 
+                                title="Ver Asignaturas">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>';
                 })
-
-                ->rawColumns(['foto', 'nombre_completo', 'acciones']) // Permitir contenido HTML
+                ->addColumn('cohortes', function ($docente) {
+                    return '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <a href="' . route('cohortes_docentes.create1', $docente->dni) . '" 
+                                class="btn btn-outline-warning btn-sm btn-action"  
+                                title="Agregar Cohortes">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                            <button type="button" 
+                                class="btn btn-outline-info btn-sm btn-modal-cohortes btn-action"  
+                                data-dni="' . $docente->dni . '"
+                                data-toggle="modal" 
+                                data-target="#cohortesModal"  
+                                data-type="cohortes" 
+                                title="Ver Cohortes">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>';
+                })
+                ->addColumn('editar', function ($docente) {
+                    return '<a href="' . route('docentes.edit', $docente->dni) . '" 
+                            class="btn btn-outline-primary btn-sm btn-action" 
+                            title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>';
+                })
+                ->rawColumns(['foto', 'nombre_completo', 'asignaturas', 'cohortes', 'editar']) // Permitir contenido HTML
                 ->toJson();
         }
 

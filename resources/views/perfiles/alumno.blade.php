@@ -53,8 +53,8 @@
                                     <div class="form-group">
                                         <label for="sexo"><i class="fas fa-venus-mars"></i> Sexo:</label>
                                         <select name="sexo" class="form-control" required>
-                                            <option value="HOMBRE" {{ old('sexo', $alumno->sexo) == 'HOMBRE' ? 'selected' : '' }}>Hombre</option>
-                                            <option value="MUJER" {{ old('sexo', $alumno->sexo) == 'MUJER' ? 'selected' : '' }}>Mujer</option>
+                                            <option value="M" {{ old('sexo', $alumno->sexo) == 'M' ? 'selected' : '' }}>Hombre</option>
+                                            <option value="F" {{ old('sexo', $alumno->sexo) == 'F' ? 'selected' : '' }}>Mujer</option>
                                         </select>
                                     </div>
 
@@ -103,6 +103,10 @@
                                     <div class="form-group">
                                         <label for="canton"><i class="fas fa-city"></i> Cantón:</label>
                                         <input type="text" name="canton" class="form-control" placeholder="Cantón" value="{{ old('canton', $alumno->canton) }}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="Barrio"><i class="fas fa-city"></i> Barrio:</label>
+                                        <input type="text" name="barrio" class="form-control" placeholder="Barrio" value="{{ old('barrio', $alumno->barrio) }}">
                                     </div>
 
                                     <div class="form-group">

@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #3007b8;">
                 <h3 class="card-title">Listado de Aulas</h3>
                 <div class="card-tools">
                     <button id="crearAulaBtn" class="btn btn-light btn-sm" data-bs-toggle="modal"
@@ -21,14 +21,14 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="aulas">
-                        <thead style="background-color: #003366; color: white;">
+                        <thead style="background-color: #28a745; color: white;">
                             <tr>
-                                <th><i class="fas fa-hashtag"></i> ID</th>
-                                <th><i class="fas fa-user"></i> Nombre</th>
-                                <th><i class="fas fa-building"></i> Piso</th>
-                                <th><i class="fas fa-barcode"></i> Código</th>
-                                <th><i class="fas fa-layer-group"></i> Paralelo</th>
-                                <th class="text-center"><i class="fas fa-cogs"></i> Acciones</th>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Piso</th>
+                                <th>Código</th>
+                                <th>Paralelo</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -79,6 +79,7 @@
             $('#aulas').DataTable({
                 lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
                 pageLength: {{ $perPage }},
+                responsive: true,
                 colReorder: true,
                 keys: true,
                 autoFill: true,

@@ -63,16 +63,20 @@ class DashboardAlumnoController extends Controller
             // Obtener el docente asociado a la asignatura de la matrícula
             $docente = $matricula->docente;
 
+            // Si no existe un docente, asignamos "sin asignar"
+            $docenteNombre = $docente ? $docente->nombre1 . ' ' . $docente->nombre2 . ' ' . $docente->apellidop . ' ' . $docente->apellidom : 'Sin asignar';
+            $docenteImagen = $docente ? $docente->image : 'default_image_path.jpg';
+
             // Obtener las notas relacionadas con la asignatura, el alumno y el docente
             $nota = Nota::where('alumno_dni', $alumno->dni)
                 ->where('asignatura_id', $asignatura->id)
-                ->where('docente_dni', $docente->dni)
+                ->where('docente_dni', $docente ? $docente->dni : null) // Si no hay docente, no lo buscamos por docente_dni
                 ->first();
 
             return [
                 $asignatura->nombre => [
-                    'docente_nombre' => $docente ? $docente->nombre1 . ' ' . $docente->nombre2 . ' ' . $docente->apellidop . ' ' . $docente->apellidom : 'N/A',
-                    'docente_image' => $docente ? $docente->image : 'default_image_path.jpg',
+                    'docente_nombre' => $docenteNombre,
+                    'docente_image' => $docenteImagen,
                     'nota_actividades' => $nota ? $nota->nota_actividades : 'N/A',
                     'nota_practicas' => $nota ? $nota->nota_practicas : 'N/A',
                     'nota_autonomo' => $nota ? $nota->nota_autonomo : 'N/A',

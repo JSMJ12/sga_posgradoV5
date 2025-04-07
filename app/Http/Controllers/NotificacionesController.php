@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class NotificacionesController extends Controller
 {
@@ -25,18 +26,15 @@ class NotificacionesController extends Controller
         ]);
     }
 
-    public function contador()
+    public function marcarMensajesComoLeidos()
     {
-        // Obtener las notificaciones del usuario autenticado
-        $notificaciones = Auth::user()->unreadNotifications;
+        $user = auth()->user();
 
-        // Obtener la cantidad de notificaciones nuevas
-        $cantidadNotificacionesNuevas = $notificaciones->count();
+        $user->unreadNotifications->filter(function ($notification) {
+            return Str::contains($notification->type, 'NewMessageNotification');
+        })->each->markAsRead();
 
-        // Retornar la cantidad de notificaciones nuevas como JSON
-        return response()->json([
-            'cantidadNotificacionesNuevas' => $cantidadNotificacionesNuevas
-        ]);
+        return response()->json(['success' => true]);
     }
 
 }

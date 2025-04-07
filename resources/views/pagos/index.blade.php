@@ -37,7 +37,7 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            $('#pagosTable').DataTable({
+            let table = $('#pagosTable').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('pagos.index') }}",
@@ -93,6 +93,9 @@
                     url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
                 }
             });
+            setInterval(function() {
+                table.ajax.reload(null, false);
+            }, 30000);
         });
 
         // Función para confirmar la verificación del pago

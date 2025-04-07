@@ -100,7 +100,7 @@
             <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ $alumno->maestria->nombre }}</span>
+            <span class="coordinator">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</span>
         </div>
         <div class="divider"></div>
         <p class="certificate-title">CERTIFICA</p>

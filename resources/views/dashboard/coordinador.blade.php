@@ -9,7 +9,9 @@
     <div class="container">
         <h3 class="text-center text-info my-4">{{ $maestria->nombre }}</h3>
 
+        <!-- Estadísticas Generales -->
         <div class="row mb-4">
+            <!-- Alumnos -->
             <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
                 <div class="card shadow border-0 h-100">
                     <div class="card-body text-center bg-gradient-primary text-white rounded">
@@ -22,6 +24,7 @@
                 </div>
             </div>
 
+            <!-- Docentes -->
             <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
                 <div class="card shadow border-0 h-100">
                     <div class="card-body text-center bg-gradient-success text-white rounded">
@@ -34,6 +37,7 @@
                 </div>
             </div>
 
+            <!-- Postulantes -->
             <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
                 <div class="card shadow border-0 h-100">
                     <div class="card-body text-center bg-gradient-warning text-white rounded">
@@ -47,7 +51,9 @@
             </div>
         </div>
 
+        <!-- Gráficos -->
         <div class="row">
+            <!-- Gráfico de Matriculados -->
             <div class="col-md-6">
                 <div class="card shadow-lg rounded-lg">
                     <div class="card-header bg-primary text-white">
@@ -59,15 +65,85 @@
                 </div>
             </div>
 
+            <!-- Resumen de Pagos por Cohorte -->
             <div class="col-md-6">
-                <div class="card shadow-lg rounded-lg">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Asignaturas</h5>
+                <div class="card mb-6 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5>Resumen de Pagos por Cohorte</h5>
                     </div>
                     <div class="card-body">
+                        <canvas id="cohorteChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Pagos por Cohorte -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card mb-6 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5>Resumen de Pagos por Cohorte</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Cohorte</th>
+                                    <th>Total Monto</th>
+                                    <th>Cantidad de Pagos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($cohortes as $index => $cohorte)
+                                    <tr>
+                                        <td>{{ $cohorte }}</td>
+                                        <td>${{ number_format($monto[$index], 2) }}</td>
+                                        <td>{{ $cantidad[$index] }}</td>
+                                        <td>
+                                            <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
+                                                class="btn btn-danger btn-sm" target="_blank">
+                                                Descargar PDF
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asignaturas -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-6 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5>Deuda Pendiente por Cohorte</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="deudaPendienteChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-lg rounded-lg">
+                    <div class="card-header bg-info text-white" id="asignaturasHeader" style="cursor: pointer;">
+                        <h5 class="mb-0">Asignaturas</h5>
+                    </div>
+                    <div class="card-body" id="asignaturasList" style="display: none;">
                         <ul class="list-group list-group-flush">
                             @foreach ($asignaturas as $asignatura)
-                                <li class="list-group-item">{{ $asignatura->nombre }}</li>
+                                <li class="list-group-item">
+                                    {{ $asignatura->nombre }}
+                                    <br>
+                                    <span style="font-weight: bold;">Docente:</span>
+                                    {{ $asignatura->docentes->first()->nombre1 }}
+                                    {{ $asignatura->docentes->first()->nombre2 }}
+                                    {{ $asignatura->docentes->first()->apellidop }}
+                                    {{ $asignatura->docentes->first()->apellidom }}
+                                </li>
                             @endforeach
                         </ul>
                     </div>
@@ -113,6 +189,63 @@
 @stop
 
 @section('js')
+    <script>
+        var ctx = document.getElementById('deudaPendienteChart').getContext('2d');
+        var deudaPendienteChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($cohortes), // Los nombres de las cohortes
+                datasets: [{
+                    label: 'Deuda Pendiente (USD)',
+                    data: @json($monto), // Los montos de deuda
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+    <script>
+        var ctx = document.getElementById('cohorteChart').getContext('2d');
+        var cohorteChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($cohortes) !!},
+                datasets: [{
+                        label: 'Monto Total',
+                        data: {!! json_encode($monto) !!},
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Cantidad de Pagos',
+                        data: {!! json_encode($cantidad) !!},
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+
+
     <script>
         // Datos del gráfico
         var matriculadosIds = {!! $matriculadosPorMaestria->pluck('nombre') !!}; // IDs de las maestrías
@@ -186,5 +319,21 @@
             options: matriculadosOptions
         });
     </script>
+    <script>
+        // Obtener el header y el cuerpo de las asignaturas
+        const header = document.getElementById('asignaturasHeader');
+        const list = document.getElementById('asignaturasList');
+
+        // Agregar un evento para mostrar/ocultar la lista al hacer clic en el header
+        header.addEventListener('click', function() {
+            // Alternar la visibilidad de la lista de asignaturas
+            if (list.style.display === 'none') {
+                list.style.display = 'block'; // Mostrar la lista
+            } else {
+                list.style.display = 'none'; // Ocultar la lista
+            }
+        });
+    </script>
+
 
 @stop

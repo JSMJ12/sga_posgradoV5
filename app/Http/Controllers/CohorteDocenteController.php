@@ -7,6 +7,7 @@ use App\Models\Maestria;
 use App\Models\Asignatura;
 use App\Models\Docente;
 use App\Models\Cohorte;
+use App\Models\Matricula;
 use App\Models\CohorteDocente;
 use App\Models\Nota;
 use App\Models\CalificacionVerificacion;
@@ -39,13 +40,14 @@ class CohorteDocenteController extends Controller
         if ($asignatura_id) {
             // Si se proporciona $asignatura_id, obtener cohortes para esa asignatura específica
             $asignatura = Asignatura::find($asignatura_id);
-            
+
             if (!$asignatura) {
                 return redirect()->route('docentes.index')->with('error', 'Asignatura no encontrada.');
             }
 
             $maestria = $asignatura->maestria;
-            $cohortes = $maestria->cohortes()->whereDate('fecha_fin', '>', Carbon::now())->get();
+
+            $cohortes = $maestria->cohortes()->get();
 
             if ($cohortes->isNotEmpty()) {
                 $maestriaCohortes[] = [
@@ -60,7 +62,7 @@ class CohorteDocenteController extends Controller
 
             foreach ($asignaturas as $maestriaId => $asignaturasPorMaestria) {
                 $maestria = Maestria::find($maestriaId);
-                
+
                 if (!$maestria) {
                     continue;
                 }
@@ -105,8 +107,8 @@ class CohorteDocenteController extends Controller
             if (!empty($cohortesADesasignar)) {
                 foreach ($cohortesADesasignar as $cohorteId) {
                     $asignaturasIds = CohorteDocente::where('cohorte_id', $cohorteId)
-                                                    ->where('docente_dni', $docenteDni)
-                                                    ->pluck('asignatura_id');
+                        ->where('docente_dni', $docenteDni)
+                        ->pluck('asignatura_id');
 
                     foreach ($asignaturasIds as $asignaturaId) {
                         // Eliminar el registro de CohorteDocente
@@ -139,6 +141,14 @@ class CohorteDocenteController extends Controller
                                 'docente_dni' => $docenteDni,
                                 'asignatura_id' => $asignaturaId,
                             ])->delete();
+                        }
+                        $matriculas = Matricula::where('cohorte_id', $cohorteId)
+                            ->where('asignatura_id', $asignaturaId)
+                            ->get();
+
+                        foreach ($matriculas as $matricula) {
+                            $matricula->docente_dni = $docenteDni;
+                            $matricula->save();
                         }
                     }
                 }
@@ -175,6 +185,14 @@ class CohorteDocenteController extends Controller
                                 'editar' => !$notasExistentes,
                             ]
                         );
+                        $matriculas = Matricula::where('cohorte_id', $cohorteId)
+                            ->where('asignatura_id', $asignaturaId)
+                            ->get();
+
+                        foreach ($matriculas as $matricula) {
+                            $matricula->docente_dni = $docenteDni;
+                            $matricula->save();
+                        }
                     }
                 }
             }

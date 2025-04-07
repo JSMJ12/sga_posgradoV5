@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #3007b8;">
                 <h3 class="card-title">Listado de Secretarios</h3>
                 <div class="card-tools">
                     <a href="{{ route('secretarios.create') }}" class="btn btn-light btn-sm">
@@ -20,14 +20,14 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="secretarios">
-                        <thead style="background-color: #003366; color: white;">
-                            <tr class="text-center">
-                                <th><i class="fas fa-id-card"></i> Cédula / Pasaporte</th>
-                                <th><i class="fas fa-image"></i> Foto</th>
-                                <th><i class="fas fa-user"></i> Nombres</th>
-                                <th><i class="fas fa-envelope"></i> Email</th>
-                                <th><i class="fas fa-users"></i> Sección</th>
-                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                        <thead style="background-color: #28a745; color: white;">
+                            <tr>
+                                <th>Cédula / Pasaporte</th>
+                                <th>Foto</th>
+                                <th>Nombres</th>
+                                <th>Email</th>
+                                <th>Sección</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                     </table>
@@ -40,7 +40,7 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            $('#secretarios').DataTable({
+            let table = $('#secretarios').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('secretarios.index') }}",
@@ -88,6 +88,7 @@
                 language: {
                     url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
                 }
+
             });
 
             // Cargar modal dinámicamente al hacer clic en el botón
@@ -96,7 +97,7 @@
                 // Llamada AJAX para cargar datos de la sección
                 $.ajax({
                     url: "/secciones/" +
-                    seccionId, // Asume que tienes una ruta para obtener los detalles de la sección
+                        seccionId, // Asume que tienes una ruta para obtener los detalles de la sección
                     method: "GET",
                     success: function(data) {
                         // Crear el modal
@@ -130,6 +131,9 @@
                     }
                 });
             });
+            setInterval(function() {
+                table.ajax.reload(null, false);
+            }, 10000);
         });
     </script>
 

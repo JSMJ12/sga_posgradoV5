@@ -3,8 +3,8 @@
         <div class="modal-content">
             <div class="modal-header" style="background-color: #003366; color: white;">
                 <h5 class="modal-title" id="mostrarSeccionModalLabel_{{ $secretario->seccion->id }}">Información de la Sección</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true" style="color: white;">&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -15,9 +15,6 @@
                         <li>{{ $maestria->nombre }}</li>
                     @endforeach
                 </ul>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>

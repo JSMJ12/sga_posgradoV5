@@ -18,7 +18,7 @@ class AsignaturaController extends Controller
     {
         $request->validate([
             'nombre' => 'required',
-            'codigo_asignatura' => 'required|unique:asignaturas',
+            'codigo_asignatura' => 'required',
             'credito' => 'required|numeric',
             'itinerario' => 'nullable',
             'unidad_curricular'=> 'nullable',
@@ -42,7 +42,7 @@ class AsignaturaController extends Controller
     {
         $request->validate([
             'nombre' => 'required',
-            'codigo_asignatura' => 'required|unique:asignaturas,codigo_asignatura,'.$asignatura->id,
+            'codigo_asignatura' => 'required',
             'credito' => 'required|numeric',
             'itinerario' => 'nullable',
             'unidad_curricular'=> 'nullable',

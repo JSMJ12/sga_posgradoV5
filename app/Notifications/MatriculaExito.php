@@ -5,8 +5,11 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
 
-class MatriculaExito extends Notification
+class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcast
 {
     use Queueable;
 
@@ -14,13 +17,15 @@ class MatriculaExito extends Notification
     protected $email;
     protected $nombre;
     protected $dni;
+    protected $userId;
 
-    public function __construct($user, $email, $nombre, $dni)
+    public function __construct($user, $email, $nombre, $dni, $userId)
     {
         $this->user = $user;
         $this->email = $email;
         $this->nombre = $nombre;
         $this->dni = $dni;
+        $this->user->id = $userId;
     }
 
     /**
@@ -31,7 +36,7 @@ class MatriculaExito extends Notification
      */
     public function via($notifiable)
     {
-        return ['mail']; // Puedes agregar más canales como base de datos o SMS si lo deseas
+        return ['mail','database', 'broadcast']; // Puedes agregar más canales como base de datos o SMS si lo deseas
     }
 
     /**
@@ -64,7 +69,28 @@ class MatriculaExito extends Notification
     {
         return [
             'message' => 'Tu matrícula ha sido exitosa y el pago ha sido procesado. Ahora puedes acceder con tu correo institucional.',
-            'dni' => $this->dni,
+        ];
+    }
+    public function broadcastOn()
+    {
+        return new PrivateChannel('user.' . $this->userId);
+    }
+
+    /**
+     * Nombre del evento de transmisión.
+     */
+    public function broadcastAs()
+    {
+        return 'matricula.exito';
+    }
+
+    /**
+     * Datos que se enviarán con la notificación en tiempo real.
+     */
+    public function broadcastWith()
+    {
+        return [
+            'message' => "Tu matrícula ha sido exitosa y el pago ha sido procesado. Ahora puedes acceder con tu correo institucional. {$this->email}.",
         ];
     }
 }

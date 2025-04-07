@@ -120,11 +120,9 @@ class AlumnoController extends Controller
                 ->where('email', $user->email)
                 ->firstOrFail();
             $maestriasIds = $secretario->seccion->maestrias->pluck('id');
-            $maestrias = Maestria::whereIn('id', $maestriasIds)
-                ->where('status', 'ACTIVO')
-                ->get();
+            $maestrias = Maestria::whereIn('id', $maestriasIds)->get();
         } else {
-            $maestrias = Maestria::where('status', 'ACTIVO')->get();
+            $maestrias = Maestria::all(); // Obtener todas las maestrías sin filtrar por estado
         }
 
         return view('alumnos.create', compact('provincias', 'maestrias'));

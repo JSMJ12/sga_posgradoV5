@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Pago;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use App\Models\Alumno;
 use Illuminate\Support\Facades\Auth;
-use Yajra\DataTables\DataTables;
 
 class PagoController extends Controller
 {
@@ -28,7 +26,7 @@ class PagoController extends Controller
                         <form id="form-verificar-' . $pago->id . '" action="' . route('pagos.verificar', $pago->id) . '" method="POST">
                             ' . csrf_field() . method_field('PATCH') . '
                             <button type="button" class="btn btn-success btn-sm" onclick="confirmarVerificacion(' . $pago->id . ')">
-                                <i class="fas fa-check"></i> Aprobado
+                                <i class="fas fa-check"></i> Aprobar
                             </button>
                         </form>
                     ';
@@ -249,6 +247,7 @@ class PagoController extends Controller
 
         return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado y monto total actualizado.');
     }
+    
     public function verificar_pago($id)
     {
         // Encontrar el pago por su ID

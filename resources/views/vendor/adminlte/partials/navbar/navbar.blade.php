@@ -2,30 +2,85 @@
     class="main-header navbar {{ config('adminlte.classes_topnav_nav', 'navbar-expand') }} {{ config('adminlte.classes_topnav', 'navbar-white navbar-light') }}">
     {{-- Navbar left links --}}
     <ul class="navbar-nav">
-        {{-- Left sidebar toggler link --}}
         @include('adminlte::partials.navbar.menu-item-left-sidebar-toggler')
-
-        {{-- Configured left links --}}
         @each('adminlte::partials.navbar.menu-item', $adminlte->menu('navbar-left'), 'item')
-
-        {{-- Custom left links --}}
         @yield('content_top_nav_left')
-        {{-- Mostrar el icono de notificaciones con el número --}}
-
     </ul>
 
     {{-- Navbar right links --}}
     <ul class="navbar-nav ml-auto">
+        
+        <label for="toggle-sound" style="cursor: pointer;">
+            <i id="sound-icon" class="fas fa-volume-up" style="font-size: 10px; margin-left: 10px;" title="Apagar sonido notificacion"></i>
+        </label>
+        <input type="checkbox" id="toggle-sound" checked style="display: none;" />
+        
+        @php
+            $notificaciones = auth()->user()->unreadNotifications;
+
+            $mensajes = $notificaciones->filter(fn($n) => str_contains($n->type, 'NewMessageNotification'));
+            $sistema = $notificaciones->reject(fn($n) => str_contains($n->type, 'NewMessageNotification'));
+
+            $mensajesCount = $mensajes->count();
+            $sistemaCount = $sistema->count();
+        @endphp
+
+        {{-- 🔔 Notificaciones del sistema --}}
+        <li class="nav-item dropdown" id="sistemaDropdown">
+            <a class="nav-link" data-toggle="dropdown" href="#" id="sistemaToggle">
+                <i class="far fa-bell" style="font-size: 25px;"></i>
+                <span id="sistema-badge" class="badge badge-warning navbar-badge" style="font-size: 0.7rem;">
+                    {{ $sistemaCount > 0 ? $sistemaCount : '0' }}
+                </span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right animate__animated animate__fadeIn">
+                <span class="dropdown-header" id="sistema-header">
+                    {{ $sistemaCount }} Notificaciones del sistema
+                </span>
+                <div class="dropdown-divider"></div>
+
+                <div id="sistema-lista">
+                    @foreach ($sistema->take(5) as $noti)
+                        <a href="#" class="dropdown-item" onclick="marcarLeido('{{ $noti->id }}')">
+                            <i class="fas fa-info-circle text-info mr-2"></i>
+                            {{ Str::limit($noti->data['message'], 100) }}
+                            <span class="float-right text-muted text-sm">{{ $noti->created_at->diffForHumans() }}</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                    @endforeach
+                </div>
+            </div>
+        </li>
+
+        {{-- ✉️ Mensajes entre usuarios --}}
+        <li class="nav-item dropdown" id="dropdown-mensajes">
+            <a class="nav-link" data-toggle="dropdown" href="#" id="mensajeToggle">
+                <i class="far fa-envelope" style="font-size: 25px;"></></i>
+                <span class="badge badge-primary navbar-badge" id="mensajes-count" style="font-size: 0.7rem;">
+                    {{ $mensajesCount > 0 ? $mensajesCount : '0' }}
+                </span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" id="mensajes-dropdown">
+                <span class="dropdown-header" id="mensajes-header">{{ $mensajesCount }} Mensajes nuevos</span>
+                <div class="dropdown-divider"></div>
+
+                @foreach ($mensajes->take(5) as $noti)
+                    <a href="{{ url('/mensajes/buzon') }}" class="dropdown-item"
+                        onclick="marcarLeido('{{ $noti->id }}')">
+                        <i class="fas fa-user text-primary mr-2"></i>
+                        {{ $noti->data['sender']['name'] ?? 'Usuario' }}: {{ Str::limit($noti->data['message'], 30) }}
+                        <span class="float-right text-muted text-sm">{{ $noti->created_at->diffForHumans() }}</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                @endforeach
+
+                <a href="{{ route('messages.index') }}" class="dropdown-item dropdown-footer">Ir a la bandeja</a>
+            </div>
+        </li>
+
         {{-- Custom right links --}}
         @yield('content_top_nav_right')
-        <li class="nav-item">
-            <a id="notificacionesModalLink" class="nav-link" href="#">
-                <i class="fa fa-bell"></i> {{-- Icono de campana para notificaciones --}}
-                <span class="badge badge-warning" id="cantidadDeNuevasNotificaciones">
-                    {{ $cantidadDeNuevasNotificaciones ?? 0 }}
-                </span> {{-- Número de nuevos mensajes --}}
-            </a>
-        </li>
+
         {{-- Configured right links --}}
         @each('adminlte::partials.navbar.menu-item', $adminlte->menu('navbar-right'), 'item')
 
@@ -38,143 +93,115 @@
             @endif
         @endif
 
-        {{-- Right sidebar toggler link --}}
+        {{-- Right sidebar toggler --}}
         @if (config('adminlte.right_sidebar'))
             @include('adminlte::partials.navbar.menu-item-right-sidebar-toggler')
         @endif
     </ul>
 </nav>
-
-<div class="modal fade" id="notificacionesModal" tabindex="-1" role="dialog"
-    aria-labelledby="notificacionesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="notificacionesModalLabel">Notificaciones</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Aquí se llenarán dinámicamente las notificaciones mediante JavaScript -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-<script src="https://js.pusher.com/7.0/pusher.min.js"></script>
-
-<script>
-    $(document).ready(function() {
-        const notificationModal = $('#notificacionesModal');
-        const notificationBody = notificationModal.find('.modal-body');
-
-        function renderNotification(type, id, senderName, message) {
-            const senderInfo = senderName ? `De: ${senderName}<br>` : '';
-            return `<li data-message-id="${id}" data-type="${type}">${senderInfo}Mensaje: ${message}</li>`;
+@auth
+    <style>
+        /* Estilos personalizados para Toastr */
+        .toast-message {
+            display: flex;
+            align-items: center;
         }
 
-        function handleNotificationClick() {
-            const messageId = $(this).data('message-id');
-            const notificationType = $(this).data('type');
-
-            const redirectMap = {
-                'NewMessageNotification': '/mensajes/buzon/',
-                'PostulanteAceptadoNotification': '/inicio',
-                'SubirArchivoNotification': '/inicio',
-                'MatriculaExito': '/'
-            };
-
-            if (redirectMap[notificationType]) {
-                window.location.href = redirectMap[notificationType];
-            }
+        .toast-message i {
+            margin-right: 10px;
+            font-size: 1.2em;
         }
 
-        function updateModalContent(data) {
-            notificationBody.empty();
-
-            if (data.notificaciones && data.notificaciones.length > 0) {
-                const notifications = data.notificaciones.map(notificacion => {
-                    const {
-                        id,
-                        data: {
-                            type,
-                            message,
-                            sender
-                        }
-                    } = notificacion;
-                    return renderNotification(type, id, sender?.name, message);
-                }).join('');
-                notificationBody.html(`<ul>${notifications}</ul>`);
-                notificationBody.find('li').click(handleNotificationClick);
-            } else {
-                notificationBody.html('<p>No hay notificaciones.</p>');
-            }
-
-            $('#cantidadDeNuevasNotificaciones').text(data.cantidadNotificacionesNuevas);
+        .toast-message .notification-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="{{ asset('js/notificaciones.js') }}"></script>
 
-        function subscribeToPusher() {
-            const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
-                cluster: '{{ env('PUSHER_APP_CLUSTER') }}'
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sistemaToggle = document.getElementById('sistemaToggle');
+
+            sistemaToggle.addEventListener('click', function() {
+                // Llamada AJAX solo una vez
+                if (!sistemaToggle.dataset.marked) {
+                    fetch("{{ route('notificaciones.sistema.leidas') }}", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')
+                                    .getAttribute('content'),
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                console.log("✅ Notificaciones marcadas como leídas");
+                                document.getElementById('sistema-badge').style.display = "none";
+                                document.getElementById('sistema-header').textContent =
+                                    "0 Notificaciones del sistema";
+                            }
+                        });
+                    sistemaToggle.dataset.marked = true;
+                }
             });
 
-            const channel = pusher.subscribe('brief-valley-786');
+            const mensajeToggle = document.getElementById('mensajeToggle');
+            const sistemaBadge = document.getElementById('mensajes-count');
+            const sistemaHeader = document.getElementById('mensajes-header');
 
-            channel.bind('App\\Events\\NewMessageNotificationEvent', handlePusherEvent);
-            channel.bind('App\\Events\\PostulanteAceptado', handlePusherEvent);
-            channel.bind('App\\Events\\SubirArchivoEvent', handlePusherEvent);
-        }
+            // Evitar múltiples llamadas AJAX
+            if (!mensajeToggle.dataset.marked) {
+                mensajeToggle.addEventListener('click', function() {
+                    // Llamada AJAX para marcar notificaciones como leídas
+                    fetch("{{ route('notificaciones.mensajes.leidas') }}", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')
+                                    .getAttribute('content'),
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Actualizar la visualización
+                                console.log("✅ Notificaciones marcadas como leídas");
 
-        function handlePusherEvent(data) {
-            const {
-                type,
-                id,
-                sender,
-                message
-            } = data;
-            const newNotification = renderNotification(type, id, sender?.name, message);
+                                // Ocultar el badge de nuevos mensajes
+                                sistemaBadge.style.display = "none";
 
-            if (notificationBody.find('ul').length === 0) {
-                notificationBody.html(`<ul>${newNotification}</ul>`);
-            } else {
-                notificationBody.find('ul').prepend(newNotification);
+                                // Actualizar el header de la lista
+                                sistemaHeader.textContent = "0 Mensajes nuevos";
+
+                                // Marcar que ya se ha realizado la acción
+                                mensajeToggle.dataset.marked = true;
+                            }
+                        })
+                        .catch(error => {
+                            console.error("❌ Error al marcar las notificaciones como leídas:", error);
+                        });
+                });
             }
-
-            notificationBody.find('li').first().click(handleNotificationClick);
-        }
-
-        $('#notificacionesModalLink').click(function(event) {
-            event.preventDefault();
-
-            $.get('/notificaciones')
-                .done(updateModalContent)
-                .fail(() => {
-                    notificationBody.html('<p>Error al obtener las notificaciones.</p>');
-                    $('#cantidadDeNuevasNotificaciones').text('0');
-                })
-                .always(() => notificationModal.modal('show'));
-
-            subscribeToPusher();
         });
-    });
-</script>
+    </script>
 
-<script>
-    $(document).ready(function() {
-        function actualizarContador() {
-            $.get('/cantidad-notificaciones', function(data) {
-                $('#cantidadDeNuevasNotificaciones').text(data.cantidadNotificacionesNuevas);
-            }).fail(function() {
-                $('#cantidadDeNuevasNotificaciones').text('0');
-            });
-        }
+@endauth
 
-        setInterval(actualizarContador, 1000);
-    });
-</script>
+<style>
+    .dropdown-item {
+        white-space: normal !important;
+        word-wrap: break-word;
+        max-width: 300px;
+    }
+</style>

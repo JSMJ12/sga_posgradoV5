@@ -6,7 +6,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #3007b8;">
                 <h3 class="card-title">Listado de Maestrias</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#createMaestriaModal">
@@ -23,17 +23,17 @@
                         </div>
                     @else
                         <table class="table table-hover table-bordered table-striped" id="maestrias">
-                            <thead style="background-color: #003366; color: white;">
+                            <thead style="background-color: #28a745; color: white;">
                                 <tr>
-                                    <th><i class="fas fa-id-badge"></i> ID</th>
-                                    <th><i class="fas fa-barcode"></i> Codigo</th>
-                                    <th><i class="fas fa-bookmark"></i> Nombre</th>
-                                    <th><i class="fas fa-chalkboard-teacher"></i> Coordinador</th>
-                                    <th><i class="fas fa-book"></i> Asignaturas</th>
-                                    <th><i class="fas fa-dollar-sign"></i> Precios</th>
-                                    <th><i class="fas fa-cogs"></i></th>
-                                    <th><i class="fas fa-tools"></i> Acciones</th>
-                                </tr>                                
+                                    <th>ID</th>
+                                    <th>Codigo</th>
+                                    <th>Nombre</th>
+                                    <th>Coordinador</th>
+                                    <th>Asignaturas</th>
+                                    <th>Precios</th>
+                                    <th></th>
+                                    <th>Acciones</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 @foreach ($maestrias as $maestria)
@@ -130,9 +130,10 @@
             $('#maestrias').DataTable({
                 lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
                 pageLength: {{ $perPage }},
+                responsive: true,
                 colReorder: true,
                 keys: true,
-                autoFill: true,}
+                autoFill: true,
                 language: {
                     url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
                 },

@@ -5,14 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Postulante;
 use App\Models\User;
-use App\Models\Maestria;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\Postulacion2;
-use App\Events\SubirArchivoEvent;
 use App\Notifications\SubirArchivoNotification;
+use App\Notifications\NuevoPagoMatricula;
 
 class DashboardPostulanteController extends Controller
 {
@@ -52,42 +49,89 @@ class DashboardPostulanteController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
+        // Buscar al postulante en la base de datos
         $postulante = Postulante::where('nombre1', $user->name)
             ->where('apellidop', $user->apellido)
             ->where('correo_electronico', $user->email)
-            ->firstOrFail();
+            ->first();
 
-        // Crear el directorio si no existe
-        Storage::makeDirectory('public/postulantes/pdf');
+        if (!$postulante) {
+            return back()->with('error', 'No se encontró al postulante en la base de datos.');
+        }
 
+        // Validar los archivos
+        $rules = [
+            'Cédula' => 'nullable|file|mimes:pdf|max:5120',
+            'Papel_de_Votación' => 'nullable|file|mimes:pdf|max:5120',
+            'Título_de_Universidad' => 'nullable|file|mimes:pdf|max:5120',
+            'Hoja_de_Vida' => 'nullable|file|mimes:pdf|max:5120',
+            'CONADIS' => 'nullable|file|mimes:pdf|max:5120',
+            'Carta_de_Aceptación' => 'nullable|file|mimes:pdf|max:5120',
+            'pago_matricula' => 'nullable|file|mimes:pdf|max:5120',
+        ];
+
+        $messages = [
+            'file' => 'El archivo debe ser un archivo válido.',
+            'mimes' => 'Solo se permiten archivos en formato PDF.',
+            'max' => 'El archivo no debe superar los 5MB.',
+        ];
+
+        $request->validate($rules, $messages);
+
+        // Definir los archivos esperados y sus nombres de columna en la BD
         $files = [
-            'Cedula' => 'pdf_cedula',
-            'Papel_Votación' => 'pdf_papelvotacion',
-            'Título_Universidad' => 'pdf_titulouniversidad',
+            'Cédula' => 'pdf_cedula',
+            'Papel_de_Votación' => 'pdf_papelvotacion',
+            'Título_de_Universidad' => 'pdf_titulouniversidad',
+            'CONADIS' =>  'pdf_conadis',
             'Hoja_de_Vida' => 'pdf_hojavida',
-            'CONADIS' => 'pdf_conadis',
             'Carta_de_Aceptación' => 'carta_aceptacion',
             'pago_matricula' => 'pago_matricula',
         ];
 
         $updateData = [];
+        $uploadedFiles = 0;
+        $pagoMatriculaSubido = false; // Para verificar si se subió "pago_matricula"
 
-        // Procesar cada archivo y actualizar solo si el archivo fue subido
         foreach ($files as $inputName => $column) {
             if ($request->hasFile($inputName)) {
-                $updateData[$column] = $request->file($inputName)->store('postulantes/pdf', 'public');
+                try {
+                    $path = $request->file($inputName)->store('postulantes/pdf', 'public');
+                    $updateData[$column] = $path;
+                    $uploadedFiles++;
+
+                    // Verificar si el archivo subido es "pago_matricula"
+                    if ($column === 'pago_matricula') {
+                        $pagoMatriculaSubido = true;
+                    }
+                } catch (\Exception $e) {
+                    return back()->with('error', "Error al subir {$inputName}: " . $e->getMessage());
+                }
             }
         }
 
-        if (!empty($updateData)) {
-            $postulante->update($updateData);
+        // Si se subió el pago de matrícula, enviar la notificación
+        if ($pagoMatriculaSubido) {
+            $postulante->notify(new NuevoPagoMatricula($postulante));
         }
 
-        // Enviar notificación al postulante
-        Notification::route('mail', $postulante->correo_electronico)
-            ->notify(new Postulacion2($postulante));
 
-        return back()->with('success', 'Archivo subido exitosamente.');
+        // Si no se subió ningún archivo, mostrar advertencia
+        if ($uploadedFiles === 0) {
+            return back()->with('warning', 'No se subió ningún archivo válido.');
+        }
+
+        // Actualizar la base de datos con los archivos subidos
+        $postulante->update($updateData);
+
+        // Enviar notificación solo si al menos un archivo fue subido
+        try {
+            Notification::route('mail', $postulante->correo_electronico)
+                ->notify(new Postulacion2($postulante));
+        } catch (\Exception $e) {
+        }
+
+        return back()->with('success', 'Archivo(s) subido(s) exitosamente.');
     }
 
 

@@ -18,7 +18,6 @@ class UsuarioController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);
-        $users = User::all();
 
         if ($request->ajax()) {
             $data = User::with('roles')->select('users.*');
@@ -32,29 +31,37 @@ class UsuarioController extends Controller
                     })->implode(', ');
                 })
                 ->addColumn('mensajeria', function ($row) {
-                    return '<i class="fas fa-envelope send-message" data-toggle="modal" data-target="#sendMessageModal' . $row->id . '" title="Enviar mensaje"></i>';
+                    return '<button type="button" 
+                                        class="btn btn-outline-info btn-sm btn-message"  
+                                        data-id="' . $row->id . '" 
+                                        data-nombre="' . $row->name . '" 
+                                        data-toggle="modal" 
+                                        data-target="#sendMessageModal" 
+                                        title="Enviar mensaje">
+                                <i class="fas fa-envelope"></i>
+                            </button>';
                 })
                 ->addColumn('action', function ($row) {
                     $btn = '<a href="' . route('usuarios.edit', $row->id) . '" class="btn btn-outline-primary btn-sm" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </a>';
+                                <i class="fas fa-edit"></i>
+                            </a>';
 
                     if ($row->status == 'ACTIVO') {
                         $btn .= '<form action="' . route('usuarios.disable', $row->id) . '" method="POST" style="display: inline;">
-                                ' . csrf_field() . '
-                                ' . method_field('PUT') . '
-                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Deshabilitar">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </form>';
+                                    ' . csrf_field() . '
+                                    ' . method_field('PUT') . '
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Deshabilitar">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </form>';
                     } else {
                         $btn .= '<form action="' . route('usuarios.enable', $row->id) . '" method="POST" style="display: inline;">
-                                ' . csrf_field() . '
-                                ' . method_field('PUT') . '
-                                <button type="submit" class="btn btn-outline-success btn-sm" title="Reactivar">
-                                    <i class="fas fa-check-circle"></i>
-                                </button>
-                            </form>';
+                                    ' . csrf_field() . '
+                                    ' . method_field('PUT') . '
+                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Reactivar">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                </form>';
                     }
 
                     return $btn;
@@ -63,7 +70,7 @@ class UsuarioController extends Controller
                 ->make(true);
         }
 
-        return view('usuarios.index', compact('perPage', 'users'));
+        return view('usuarios.index', compact('perPage'));
     }
 
     public function create()

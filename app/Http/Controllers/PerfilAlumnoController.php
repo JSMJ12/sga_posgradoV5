@@ -76,7 +76,7 @@ class PerfilAlumnoController extends Controller
             'NO REGISTRA'
         ];
         $alumno = Alumno::where('email_institucional', $user->email)->firstOrFail();
-        
+
         return view('perfiles.alumno', compact('alumno', 'estadosCiviles', 'provincias', 'tipo_colegio', 'ingreso_hogar', 'formacion_padre', 'origen_recursos'));
     }
 
@@ -88,7 +88,7 @@ class PerfilAlumnoController extends Controller
             'canton' => 'nullable|string|max:100',
             'barrio' => 'nullable|string|max:100',
             'direccion' => 'nullable|string|max:255',
-            'email_personal' => 'nullable|email|max:255' ,
+            'email_personal' => 'nullable|email|max:255',
             'carnet_discapacidad' => 'nullable|string|max:50',
             'tipo_discapacidad' => 'nullable|string|max:50',
             'porcentaje_discapacidad' => 'nullable|numeric|min:0|max:100',
@@ -103,26 +103,33 @@ class PerfilAlumnoController extends Controller
             'nivel_formacion_padre' => 'nullable|string|max:255',
             'nivel_formacion_madre' => 'nullable|string|max:255',
             'origen_recursos_estudios' => 'nullable|string|max:255',
+            'sexo' => 'required|string|in:M,F',
         ]);
-
         $user = Auth::user();
         $alumno = Alumno::where('email_institucional', $user->email)->firstOrFail();
 
+        // Actualizar todos los datos excepto la imagen
         $alumno->update($request->except(['image']));
 
+        // Manejo de la imagen
         if ($request->hasFile('image')) {
-            // Eliminar la imagen anterior si existe
+            // Eliminar imagen anterior si existe
             if ($alumno->image) {
                 \Storage::disk('public')->delete($alumno->image);
             }
 
+            // Guardar nueva imagen
             $path = $request->file('image')->store('imagenes_usuarios', 'public');
             $alumno->image = $path;
+            $alumno->save();
+
+            // También actualizar la imagen en la tabla `users`
+            $usuario = User::where('email', $alumno->email_institucional)->first();
+            if ($usuario) {
+                $usuario->image = $path;
+                $usuario->save();
+            }
         }
-        $alumno->save();
-        $usuario = User::where('email', $alumno->email_institucional)->first();
-        $usuario->image = $path;
-        $usuario->save();
 
         return redirect()->route('edit_datosAlumnos')->with('success', 'Perfil actualizado con éxito.');
     }

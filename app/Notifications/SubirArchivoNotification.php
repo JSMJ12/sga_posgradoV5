@@ -6,6 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Broadcasting\PrivateChannel;
+use App\Models\User;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use App\Models\Postulante;
 
@@ -14,10 +15,15 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     use Queueable;
 
     protected $postulante;
+    protected $userId;
 
     public function __construct(Postulante $postulante)
     {
         $this->postulante = $postulante;
+
+        // Buscar al usuario por su email y extraer el DNI
+        $user = User::where('email', $postulante->correo_electronico)->first();
+        $this->userId = $user ? $user->id : null;
     }
 
     public function via($notifiable)
@@ -44,13 +50,15 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
 
     public function broadcastOn()
     {
-        return new PrivateChannel('canal_p');
+        return new PrivateChannel('user.' . $this->userId);
     }
-
+    public function broadcastAs()
+    {
+        return 'subir.archivo';
+    }
     public function broadcastWith()
     {
         return [
-            'postulante' => $this->postulante,
             'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
         ];
     }

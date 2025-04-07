@@ -11,7 +11,11 @@
 
     {{-- Custom Meta Tags --}}
     @yield('meta_tags')
+    @auth
+        <meta name="user-id" content="{{ auth()->user()->id }}">
+    @endauth
 
+    {{-- Page Title --}}
     {{-- Title --}}
     <title>
         @yield('title_prefix', config('adminlte.title_prefix', ''))
@@ -77,9 +81,6 @@
         .content-header h1 {
             color: black;
             font-family: "Times New Roman", Times, serif;
-        }
-        body {
-            background-color: white;
         }
     </style>
 
@@ -162,6 +163,7 @@
             @endif
         });
     </script>
+
     {{-- Custom Scripts --}}
     @yield('adminlte_js')
 

@@ -5,8 +5,8 @@
         <div class="modal-content">
             <div class="modal-header" style="background-color: #003366; color: white;">
                 <h5 class="modal-title" id="cohortesModalLabel">Cohortes del Docente</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
-                    <span aria-hidden="true">&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true" style="color: white;">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -27,17 +27,15 @@
     </div>
 </div>
 
-<!-- Script para manejar el contenido dinámico -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).on('click', '.btn-modal-cohortes', function() {
-        const docenteDni = $(this).data('dni'); // Obtener el DNI del docente del botón clickeado
-        const docenteNombre = $(this).data('nombre'); // Obtener el nombre del docente del botón
+        const docenteDni = $(this).data('dni');
+        const docenteNombre = $(this).data('nombre'); 
         const modal = $('#cohortesModal');
         const modalTitle = modal.find('#cohortesModalLabel');
         const modalBody = modal.find('#cohortesContent');
 
-
-        // Mostrar spinner de carga
         modalBody.html(`
             <div class="text-center">
                 <p>Cargando información...</p>
@@ -47,7 +45,6 @@
             </div>
         `);
 
-        // Hacer la solicitud AJAX
         $.ajax({
             url: `/docentes/${docenteDni}/cohortes`,
             method: 'GET',

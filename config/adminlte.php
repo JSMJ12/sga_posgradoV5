@@ -363,6 +363,12 @@ return [
             'can' => 'dashboard_secretario_epsu',
         ],
         [
+            'text' => 'Pagos de Matricula',
+            'route'  => 'pagos.matricula',
+            'icon' => 'fas fa-fw fa-dollar-sign',
+            'can' => 'dashboard_secretario_epsu',
+        ],
+        [
             'text' => 'Pagos',
             'route' => 'pagos.pago',
             'icon' => 'fas fa-fw fa-dollar-sign',

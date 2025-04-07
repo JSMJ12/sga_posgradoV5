@@ -8,22 +8,22 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #3007b8;">
                 <h3 class="card-title">Listado de Postulantes</h3>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="postulantes">
-                        <thead style="background-color: #003366; color: white;">
+                        <thead style="background-color: #28a745; color: white;">
                             <tr>
-                                <th><i class="fas fa-id-card"></i> Cedula</th>
-                                <th><i class="fas fa-user"></i> Nombre</th>
-                                <th><i class="fas fa-envelope"></i> Correo Electrónico</th>
-                                <th><i class="fas fa-mobile-alt"></i> Celular</th>
-                                <th><i class="fas fa-user-graduate"></i> Título Profesional</th>
-                                <th><i class="fas fa-university"></i> Maestría</th>
-                                <th><i class="fas fa-file-pdf"></i> PDFs</th>
-                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                                <th>Cedula</th>
+                                <th>Nombre</th>
+                                <th>Correo Electrónico</th>
+                                <th>Celular</th>
+                                <th>Título Profesional</th>
+                                <th>Maestría</th>
+                                <th>PDFs</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -38,15 +38,14 @@
                                     <td>{{ $postulante->maestria->nombre }}</td>
                                     <td>
                                         <div class="d-flex justify-content-center">
-                                            <button type="button" 
-                                                    class="btn btn-sm text-white" 
-                                                    style="background-color: #064584; border-color: #032546;" 
-                                                    data-toggle="modal" 
-                                                    data-target="#verificarDocumentosModal_{{ $postulante->dni }}"
-                                                    title="Verificar Documentos">
+                                            <button type="button" class="btn btn-sm text-white"
+                                                style="background-color: #064584; border-color: #032546;"
+                                                data-toggle="modal"
+                                                data-target="#verificarDocumentosModal_{{ $postulante->dni }}"
+                                                title="Verificar Documentos">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
-                                        </div>                                        
+                                        </div>
                                         @include('modales.verificar_documento_modal')
                                     </td>
                                     <td>
@@ -120,30 +119,40 @@
 @stop
 
 @section('js')
+@section('js')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+
     <script>
-        $('#postulantes').DataTable({
-            lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
-            pageLength: {{ $perPage }},
-            colReorder: true,
-            keys: true,
-            autoFill: true,
-            language: {
-                url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-            }
+        $(document).ready(function() {
+            $('#postulantes').DataTable({
+                lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
+                pageLength: 10, // Valor predeterminado
+                responsive: true,
+                colReorder: true,
+                autoFill: true,
+                keys: true,
+                language: {
+                    url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+                }
+            });
         });
     </script>
 @stop
-@section('css')
-    <style>
-        .btn-outline-lila {
-            color: #6f42c1;
-            border-color: #6f42c1;
-        }
 
-        .btn-outline-lila:hover {
-            color: #fff;
-            background-color: #6f42c1;
-            border-color: #6f42c1;
-        }
-    </style>
+@stop
+@section('css')
+<style>
+    .btn-outline-lila {
+        color: #6f42c1;
+        border-color: #6f42c1;
+    }
+
+    .btn-outline-lila:hover {
+        color: #fff;
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+</style>
 @stop
