@@ -4,9 +4,15 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Bus\Queueable;
 
-class TesisAceptadaNotificacion extends Notification
+class TesisAceptadaNotificacion extends Notification implements ShouldQueue, ShouldBroadcast
 {
+    use Queueable;
+
     protected $tesis;
     protected $usuario;  
     protected $email;    
@@ -20,7 +26,7 @@ class TesisAceptadaNotificacion extends Notification
 
     public function via($notifiable)
     {
-        return ['mail', 'database']; 
+        return ['mail', 'database', 'broadcast']; 
     }
 
     public function toMail($notifiable)
@@ -37,6 +43,28 @@ class TesisAceptadaNotificacion extends Notification
     {
         return [
             'message' => 'El tema de tesis ha sido aceptado.',
+        ];
+    }
+    public function broadcastOn()
+    {
+        return new PrivateChannel('user.' . $this->usuario->id);
+    }
+
+    /**
+     * Nombre del evento de transmisión.
+     */
+    public function broadcastAs()
+    {
+        return 'tesis.aceptada';
+    }
+
+    /**
+     * Datos que se enviarán con la notificación en tiempo real.
+     */
+    public function broadcastWith()
+    {
+        return [
+            'message' => "📚 Tu tema de tesis \"{$this->tesis->tema}\" ha sido aprobado. ",
         ];
     }
 }

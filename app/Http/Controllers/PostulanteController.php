@@ -226,13 +226,6 @@ class PostulanteController extends Controller
         }
         $usuario = User::where('email', $postulante->correo_electronico)->first();
 
-        if ($usuario && Auth::check() && Auth::user()->id === $usuario->id) {
-            // Si el usuario está logueado y es el mismo que el del postulante
-            Auth::logout();  // Cerrar sesión del usuario logueado
-            Session::invalidate(); // Invalidar la sesión
-            Session::regenerateToken(); // Regenerar el token de sesión
-        }
-
         $rutaDirectorio = 'public/alumnos/pdf';
         if (!Storage::exists($rutaDirectorio)) {
             Storage::makeDirectory($rutaDirectorio);

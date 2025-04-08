@@ -22,6 +22,7 @@
                                 <th>Celular</th>
                                 <th>Título Profesional</th>
                                 <th>Maestría</th>
+                                <th>Mensaje</th>
                                 <th>PDFs</th>
                                 <th>Acciones</th>
                             </tr>
@@ -36,6 +37,24 @@
                                     <td>{{ $postulante->celular }}</td>
                                     <td>{{ $postulante->titulo_profesional }}</td>
                                     <td>{{ $postulante->maestria->nombre }}</td>
+                                    <td>
+                                        @php
+                                            $usuario = \App\Models\User::where(
+                                                'email',
+                                                $postulante->correo_electronico,
+                                            )->first();
+                                        @endphp
+
+                                        @if ($usuario)
+                                            <button type="button" class="btn btn-outline-info btn-sm btn-message"
+                                                data-id="{{ $usuario->id }}" data-nombre="{{ $usuario->name }}"
+                                                data-toggle="modal" data-target="#sendMessageModal" title="Enviar mensaje">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                        @else
+                                            <span class="text-muted">Usuario no encontrado</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <div class="d-flex justify-content-center">
                                             <button type="button" class="btn btn-sm text-white"
@@ -115,7 +134,7 @@
             </div>
         </div>
     </div>
-
+    @include('modales.enviar_mensaje_modal')
 @stop
 
 @section('js')
@@ -137,6 +156,16 @@
                     url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
                 }
             });
+        });
+    </script>
+    <script>
+        $(document).on('click', '.btn-message', function() {
+            var userId = $(this).data('id');
+            var userName = $(this).data('nombre');
+
+            $('#sendMessageModalLabel').text('Enviar mensaje a ' + userName);
+
+            $('#receiver_id').val(userId);
         });
     </script>
 @stop

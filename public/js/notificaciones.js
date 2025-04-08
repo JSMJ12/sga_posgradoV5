@@ -1,3 +1,19 @@
+function logoutUsuario() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `${window.location.origin}/logout`;
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = csrf;
+
+    form.appendChild(csrfInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+
 // Verifica si hay preferencia guardada en localStorage
 const sonidoActivado = localStorage.getItem('notificaciones_sonido') === 'true';
 
@@ -268,7 +284,7 @@ if (userId) {
             document.getElementById('sistema-badge').innerText = sistemaCount;
             document.getElementById('sistema-header').innerText = `${sistemaCount} Notificaciones del sistema`;
             const nuevaNoti = `
-                <a href="#" class="dropdown-item">
+                <a href="/pagos/matricula" class="dropdown-item">
                     <i class="fas fa-info-circle text-info mr-2"></i>
                     ${data.message}
                     <span class="float-right text-muted text-sm">Justo ahora</span>
@@ -289,7 +305,7 @@ if (userId) {
 
             // 📨 Toastr
             toastr.info(
-                `<div class="notification-content" style="cursor: pointer;">
+                `<div class="notification-content" onclick="logoutUsuario()" style="cursor: pointer;">
                     <span><strong>${data.message}</strong></span><br>
                     <small><i class="fas fa-clock"></i> ${currentTime}</small>
                 </div>`,
@@ -307,7 +323,46 @@ if (userId) {
             document.getElementById('sistema-badge').innerText = sistemaCount;
             document.getElementById('sistema-header').innerText = `${sistemaCount} Notificaciones del sistema`;
             const nuevaNoti = `
-                <a href="#" class="dropdown-item">
+                <a href="#" onclick="logoutUsuario()" class="dropdown-item">
+                    <i class="fas fa-info-circle text-info mr-2"></i>
+                    ${data.message}
+                    <span class="float-right text-muted text-sm">Justo ahora</span>
+                </a>
+                <div class="dropdown-divider"></div>
+            `;
+            document.getElementById('sistema-lista').insertAdjacentHTML('afterbegin', nuevaNoti);
+        } else {
+            console.log("❌ No hay mensaje de archivo en los datos:", data);
+        }
+    });
+
+    // Evento: Tesis Aceptada
+    sistemaChannel.bind('tesis.aceptada', function (data) {
+        if (data.message) {
+            // 🔔 Sonido
+            playNotificationSound();
+
+            // 📨 Toastr
+            toastr.info(
+                `<div class="notification-content" onclick="window.location.href='${window.location.origin}/tesis/create'" style="cursor: pointer;">
+                    <span><strong>${data.message}</strong></span><br>
+                    <small><i class="fas fa-clock"></i> ${currentTime}</small>
+                </div>`,
+                '👀 ¡Verificar Pago!', {
+                closeButton: true,
+                progressBar: true,
+                timeOut: 8000,
+                positionClass: 'toast-top-right',
+                enableHtml: true
+            }
+            );
+
+            // Actualizar el contador de notificaciones
+            sistemaCount++;
+            document.getElementById('sistema-badge').innerText = sistemaCount;
+            document.getElementById('sistema-header').innerText = `${sistemaCount} Notificaciones del sistema`;
+            const nuevaNoti = `
+                <a href="/tesis/create" class="dropdown-item">
                     <i class="fas fa-info-circle text-info mr-2"></i>
                     ${data.message}
                     <span class="float-right text-muted text-sm">Justo ahora</span>

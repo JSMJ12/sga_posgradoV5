@@ -36,6 +36,8 @@ class NewMessageNotification2 extends Notification implements ShouldBroadcast
     public function toMail($notifiable)
     {
         return (new MailMessage)
+            ->subject('Nuevo mensaje recibido')
+            ->greeting('¡Hola ' . $this->message->receiver->name . '!')
             ->line('¡Tienes un nuevo mensaje!')
             ->action('Ver mensaje', route('messages.index'))
             ->line('Gracias por usar nuestra aplicación.');
@@ -56,7 +58,7 @@ class NewMessageNotification2 extends Notification implements ShouldBroadcast
                 'name' => $this->message->receiver->name,
             ],
             'time' => Carbon::now()->toDateTimeString(),
-            'url' => route('messages.index'), 
+            'url' => route('messages.index'),
         ];
     }
 

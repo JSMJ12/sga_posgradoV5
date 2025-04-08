@@ -36,7 +36,7 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
      */
     public function via($notifiable)
     {
-        return ['mail','database', 'broadcast']; // Puedes agregar más canales como base de datos o SMS si lo deseas
+        return ['mail', 'database', 'broadcast']; 
     }
 
     /**
@@ -48,15 +48,15 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->subject('Matrícula Exitosa - Bienvenido como Estudiante')
-                    ->greeting('¡Hola ' . $this->nombre . '!')
-                    ->line('¡Felicitaciones! Tu matrícula ha sido exitosa y el pago ha sido procesado correctamente.')
-                    ->line('Tu correo electrónico institucional ha sido creado: ' . $this->email)
-                    ->line('Puedes iniciar sesión con tu correo institucional y tu cedula como contraseña.')
-                    ->line('Tu contraseña es: ' . $this->dni)
-                    ->action('Iniciar sesión', url('/login')) 
-                    ->line('Si tienes alguna pregunta, no dudes en contactarnos.')
-                    ->line('¡Te damos la bienvenida a la comunidad universitaria!');
+            ->subject('Matrícula Exitosa - Bienvenido como Estudiante')
+            ->greeting('¡Hola ' . $this->nombre . '!')
+            ->line('¡Felicitaciones! Tu matrícula ha sido exitosa y el pago ha sido procesado correctamente.')
+            ->line('Tu correo electrónico institucional ha sido creado: ' . $this->email)
+            ->line('Puedes iniciar sesión con tu correo institucional y tu cedula como contraseña.')
+            ->line('Tu contraseña es: ' . $this->dni)
+            ->action('Iniciar sesión', url('/login'))
+            ->line('Si tienes alguna pregunta, no dudes en contactarnos.')
+            ->line('¡Te damos la bienvenida a la comunidad universitaria!');
     }
 
     /**
@@ -90,7 +90,8 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
     public function broadcastWith()
     {
         return [
-            'message' => "Tu matrícula ha sido exitosa y el pago ha sido procesado. Ahora puedes acceder con tu correo institucional. {$this->email}.",
+            'message' => "🎓 Tu matrícula ha sido exitosa y el pago ha sido procesado. Ahora puedes acceder con tu correo institucional: {$this->email}. Tu contraseña temporal es tu número de cédula o pasaporte registrado. Toca esta notificación o cierra sesión para ingresar con tus nuevas credenciales.",
         ];
     }
+    
 }
