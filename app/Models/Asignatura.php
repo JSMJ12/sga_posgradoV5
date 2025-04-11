@@ -14,6 +14,7 @@ class Asignatura extends Model
         'credito',
         'itinerario',
         'unidad_curricular',
+        'horas_duracion',
         'maestria_id',
     ];
     public function calificacionVerificaciones()

@@ -42,15 +42,12 @@ class DashboardSecretarioController extends Controller
         $alumnos = Alumno::with('maestria')->get();
         // Obtener datos para el gráfico de matriculados por maestría
         $matriculadosPorMaestria = Maestria::withCount('alumnos')->get();
-        $totalMaestrias = Maestria::count();
         $totalDocentes = Docente::count();
-        $totalSecretarios = Secretario::count();
-        $totalUsuarios = User::count();
         $totalPostulantes = Postulante::count();
         $totalAlumnos = Alumno::count();
-        return view('dashboard.administrador', 
+        return view('dashboard.secretario', 
         compact('alumnos', 'matriculadosPorMaestria', 'totalAlumnos', 
-        'perPage', 'totalUsuarios', 'totalMaestrias', 'totalSecretarios', 'totalDocentes',
-        'totalPostulantes', 'postulantesPorMaestria'));
+        'perPage', 'totalDocentes',
+        'totalPostulantes', 'maestrias','postulantesPorMaestria'));
     }
 }

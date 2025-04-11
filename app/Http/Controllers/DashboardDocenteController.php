@@ -99,7 +99,7 @@ class DashboardDocenteController extends Controller
                                 'imagen' => asset($matricula->alumno->image),
                                 'nombreCompleto' => $matricula->alumno->apellidop . ' ' . $matricula->alumno->apellidom . ' ' . $matricula->alumno->nombre1 . ' ' . $matricula->alumno->nombre2,
                                 'verNotasUrl' => route('calificaciones.show1', [
-                                    'alumno_id' => $matricula->alumno->dni,
+                                    'alumno_dni' => $matricula->alumno->dni,
                                     'docente_id' => $docente->dni,
                                     'asignatura_id' => $asignatura->id,
                                     'cohorte_id' => $cohorte->id,

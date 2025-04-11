@@ -8,18 +8,6 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-primary">
-                    <div class="inner">
-                        <h3>{{ $totalUsuarios }}</h3>
-                        <p>Usuarios Generales</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fa fa-users"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-6">
                 <div class="small-box bg-success">
                     <div class="inner">
                         <h3>{{ $totalDocentes }}</h3>
@@ -34,17 +22,6 @@
                 </div>
             </div>
 
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-warning">
-                    <div class="inner">
-                        <h3>{{ $totalSecretarios }}</h3>
-                        <p>Secretarios</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fa fa-user-tie"></i>
-                    </div>
-                </div>
-            </div>
 
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-danger">
@@ -61,17 +38,6 @@
                 </div>
             </div>
 
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3>{{ $totalMaestrias }}</h3>
-                        <p>Maestrías</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fa fa-graduation-cap"></i>
-                    </div>
-                </div>
-            </div>
 
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-secondary">
@@ -87,6 +53,30 @@
                     </a>
                 </div>
             </div>
+
+            <div class="col-md-12">
+        <div class="card">
+            <div class="card-header" style="background-color: #003366; color: white;">
+                <h5 class="card-title">Maestrías Asignadas al Secretario</h5>
+            </div>
+            <div class="card-body">
+                @if($maestrias->isEmpty())
+                    <p>No hay maestrías asignadas.</p>
+                @else
+                    <ul class="list-group">
+                        @foreach($maestrias as $maestria)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ $maestria->nombre }}
+                                <span class="badge bg-primary rounded-pill">
+                                    {{ $maestria->alumnos_count ?? $maestria->alumnos->count() }} alumnos
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    </div>
         </div>
         <div class="row">
             <div class="col-md-6">

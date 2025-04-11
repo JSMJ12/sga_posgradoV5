@@ -17,6 +17,8 @@ class AssignSecretarioCoordinadorPermissionSeeder extends Seeder
         $secretarioRole = Role::findByName('Secretario/a EPSU');
         $coordinadorRole = Role::findByName('Coordinador');
         $administradorRole = Role::findByName('Administrador');
+        $administradorRole = Role::findByName('Secretario');
+
 
         // Asigna el permiso a ambos roles
         $secretarioRole->givePermissionTo($permission);

@@ -137,11 +137,25 @@ class DashboardPostulanteController extends Controller
 
     public function carta_aceptacionPdf(Request $request, $dni)
     {
+        // Buscar el postulante por su DNI
         $postulante = Postulante::find($dni);
 
+        // Obtener el cohorte más próximo cuya fecha de inicio sea futura y con el estado 'INSCRIPCION'
+        $fecha_actual = now();
+
+        // Filtrar los cohortes de la maestría del postulante
+        $cohorte_en_inscripcion = $postulante->maestria->cohortes
+            ->filter(function ($cohorte) use ($fecha_actual) {
+                return $cohorte->fecha_inicio > $fecha_actual && $cohorte->aforo > 0;
+            })
+            ->sortBy('fecha_inicio')
+            ->first();
+
+        // Definir el nombre del archivo PDF
         $filename = 'Carta_de_Aceptacion_' . $postulante->nombre1 . '_' . $postulante->apellidop . '_' . $postulante->dni . '.pdf';
 
-        return PDF::loadView('postulantes.carta_aceptacion', compact('postulante'))
+        // Pasar los datos del postulante y cohorte a la vista
+        return PDF::loadView('postulantes.carta_aceptacion', compact('postulante', 'cohorte_en_inscripcion'))
             ->setPaper('A4', 'portrait')
             ->stream($filename);
     }

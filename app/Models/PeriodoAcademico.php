@@ -38,11 +38,16 @@ class PeriodoAcademico extends Model
     }
     public function actualizarEstado()
     {
-        if ($this->fecha_fin < now() || $this->fecha_inicio > now()) {
+        $ahora = now();
+
+        if ($this->fecha_inicio > $ahora) {
+            $this->status = 'INSCRIPCIONES';
+        } elseif ($this->fecha_fin < $ahora) {
             $this->status = 'INACTIVO';
         } else {
             $this->status = 'ACTIVO';
         }
+
         $this->save();
     }
 }

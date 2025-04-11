@@ -14,22 +14,24 @@ class AsignaturaController extends Controller
     {
         $this->middleware('auth');
     }
+
     public function store(Request $request)
     {
         $request->validate([
             'nombre' => 'required',
             'codigo_asignatura' => 'required',
             'credito' => 'required|numeric',
+            'horas_duracion' => 'nullable|integer',
             'itinerario' => 'nullable',
             'unidad_curricular'=> 'nullable',
             'maestria_id' => 'required|exists:maestrias,id',
         ]);
 
-
         $asignatura = Asignatura::create([
             'nombre' => $request->nombre,
             'codigo_asignatura' => $request->codigo_asignatura,
             'credito' => $request->credito,
+            'horas_duracion' => $request->horas_duracion,
             'itinerario' => $request->itinerario,
             'unidad_curricular' => $request->unidad_curricular,
             'maestria_id' => $request->maestria_id,
@@ -44,6 +46,7 @@ class AsignaturaController extends Controller
             'nombre' => 'required',
             'codigo_asignatura' => 'required',
             'credito' => 'required|numeric',
+            'horas_duracion' => 'nullable|integer',
             'itinerario' => 'nullable',
             'unidad_curricular'=> 'nullable',
             'maestria_id' => 'required|exists:maestrias,id',
@@ -52,6 +55,7 @@ class AsignaturaController extends Controller
         $asignatura->nombre = $request->nombre;
         $asignatura->codigo_asignatura = $request->codigo_asignatura;
         $asignatura->credito = $request->credito;
+        $asignatura->horas_duracion = $request->horas_duracion;
         $asignatura->itinerario = $request->itinerario;
         $asignatura->unidad_curricular = $request->unidad_curricular;
         $asignatura->maestria_id = $request->maestria_id;

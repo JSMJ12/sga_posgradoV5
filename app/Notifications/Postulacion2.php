@@ -27,17 +27,11 @@ class Postulacion2 extends Notification implements ShouldQueue, ShouldBroadcast
         $this->userId = $user ? $user->id : null;
     }
 
-    /**
-     * Definir los canales de entrega de la notificación.
-     */
     public function via($notifiable)
     {
-        return ['mail', 'database', 'broadcast']; // Agregamos broadcast para Pusher
+        return ['mail', 'database', 'broadcast'];
     }
 
-    /**
-     * Notificación por correo.
-     */
     public function toMail($notifiable)
     {
         return (new MailMessage)
@@ -49,9 +43,6 @@ class Postulacion2 extends Notification implements ShouldQueue, ShouldBroadcast
             ->salutation('Saludos, POSGRADOSGA');
     }
 
-    /**
-     * Notificación para la base de datos.
-     */
     public function toArray($notifiable)
     {
         return [
@@ -61,9 +52,6 @@ class Postulacion2 extends Notification implements ShouldQueue, ShouldBroadcast
         ];
     }
 
-    /**
-     * Notificación para Pusher (broadcast en tiempo real).
-     */
     public function broadcastOn()
     {
         return new PrivateChannel('user.' . $this->userId);
