@@ -27,12 +27,13 @@ class RecordController extends Controller
 
         $secretarios = Secretario::where('seccion_id', $seccionId)->get();
 
-        $totalCreditos = $notas->sum(function ($nota) {
-            return $nota->asignatura->credito;
+        $totalHoras = $notas->sum(function ($nota) {
+            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
         });
 
-        // Obtener la cohorte del alumno
-        $cohorte = $alumno->maestria->cohortes->first();
+        $matricula = $alumno->matriculas->first();
+
+        $cohorte = $matricula->cohorte;
 
         preg_match('/Cohorte (\w+)/', $cohorte->nombre, $matches);
         $numeroRomano = $matches[1] ?? '';
@@ -70,7 +71,7 @@ class RecordController extends Controller
             }
 
             // Crear una instancia de Dompdf con las opciones
-            $pdf = Pdf::loadView('record.show', compact('secretarios', 'alumno', 'notas', 'periodo_academico', 'cohorte', 'totalCreditos', 'numeroRomano', 'fechaActual', 'qrCode', 'nombreCompleto'));
+            $pdf = Pdf::loadView('record.show', compact('secretarios', 'alumno', 'notas', 'periodo_academico', 'cohorte', 'totalHoras', 'numeroRomano', 'fechaActual', 'qrCode', 'nombreCompleto'));
 
             // Directorio para almacenar los PDFs
             $pdfDirectory = public_path('record_academico/pdf');

@@ -108,7 +108,7 @@
              la Coordinación de la {{ $alumno->maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se desarrolló al {{$numeroRomano}} PROGRAMA 
              DE {{ $alumno->maestria->nombre }}, inició sus actividades 
              académicas el {{ \Carbon\Carbon::parse($periodo_academico->fecha_inicio)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }} y culminó 
-             el {{ \Carbon\Carbon::parse($periodo_academico->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}, con una modalidad {{ $cohorte->modalidad }}, con un total de {{ $totalCreditos }} horas, según plan curricular.</p>
+             el {{ \Carbon\Carbon::parse($periodo_academico->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}, con una modalidad {{ $cohorte->modalidad }}, con un total de {{ $totalHoras }} horas, según plan curricular.</p>
         <p class="certificate-details">En los archivos de esta maestría consta: {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}, con número de Matrícula Nº  {{ $alumno->registro }}, quien aprobó todos los módulos contemplados en este programa, de acuerdo al siguiente detalle:</p>
         <table class="student-info" style="width: 80%; margin: 0 auto; font-size: 10pt;">
             <col width="60%">
@@ -125,7 +125,9 @@
                 @foreach ($notas as $nota)
                     <tr>
                         <td>{{ $nota->asignatura->nombre }}</td>
-                        <td>{{ $nota->asignatura->credito }}</td>
+                        <td>
+                            {{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}
+                        </td>
                         <td>{{ $nota->total }}</td>
                     </tr>
                 @endforeach
