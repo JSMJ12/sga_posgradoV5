@@ -283,3 +283,5 @@ Route::get('/tasa-titulacion/export/estudiantes/{maestria_id}/{cohorte_id}', [Ta
 //DOCUMENTOS POSTULANTES
 Route::post('/postulantes/{id}/verificar', [DocumentoPostulanteController::class, 'verificar'])->name('documentos.verificar');
 Route::get('pagos/matricula', [DocumentoPostulanteController::class, 'pagosMatricula'])->name('pagos.matricula');
+
+Route::put('/usuario/perfil', [UsuarioController::class, 'actualizarPerfil'])->name('usuario.actualizarPerfil')->middleware('auth');

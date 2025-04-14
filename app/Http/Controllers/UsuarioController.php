@@ -7,7 +7,7 @@ use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
-
+use Illuminate\Support\Facades\Auth;
 
 class UsuarioController extends Controller
 {
@@ -138,7 +138,7 @@ class UsuarioController extends Controller
         if ($request->hasFile('usu_foto')) {
             // Eliminar la imagen anterior si existe
             if ($usuario->image) {
-                \Storage::disk('public')->delete($usuario->image);
+                Storage::disk('public')->delete($usuario->image);
             }
 
             $path = $request->file('usu_foto')->store('imagenes_usuarios', 'public');
@@ -185,4 +185,34 @@ class UsuarioController extends Controller
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario habilitado exitosamente.');
     }
+
+    public function actualizarPerfil(Request $request)
+    {
+        $user = User::find(Auth::id());
+    
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'password' => 'nullable|min:8|confirmed',
+        ]);
+    
+        if ($request->hasFile('image')) {
+            // Eliminar imagen anterior si es local (no un avatar por URL)
+            if ($user->image && !str_starts_with($user->image, 'http')) {
+                Storage::disk('public')->delete($user->image);
+            }
+    
+            // Guardar nueva imagen
+            $path = $request->file('image')->store('imagenes_usuarios', 'public');
+            $user->image = $path;
+        }
+    
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->password);
+        }
+    
+        $user->save();
+    
+        return redirect()->back()->with('success', 'Perfil actualizado correctamente.');
+    }
+
 }

@@ -78,6 +78,12 @@
             </div>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link" href="#" data-toggle="modal" data-target="#cambiarPerfilModal" title="Editar Perfil">
+                <i class="fas fa-user-cog" style="font-size: 22px;"></i>
+            </a>
+        </li>
+
         {{-- Custom right links --}}
         @yield('content_top_nav_right')
 
@@ -100,6 +106,7 @@
     </ul>
 </nav>
 @auth
+    @include('modales.perfil_usuarios_modal')
     <style>
         /* Estilos personalizados para Toastr */
         .toast-message {
