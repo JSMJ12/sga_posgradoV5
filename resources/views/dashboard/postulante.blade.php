@@ -31,20 +31,21 @@
                                         <td><strong>{{ $postulante->maestria->nombre }}</strong></td>
                                         <td><span class="text-muted">Precio de Matriculación:</span> ${{ $postulante->maestria->matricula }}</td>
                                     </tr>
-                                    @if ($postulante->maestria->cohorte)
+                                    @if ($postulante->maestria->cohortes)
                                     @php
+                                        
                                         // Obtenemos la fecha actual
                                         $fecha_actual = now();
                                         
                                         // Filtramos los cohortes cuya fecha de inicio esté dentro de los próximos 5 días
-                                        $cohortes_filtrados = $postulante->maestria->cohorte->filter(function ($cohorte) use ($fecha_actual) {
+                                        $cohortes_filtrados = $postulante->maestria->cohortes->filter(function ($cohorte) use ($fecha_actual) {
                                             return $cohorte->fecha_inicio >= $fecha_actual && $cohorte->fecha_inicio <= $fecha_actual->addDays(5);
                                         });
                                         
                                         // Si no hay cohortes dentro de los próximos 5 días
                                         if ($cohortes_filtrados->isEmpty()) {
                                             // Buscamos el siguiente cohorte más cercano en el tiempo que esté al menos a 10 días de distancia
-                                            $cohortes_filtrados = $postulante->maestria->cohorte->sortBy('fecha_inicio')->filter(function ($cohorte) use ($fecha_actual) {
+                                            $cohortes_filtrados = $postulante->maestria->cohortes->sortBy('fecha_inicio')->filter(function ($cohorte) use ($fecha_actual) {
                                                 return $cohorte->fecha_inicio > $fecha_actual->addDays(5);
                                             })->take(1);
                                         }
