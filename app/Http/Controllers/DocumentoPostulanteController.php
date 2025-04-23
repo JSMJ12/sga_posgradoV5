@@ -40,7 +40,7 @@ class DocumentoPostulanteController extends Controller
                 $documento->ruta_documento = $documento->ruta_documento ?? null; // Si no tiene ruta, la establece a null
                 $documento->save();
 
-                return redirect(route('postulaciones.index'))->with('success', 'El comprobante de pago se ha actualizado correctamente.');
+                return redirect()->back()->with('success', 'El comprobante de pago se ha actualizado correctamente.');
             }
 
             // Si no es el comprobante de pago, procedemos con los otros documentos
@@ -84,6 +84,7 @@ class DocumentoPostulanteController extends Controller
             $documentos = DocumentoPostulante::where('tipo_documento', 'Comprobante de Pago')
                 ->where('verificado', 0)
                 ->with('postulante')
+
                 ->get();
 
             return datatables()->collection($documentos)

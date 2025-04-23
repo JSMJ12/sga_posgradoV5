@@ -30,6 +30,7 @@
                                 <th>Fin</th>
                                 <th>Estudiantes</th>
                                 <th>Acciones</th>
+                                <th>Verificación</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -39,6 +40,7 @@
         </div>
     </div>
 @stop
+@include('modales.verificar_calificacion_cohortes_modal')
 
 @section('js')
     <script>
@@ -95,6 +97,12 @@
                         name: 'acciones',
                         orderable: false,
                         searchable: false
+                    },
+                    {
+                        data: 'verificaciones',
+                        name: 'verificaciones',
+                        orderable: false,
+                        searchable: false
                     }
                 ],
                 language: {
@@ -114,6 +122,42 @@
         });
 
         
+    </script>
+    <script>
+        $(document).on('click', '.btn-verificaciones', function() {
+            let cohorteId = $(this).data('cohorte-id');
+    
+            $.ajax({
+                url: '/cohortes/' + cohorteId + '/verificaciones',
+                method: 'GET',
+                success: function(data) {
+                    let tbody = '';
+                    if (data.length > 0) {
+                        data.forEach(item => {
+                            let icon = item.calificado ?
+                                '<i class="fas fa-check-circle text-success"></i>' :
+                                '<i class="fas fa-times-circle text-danger"></i>';
+                            tbody += `
+                            <tr>
+                                <td>${item.docente}</td>
+                                <td>${item.asignatura}</td>
+                                <td>${icon}</td>
+                            </tr>
+                        `;
+                        });
+                    } else {
+                        tbody =
+                            '<tr><td colspan="3" class="text-muted">No hay registros de verificación.</td></tr>';
+                    }
+                    $('#verificacionesTableBody').html(tbody);
+                },
+                error: function() {
+                    $('#verificacionesTableBody').html(
+                        '<tr><td colspan="3" class="text-danger">Error al cargar los datos.</td></tr>'
+                        );
+                }
+            });
+        });
     </script>
 
 @stop

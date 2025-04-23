@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Pago;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
-use ConsoleTVs\Charts\Classes\Chartjs\Chart;
+
 
 use App\Models\Alumno;
 

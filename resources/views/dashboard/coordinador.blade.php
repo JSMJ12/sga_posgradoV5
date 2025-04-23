@@ -7,7 +7,7 @@
 
 @section('content')
     <div class="container">
-        <h3 class="text-center text-info my-4">{{ $maestria->nombre }}</h3>
+        <h3 class="text-center text-info my-4">{{ $maestria->nombre ?? 'Maestría no disponible' }}</h3>
 
         <!-- Estadísticas Generales -->
         <div class="row mb-4">
@@ -18,7 +18,7 @@
                         <div class="mb-2">
                             <i class="fa fa-users fa-3x"></i>
                         </div>
-                        <h3>{{ $totalAlumnos }}</h3>
+                        <h3>{{ $totalAlumnos ?? 0 }}</h3>
                         <p class="mb-0">Alumnos</p>
                     </div>
                 </div>
@@ -31,7 +31,7 @@
                         <div class="mb-2">
                             <i class="fa fa-chalkboard-teacher fa-3x"></i>
                         </div>
-                        <h3>{{ $totalDocentes }}</h3>
+                        <h3>{{ $totalDocentes ?? 0 }}</h3>
                         <p class="mb-0">Docentes</p>
                     </div>
                 </div>
@@ -44,7 +44,7 @@
                         <div class="mb-2">
                             <i class="fa fa-user-graduate fa-3x"></i>
                         </div>
-                        <h3>{{ $totalPostulantes }}</h3>
+                        <h3>{{ $totalPostulantes ?? 0 }}</h3>
                         <p class="mb-0">Postulantes</p>
                     </div>
                 </div>
@@ -60,7 +60,11 @@
                         <h5 class="mb-0">Gráfico de Matriculados</h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="matriculadosChart" width="400" height="200"></canvas>
+                        @if (!empty($graficoMatriculadosData))
+                            <canvas id="matriculadosChart" width="400" height="200"></canvas>
+                        @else
+                            <p class="text-center text-muted">No hay datos disponibles para mostrar el gráfico.</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -72,7 +76,11 @@
                         <h5>Resumen de Pagos por Cohorte</h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="cohorteChart"></canvas>
+                        @if (!empty($graficoCohorteData))
+                            <canvas id="cohorteChart"></canvas>
+                        @else
+                            <p class="text-center text-muted">No hay pagos registrados aún.</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -86,30 +94,35 @@
                         <h5>Resumen de Pagos por Cohorte</h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-bordered">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Cohorte</th>
-                                    <th>Total Monto</th>
-                                    <th>Cantidad de Pagos</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($cohortes as $index => $cohorte)
+                        @if (count($cohortes) > 0)
+                            <table class="table table-bordered">
+                                <thead class="thead-light">
                                     <tr>
-                                        <td>{{ $cohorte }}</td>
-                                        <td>${{ number_format($monto[$index], 2) }}</td>
-                                        <td>{{ $cantidad[$index] }}</td>
-                                        <td>
-                                            <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
-                                                class="btn btn-danger btn-sm" target="_blank">
-                                                Descargar PDF
-                                            </a>
-                                        </td>
+                                        <th>Cohorte</th>
+                                        <th>Total Monto</th>
+                                        <th>Cantidad de Pagos</th>
+                                        <th>PDF</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach ($cohortes as $index => $cohorte)
+                                        <tr>
+                                            <td>{{ $cohorte }}</td>
+                                            <td>${{ number_format($monto[$index] ?? 0, 2) }}</td>
+                                            <td>{{ $cantidad[$index] ?? 0 }}</td>
+                                            <td>
+                                                <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
+                                                    class="btn btn-danger btn-sm" target="_blank">
+                                                    Descargar PDF
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @else
+                            <p class="text-center text-muted">No hay cohortes con pagos registrados aún.</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -117,41 +130,54 @@
 
         <!-- Asignaturas -->
         <div class="row">
+            <!-- Deuda pendiente -->
             <div class="col-md-6">
                 <div class="card mb-6 shadow-sm">
                     <div class="card-header bg-success text-white">
                         <h5>Deuda Pendiente por Cohorte</h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="deudaPendienteChart"></canvas>
+                        @if (!empty($graficoDeudaData))
+                            <canvas id="deudaPendienteChart"></canvas>
+                        @else
+                            <p class="text-center text-muted">No hay datos de deuda pendientes.</p>
+                        @endif
                     </div>
                 </div>
             </div>
+
+            <!-- Lista de asignaturas -->
             <div class="col-md-6">
                 <div class="card shadow-lg rounded-lg">
                     <div class="card-header bg-info text-white" id="asignaturasHeader" style="cursor: pointer;">
                         <h5 class="mb-0">Asignaturas</h5>
                     </div>
-                    <div class="card-body" id="asignaturasList" style="display: none;">
-                        <ul class="list-group list-group-flush">
-                            @foreach ($asignaturas as $asignatura)
-                                <li class="list-group-item">
-                                    {{ $asignatura->nombre }}
-                                    <br>
-                                    <span style="font-weight: bold;">Docente:</span>
-                                    {{ $asignatura->docentes->first()->nombre1 }}
-                                    {{ $asignatura->docentes->first()->nombre2 }}
-                                    {{ $asignatura->docentes->first()->apellidop }}
-                                    {{ $asignatura->docentes->first()->apellidom }}
-                                </li>
-                            @endforeach
-                        </ul>
+                    <div class="card-body" id="asignaturasList" style="display: none; max-height: 300px; overflow-y: auto;">
+                        @if ($asignaturas->isNotEmpty())
+                            <ul class="list-group list-group-flush">
+                                @foreach ($asignaturas as $asignatura)
+                                    <li class="list-group-item">
+                                        {{ $asignatura->nombre }}
+                                        <br>
+                                        <span style="font-weight: bold;">Docente:</span>
+                                        {{ $asignatura->docentes->first()->nombre1 ?? 'Docente' }}
+                                        {{ $asignatura->docentes->first()->nombre2 ?? 'no' }}
+                                        {{ $asignatura->docentes->first()->apellidop ?? 'asignado' }}
+                                        {{ $asignatura->docentes->first()->apellidom ?? '' }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-center text-muted">No hay asignaturas registradas aún.</p>
+                        @endif
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 @stop
+
 
 @section('css')
     <style>

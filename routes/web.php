@@ -122,6 +122,8 @@ Route::resource('periodos_academicos', PeriodoAcademicoController::class)->middl
 Route::resource('cohortes', CohorteController::class)->middleware('can:secretario_coordinador');
 Route::get('/cohortes/{cohorte_id}/exportar-alumnos', [CohorteController::class, 'exportarAlumnos'])
     ->name('cohortes.exportarAlumnos')->middleware('can:secretario_coordinador');
+Route::get('/cohortes/{id}/verificaciones', [CohorteController::class, 'verificaciones'])->middleware('can:secretario_coordinador');
+
 
 //Postulaciones
 Route::resource('postulaciones', PostulanteController::class);
@@ -182,6 +184,8 @@ Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paral
 
 //PDFS RECORD ACADEMICO ADMINISTRADOR
 Route::resource('record', RecordController::class)->middleware('can:dashboard_secretario');
+Route::get('/certificado-matricula/{id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware('can:dashboard_secretario');
+
 
 //CALIFICACIONES DOCENTES
 Route::get('/calificaciones/create/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'create'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.create1');

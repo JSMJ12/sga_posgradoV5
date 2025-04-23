@@ -9,6 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 
 class RecordController extends Controller
@@ -86,6 +87,66 @@ class RecordController extends Controller
         }
 
         // Redirigir al archivo PDF en una nueva pestaña
+        return redirect()->away($url);
+    }
+
+    public function certificado_matricula($alumno_dni)
+    {
+        $alumno = Alumno::findOrFail($alumno_dni);
+
+        $seccionId = optional($alumno->maestria->secciones->first())->id;
+        $secretarios = Secretario::where('seccion_id', $seccionId)->get();
+
+        $matricula = $alumno->matriculas->first();
+        if (!$matricula || !$matricula->cohorte) {
+            return back()->with('error', 'El alumno no tiene matrícula o cohorte.');
+        }
+
+        $cohorte = $matricula->cohorte;
+        $periodo_academico = $cohorte->periodo_academico;
+
+        $asignaturas = $alumno->maestria->asignaturas()->get(); // corregido el nombre de relación
+        $totalHoras = $asignaturas->sum(fn($a) => $a->horas_duracion ?? $a->credito * 48);
+        $totalCreditos = $asignaturas->sum(fn($a) => $a->credito);
+
+        $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
+
+        $nombreLimpio = Str::slug($alumno->apellidop . '_' . $alumno->nombre1);
+        $pdfPath = 'certificado_matriculas/pdf/' . $alumno->dni . '_' . $nombreLimpio . '_certificado_matricula.pdf';
+        $pdfFullPath = public_path($pdfPath);
+        $url = url($pdfPath);
+
+        if (!File::exists($pdfFullPath)) {
+            $qrCode = QrCode::format('png')
+                ->size(100)
+                ->eye('circle')
+                ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
+                ->errorCorrection('H')
+                ->generate($url);
+
+            $coordinador = Docente::where('dni', $alumno->maestria->coordinador)->first();
+            $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+
+            $pdf = Pdf::loadView('record.certificado_matricula', compact(
+                'secretarios',
+                'totalHoras',
+                'asignaturas',
+                'alumno',
+                'totalCreditos',
+                'periodo_academico',
+                'cohorte',
+                'fechaActual',
+                'qrCode',
+                'nombreCompleto'
+            ));
+
+            if (!file_exists(dirname($pdfFullPath))) {
+                mkdir(dirname($pdfFullPath), 0755, true);
+            }
+
+            $pdf->save($pdfFullPath);
+        }
+
         return redirect()->away($url);
     }
 }

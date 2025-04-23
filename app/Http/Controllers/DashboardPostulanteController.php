@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Notification;
 use App\Notifications\Postulacion2;
 use App\Notifications\SubirArchivoNotification;
 use App\Notifications\NuevoPagoMatricula;
+use App\Models\DocumentoPostulante;
 
 class DashboardPostulanteController extends Controller
 {
@@ -91,7 +92,6 @@ class DashboardPostulanteController extends Controller
 
         $updateData = [];
         $uploadedFiles = 0;
-        $pagoMatriculaSubido = false; // Para verificar si se subió "pago_matricula"
 
         foreach ($files as $inputName => $column) {
             if ($request->hasFile($inputName)) {
@@ -100,10 +100,6 @@ class DashboardPostulanteController extends Controller
                     $updateData[$column] = $path;
                     $uploadedFiles++;
 
-                    // Verificar si el archivo subido es "pago_matricula"
-                    if ($column === 'pago_matricula') {
-                        $pagoMatriculaSubido = true;
-                    }
                 } catch (\Exception $e) {
                     return back()->with('error', "Error al subir {$inputName}: " . $e->getMessage());
                 }
@@ -111,9 +107,23 @@ class DashboardPostulanteController extends Controller
         }
 
         // Si se subió el pago de matrícula, enviar la notificación
-        if ($pagoMatriculaSubido) {
-            $postulante->notify(new NuevoPagoMatricula($postulante));
+        if ($request->hasFile('pago_matricula')) {
+            $archivo = $request->file('pago_matricula');
+            $path = $archivo->store('postulantes/pdf', 'public');
+            $updateData['pago_matricula'] = $path;
+        
+            // Crear nuevo DocumentoPostulante
+            DocumentoPostulante::create([
+                'dni_postulante' => $postulante->dni,
+                'tipo_documento' => 'Comprobante de Pago',
+                'ruta_documento' => $path,
+                'verificado' => 0,
+            ]);
+        
+            Notification::route('mail', $postulante->correo_electronico)
+                ->notify(new NuevoPagoMatricula($postulante));
         }
+        
 
 
         // Si no se subió ningún archivo, mostrar advertencia
@@ -133,7 +143,6 @@ class DashboardPostulanteController extends Controller
 
         return back()->with('success', 'Archivo(s) subido(s) exitosamente.');
     }
-
 
     public function carta_aceptacionPdf(Request $request, $dni)
     {

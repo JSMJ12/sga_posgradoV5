@@ -89,13 +89,34 @@
                                                         </button>
                                                     </form>
                                                 </li>
+                                                @php
+                                                    $documentos_requeridos = [
+                                                        'Cédula',
+                                                        'Papel de Votación',
+                                                        'Título de Universidad',
+                                                        'Hoja de Vida',
+                                                        'Carta de Aceptación'
+                                                    ];
 
-                                                @if (
-                                                    !$postulante->status &&
-                                                        $postulante->pdf_cedula &&
-                                                        $postulante->pdf_papelvotacion &&
-                                                        $postulante->pdf_titulouniversidad &&
-                                                        $postulante->pdf_hojavida)
+                                                    $documentos_verificados = $postulante->documentos_verificados->where(
+                                                        'verificado',
+                                                        1,
+                                                    );
+
+                                                    $verificados = $documentos_verificados
+                                                        ->pluck('tipo_documento')
+                                                        ->toArray();
+
+                                                    $apto =
+                                                        count(array_intersect($documentos_requeridos, $verificados)) ===
+                                                        count($documentos_requeridos);
+                                                    $comprobante_pago_verificado = in_array(
+                                                        'Comprobante de Pago',
+                                                        $verificados,
+                                                    );
+                                                @endphp
+
+                                                @if (!$postulante->status && $apto)
                                                     <li class="list-group-item text-center">
                                                         <form action="{{ route('postulantes.aceptar', $postulante->dni) }}"
                                                             method="POST" style="display: inline-block;">
@@ -108,7 +129,7 @@
                                                             </button>
                                                         </form>
                                                     </li>
-                                                @elseif ($postulante->pago_matricula)
+                                                @elseif ($comprobante_pago_verificado)
                                                     <li class="list-group-item text-center">
                                                         <form
                                                             action="{{ route('postulantes.convertir', $postulante->dni) }}"
@@ -123,6 +144,7 @@
                                                         </form>
                                                     </li>
                                                 @endif
+
                                             </ul>
                                         </div>
                                     </td>

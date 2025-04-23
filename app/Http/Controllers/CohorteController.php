@@ -11,6 +11,7 @@ use App\Models\Aula;
 use App\Models\Docente;
 use App\Exports\CohorteAlumnosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\CalificacionVerificacion;
 
 class CohorteController extends Controller
 {
@@ -81,13 +82,47 @@ class CohorteController extends Controller
                         </button>
                     </form>';
                 })
-                ->rawColumns(['acciones', 'alumnos'])
+                ->addColumn('verificaciones', function ($cohorte) {
+                    return '
+                    <button class="btn btn-info btn-sm btn-verificaciones" data-cohorte-id="' . $cohorte->id . '" data-toggle="modal" data-target="#verificacionModal">
+                        <i class="fas fa-clipboard-check"></i> Verificación
+                    </button>';
+                })
+                ->rawColumns(['acciones', 'alumnos', 'verificaciones'])
                 ->toJson();
         }
 
         return view('cohortes.index', compact('perPage'));
     }
 
+    public function verificaciones($cohorteId)
+    {
+        // Obtener cohorte con su maestría
+        $cohorte = Cohorte::with('maestria.asignaturas')->findOrFail($cohorteId);
+
+        // Obtener todas las asignaturas de la maestría
+        $asignaturas = $cohorte->maestria->asignaturas;
+
+        // Obtener verificaciones ya registradas
+        $verificaciones = CalificacionVerificacion::with(['docente', 'asignatura'])
+            ->where('cohorte_id', $cohorteId)
+            ->get();
+
+      
+
+        // Armar la respuesta combinando asignaturas y verificaciones
+        $resultado = $asignaturas->map(function ($asignatura) use ($verificaciones) {
+            $verificacion = $verificaciones->firstWhere('asignatura_id', $asignatura->id);
+
+            return [
+                'asignatura' => $asignatura->nombre,
+                'docente' => $verificacion?->docente?->getFullNameAttribute() ?? 'Sin docente',
+                'calificado' => $verificacion?->calificado ?? false,
+            ];
+        });
+
+        return response()->json($resultado);
+    }
 
     public function create()
     {
@@ -103,7 +138,7 @@ class CohorteController extends Controller
             $maestrias = Maestria::whereIn('id', $maestriasIds)
                 ->where('status', 'ACTIVO')
                 ->get();
-        }elseif ($user->hasRole('Coordinador')) {
+        } elseif ($user->hasRole('Coordinador')) {
             // Si el usuario es coordinador, busca la maestría asociada al docente
             $docente = Docente::where('email', $user->email)->first();
 
@@ -115,10 +150,9 @@ class CohorteController extends Controller
 
             $maestria = $docente->maestria()->first();
             $maestrias = Maestria::where('id', $maestria->id)
-            ->where('status', 'ACTIVO')
-            ->get();
-        }
-        else {
+                ->where('status', 'ACTIVO')
+                ->get();
+        } else {
             $maestrias = Maestria::where('status', 'ACTIVO')->get();
         }
         $periodos_academicos = PeriodoAcademico::all();
