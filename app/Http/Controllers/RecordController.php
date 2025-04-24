@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
-use App\Models\Secretario;
 use App\Models\Docente;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
+
 
 class RecordController extends Controller
 {
@@ -24,78 +23,65 @@ class RecordController extends Controller
         $alumno = Alumno::findOrFail($alumno_dni);
         $notas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-        $seccionId = $alumno->maestria->secciones->first()->id;
-
-        $secretarios = Secretario::where('seccion_id', $seccionId)->get();
-
+        // Total de horas
         $totalHoras = $notas->sum(function ($nota) {
             return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
         });
 
-        $matricula = $alumno->matriculas->first();
+        // Promedio solo de notas no nulas
+        $notasValidas = $notas->filter(function ($nota) {
+            return !is_null($nota->total);
+        });
 
+        $promedio = $notasValidas->avg('total');
+
+        // Contador de asignaturas
+        $cantidadAsignaturas = $notas->filter(function ($nota) {
+            return !is_null($nota->total) && $nota->total >= 7;
+        })->count();
+
+
+        // Datos de cohorte
+        $matricula = $alumno->matriculas->first();
         $cohorte = $matricula->cohorte;
 
-        preg_match('/Cohorte (\w+)/', $cohorte->nombre, $matches);
-        $numeroRomano = $matches[1] ?? '';
-
-        // Acceder a los datos de periodo_academico en la cohorte
-        $periodo_academico = $cohorte->periodo_academico;
-
+        // Fecha actual formateada
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Ruta del archivo PDF, incluye DNI, dentro del subdirectorio
-        $pdfPath = 'record_academico/pdf/' . $alumno->dni . '_' . $alumno->apellidop . '_' . $alumno->nombre1 . '_notas.pdf';
-        $pdfFullPath = public_path($pdfPath); // Ruta completa del archivo PDF
-        $url = url($pdfPath);
+        // Código QR
+        $url = route('record.show', $alumno_dni);
+        $qrCode = QrCode::format('png')
+            ->size(100)
+            ->eye('circle')
+            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
+            ->errorCorrection('H')
+            ->generate($url);
 
-        // Verificar si el archivo ya existe
-        if (!File::exists($pdfFullPath)) {
-            // Generar el código QR con logotipo
-            $qrCode = QrCode::format('png')
-                ->size(100)
-                ->eye('circle')
-                ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-                ->errorCorrection('H')
-                ->generate($url);
+        // Coordinador
+        $coordinadorDni = $alumno->maestria->coordinador;
+        $coordinador = Docente::where('dni', $coordinadorDni)->first();
+        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
-            $coordinadorDni = $alumno->maestria->coordinador;
+        // Retornar el PDF
+        $pdf = Pdf::loadView('record.show', compact(
+            'alumno',
+            'notas',
+            'cohorte',
+            'totalHoras',
+            'fechaActual',
+            'qrCode',
+            'nombreCompleto',
+            'promedio',
+            'cantidadAsignaturas'
+        ));
 
-            // Buscar al docente utilizando el DNI
-            $coordinador = Docente::where('dni', $coordinadorDni)->first();
-
-            if ($coordinador) {
-                // Acceder al nombre completo utilizando el método getFullNameAttribute
-                $nombreCompleto = $coordinador->getFullNameAttribute();
-            } else {
-                $nombreCompleto = 'Coordinador no encontrado';
-            }
-
-            // Crear una instancia de Dompdf con las opciones
-            $pdf = Pdf::loadView('record.show', compact('secretarios', 'alumno', 'notas', 'periodo_academico', 'cohorte', 'totalHoras', 'numeroRomano', 'fechaActual', 'qrCode', 'nombreCompleto'));
-
-            // Directorio para almacenar los PDFs
-            $pdfDirectory = public_path('record_academico/pdf');
-
-            // Verificar si el directorio existe, si no, crearlo
-            if (!file_exists($pdfDirectory)) {
-                mkdir($pdfDirectory, 0755, true);
-            }
-
-            // Guardar el PDF
-            $pdf->save($pdfFullPath);
-        }
-
-        // Redirigir al archivo PDF en una nueva pestaña
-        return redirect()->away($url);
+        return $pdf->stream('record_academico_' . $alumno->dni . '.pdf');
     }
+
 
     public function certificado_matricula($alumno_dni)
     {
         $alumno = Alumno::findOrFail($alumno_dni);
-
-        $seccionId = optional($alumno->maestria->secciones->first())->id;
-        $secretarios = Secretario::where('seccion_id', $seccionId)->get();
 
         $matricula = $alumno->matriculas->first();
         if (!$matricula || !$matricula->cohorte) {
@@ -103,50 +89,131 @@ class RecordController extends Controller
         }
 
         $cohorte = $matricula->cohorte;
-        $periodo_academico = $cohorte->periodo_academico;
-
-        $asignaturas = $alumno->maestria->asignaturas()->get(); // corregido el nombre de relación
-        $totalHoras = $asignaturas->sum(fn($a) => $a->horas_duracion ?? $a->credito * 48);
-        $totalCreditos = $asignaturas->sum(fn($a) => $a->credito);
 
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
         $nombreLimpio = Str::slug($alumno->apellidop . '_' . $alumno->nombre1);
-        $pdfPath = 'certificado_matriculas/pdf/' . $alumno->dni . '_' . $nombreLimpio . '_certificado_matricula.pdf';
-        $pdfFullPath = public_path($pdfPath);
-        $url = url($pdfPath);
+        $url = url()->full();
 
-        if (!File::exists($pdfFullPath)) {
-            $qrCode = QrCode::format('png')
-                ->size(100)
-                ->eye('circle')
-                ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-                ->errorCorrection('H')
-                ->generate($url);
+        $qrCode = QrCode::format('png')
+            ->size(100)
+            ->eye('circle')
+            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
+            ->errorCorrection('H')
+            ->generate($url);
 
-            $coordinador = Docente::where('dni', $alumno->maestria->coordinador)->first();
-            $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+        $coordinador = Docente::where('dni', $alumno->maestria->coordinador)->first();
+        $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
 
-            $pdf = Pdf::loadView('record.certificado_matricula', compact(
-                'secretarios',
-                'totalHoras',
-                'asignaturas',
-                'alumno',
-                'totalCreditos',
-                'periodo_academico',
-                'cohorte',
-                'fechaActual',
-                'qrCode',
-                'nombreCompleto'
-            ));
+        $pdf = Pdf::loadView('record.certificado_matricula', compact(
+            'alumno',
+            'cohorte',
+            'fechaActual',
+            'qrCode',
+            'nombreCompleto'
+        ));
 
-            if (!file_exists(dirname($pdfFullPath))) {
-                mkdir(dirname($pdfFullPath), 0755, true);
-            }
+        return $pdf->stream("certificado_matricula_{$nombreLimpio}.pdf");
+    }
+    public function certificado($alumno_dni)
+    {
+        // Obtener el alumno y sus notas
+        $alumno = Alumno::findOrFail($alumno_dni);
+        $notas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-            $pdf->save($pdfFullPath);
-        }
+        $seccionId = $alumno->maestria->secciones->first()->id;
 
-        return redirect()->away($url);
+        $totalHoras = $notas->sum(function ($nota) {
+            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
+        });
+
+        $matricula = $alumno->matriculas->first();
+        $cohorte = $matricula->cohorte;
+
+        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte->nombre, $matches);
+        $numeroRomano = $matches[1] ?? '';
+
+        $periodo_academico = $cohorte->periodo_academico;
+
+        $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
+
+        // Generar el código QR con URL de visualización (si deseas usarlo aún)
+        $url = route('certificado', $alumno->dni);
+        $qrCode = QrCode::format('png')
+            ->size(100)
+            ->eye('circle')
+            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
+            ->errorCorrection('H')
+            ->generate($url);
+
+        $coordinadorDni = $alumno->maestria->coordinador;
+        $coordinador = Docente::where('dni', $coordinadorDni)->first();
+        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
+
+        // Generar y retornar el PDF en línea (sin guardar)
+        $pdf = Pdf::loadView('record.certificacion', compact(
+            'alumno',
+            'notas',
+            'periodo_academico',
+            'cohorte',
+            'totalHoras',
+            'numeroRomano',
+            'fechaActual',
+            'qrCode',
+            'nombreCompleto'
+        ));
+
+        return $pdf->stream('certificado_' . $alumno->dni . '.pdf');
+    }
+
+    public function certificado_culminacion($alumno_dni)
+    {
+        // Obtener el alumno y sus notas
+        $alumno = Alumno::findOrFail($alumno_dni);
+        $notas = $alumno->notas()->with('asignatura', 'docente')->get();
+
+        $seccionId = $alumno->maestria->secciones->first()->id;
+
+        $totalHoras = $notas->sum(function ($nota) {
+            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
+        });
+
+        $matricula = $alumno->matriculas->first();
+        $cohorte = $matricula->cohorte;
+
+        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte->nombre, $matches);
+        $numeroRomano = $matches[1] ?? '';
+
+        $periodo_academico = $cohorte->periodo_academico;
+
+        $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
+
+        // Generar el código QR con URL de visualización (si deseas usarlo aún)
+        $url = route('certificado_culminacion', $alumno->dni);
+        $qrCode = QrCode::format('png')
+            ->size(100)
+            ->eye('circle')
+            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
+            ->errorCorrection('H')
+            ->generate($url);
+
+        $coordinadorDni = $alumno->maestria->coordinador;
+        $coordinador = Docente::where('dni', $coordinadorDni)->first();
+        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
+
+        // Generar y retornar el PDF en línea (sin guardar)
+        $pdf = Pdf::loadView('record.certificado_culminacion', compact(
+            'alumno',
+            'notas',
+            'periodo_academico',
+            'cohorte',
+            'totalHoras',
+            'numeroRomano',
+            'fechaActual',
+            'qrCode',
+            'nombreCompleto'
+        ));
+
+        return $pdf->stream('certificado_culminacion_' . $alumno->dni . '.pdf');
     }
 }

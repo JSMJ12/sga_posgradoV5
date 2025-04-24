@@ -185,7 +185,8 @@ Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paral
 //PDFS RECORD ACADEMICO ADMINISTRADOR
 Route::resource('record', RecordController::class)->middleware('can:dashboard_secretario');
 Route::get('/certificado-matricula/{id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware('can:dashboard_secretario');
-
+Route::get('/certificado/{id}', [RecordController::class, 'certificado'])->name('certificado')->middleware('can:dashboard_secretario');
+Route::get('/certificado_culminacion/{id}', [RecordController::class, 'certificado_culminacion'])->name('certificado_culminacion')->middleware('can:dashboard_secretario');
 
 //CALIFICACIONES DOCENTES
 Route::get('/calificaciones/create/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'create'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.create1');

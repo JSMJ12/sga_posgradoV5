@@ -1,178 +1,189 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Certificado</title>
+    <title>RECORD ACADÉMICO</title>
     <style>
-        #fecha-actual {
-            font-size: 12pt;
-            text-align: right;
-            margin-top: 10px;
-        }
-
         body {
             font-family: "Times New Roman", serif;
-            font-size: 12pt;
-            margin: 0;
+            font-size: 11pt;
+            margin: 40px;
             padding: 0;
         }
+
         .container {
-            width: 100%;
             max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: auto;
         }
+
         .header {
             text-align: center;
-            margin-top: 10px;
+            position: relative;
+            margin-bottom: 10px;
         }
+
         .logo {
-            width: 74px;
-            height: 89px;
+            width: 64px;
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: -35px;
+            left: 0;
         }
 
         .seal {
-            width: 94px;
-            height: 143px;
+            width: 104px;
             position: absolute;
-            top: -3px;
-            right: 10px;
+            top: -35;
+            right: 0;
         }
+
         .university-name {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
         }
-        .institute {
-            font-size: 10pt;
-        }
+
+        .institute,
         .coordinator {
             font-size: 10pt;
         }
+
         .divider {
-            width: 100%;
-            height: 2px;
-            background-color: #000;
-            margin: 10px 0;
+            height: 3px;
+            background-color: gold;
+            margin: 10px 0 20px;
         }
+
         .certificate-title {
+            text-align: center;
             font-size: 12pt;
             font-weight: bold;
-            text-align: center;
-            margin-top: 10px;
+            margin-bottom: 10px;
         }
-        .certificate-details {
-            font-size: 12pt;
-            text-align: justify;
-            margin: 10px 0;
+
+        .student-details {
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
+
         .student-info {
+            width: 100%;
             font-size: 10pt;
             border-collapse: collapse;
-            width: 100%;
-            margin-top: 10px;
+            margin-bottom: 20px;
         }
-        .student-info th, .student-info td {
-            border: 1px solid #666;
+
+        .student-info th,
+        .student-info td {
+            border: 1px solid #333;
             padding: 5px;
+            text-align: center;
         }
+
         .student-info th {
-            background-color: #ccc;
+            background-color: #f0f0f0;
         }
-        .footer {
-            font-size: 10pt;
+
+        #fecha-actual {
             text-align: right;
-            margin-top: 10px;
+            margin-top: 30px;
         }
+
+        .firmante {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .firmante b {
+            display: block;
+            margin-bottom: 2px;
+        }
+
         #qr-code {
             position: absolute;
-            bottom: 50px;
-            right: 5px;
+            bottom: 40px;
+            right: 40px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
-            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
-            <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
-            <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</span>
+            <img src="{{ public_path() . '/images/unesum.png' }}" alt="Logo" class="logo">
+            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="Sello" class="seal">
+            <div class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
+            <div class="institute">INSTITUTO DE POSGRADO</div>
+            <div class="coordinator">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</div>
         </div>
+
         <div class="divider"></div>
-        <p class="certificate-title">CERTIFICA</p>
-        <p class="certificate-details">Que de acuerdo a los registros que reposan en la Secretaría Académica de
-             la Coordinación de la {{ $alumno->maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se desarrolló al {{$numeroRomano}} PROGRAMA 
-             DE {{ $alumno->maestria->nombre }}, inició sus actividades 
-             académicas el {{ \Carbon\Carbon::parse($periodo_academico->fecha_inicio)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }} y culminó 
-             el {{ \Carbon\Carbon::parse($periodo_academico->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}, con una modalidad {{ $cohorte->modalidad }}, con un total de {{ $totalHoras }} horas, según plan curricular.</p>
-        <p class="certificate-details">En los archivos de esta maestría consta: {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}, con número de Matrícula Nº  {{ $alumno->registro }}, quien aprobó todos los módulos contemplados en este programa, de acuerdo al siguiente detalle:</p>
-        <table class="student-info" style="width: 80%; margin: 0 auto; font-size: 10pt;">
-            <col width="60%">
-            <col width="40%">
-            <col width="40%">
-            <thead class="thead-dark">
+
+        <p class="certificate-title">RECORD ACADÉMICO</p>
+
+        <div class="student-details">
+            Estudiante: {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }}
+            {{ $alumno->nombre2 }}<br>
+            Período académico: {{ $cohorte->periodo_academico->nombre }}<br>
+            Cohorte: {{ $cohorte->nombre }}<br>
+            Modalidad: {{ $cohorte->modalidad }}<br>
+            Fecha de inicio:
+            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->translatedFormat('d \d\e F \d\e Y') }}<br>
+            Fecha de fin:
+            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->translatedFormat('d \d\e F \d\e Y') }}
+
+        </div>
+
+        <table class="student-info">
+            <thead>
                 <tr>
+                    <th>N°</th>
                     <th>ASIGNATURA</th>
                     <th>TOTAL HORAS</th>
                     <th>PROMEDIO</th>
+                    <th>ESTADO</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($notas as $nota)
+                @foreach ($notas as $index => $nota)
                     <tr>
+                        <td>{{ $index + 1 }}</td>
                         <td>{{ $nota->asignatura->nombre }}</td>
-                        <td>
-                            {{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}
-                        </td>
+                        <td>{{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}</td>
                         <td>{{ $nota->total }}</td>
+                        <td>
+                            @if (is_null($nota->total))
+                                {{-- vacío --}}
+                            @elseif ($nota->total >= 7)
+                                APROBADO
+                            @else
+                                REPROBADO
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-        
+
+        <p style="margin-top: 10px;">
+            <strong>Total de horas:</strong> {{ $totalHoras }}<br>
+            <strong>Total de asignaturas aprobadas:</strong> {{ $cantidadAsignaturas }}<br>
+            <strong>Promedio general:</strong> {{ $promedio ? number_format($promedio, 2) : 'N/A' }}
+        </p>        
+
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
-        <table class="student-info">
-            <col width="50%">
-            <col width="25%">
-            <col width="25%">
-            <thead class="thead-white">
-                <tr>
-                    <th>Elaborado por:</th>
-                    <th>Revisado y aprobado por:</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <!-- Espacio para la firma -->
-                        <p style="margin: 20px 0;"></p>
-                        <p style="margin: 0;" align="center">
-                            <font size="2" face="Times New Roman, serif"><b>{{ $secretarios[0]->apellidop }} {{ $secretarios[0]->apellidom }} {{ $secretarios[0]->nombre1 }} {{ $secretarios[0]->nombre2 }}</b></font>
-                        </p>
-                        <p style="margin: 0;" align="center">
-                            <font size="2" face="Times New Roman, serif"><b>SECRETARIA ACADÉMICA DE LA MAESTRÍA</b></font>
-                        </p>
-                    </td>
-                    <td>
-                        <!-- Espacio para la firma -->
-                        <p style="margin: 20px 0;"></p>
-                        <p style="margin: 0;" align="center">
-                            <font size="2" face="Times New Roman, serif"><b>{{ $nombreCompleto}}</b></font>
-                        </p>
-                        <p style="margin: 0;" align="center">
-                            <font size="2" face="Times New Roman, serif"><b>COORDINADOR/A DE LA MAESTRÍA</b></font>
-                        </p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+
+        <div class="firmante" style="margin-top: 110px; text-align: center;">
+            <div
+                style="display: inline-block; border-top: 1px solid black; width: fit-content; padding: 0 10px; margin-bottom: 5px;">
+                <b>{{ $nombreCompleto }}</b>
+            </div>
+            <div>Coordinador del Programa de {{ ucfirst(strtolower($alumno->maestria->nombre)) }}</div>
+        </div>
+
         <div id="qr-code">
-            <img src="data:image/png;base64,{{ base64_encode($qrCode) }}" alt="Código QR">
+            <img src="data:image/png;base64,{{ base64_encode($qrCode) }}" alt="QR">
         </div>
     </div>
 </body>
+
 </html>

@@ -103,6 +103,18 @@ class AlumnoController extends Controller
                         $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank">
                                         <i class="fas fa-file-alt"></i>
                                       </a>';
+                        $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" 
+                                      target="_blank" 
+                                      class="btn btn-outline-info btn-sm" 
+                                      title="Ver Certificado">
+                                      <i class="fas fa-file-pdf"></i>
+                                   </a>';
+                        $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" 
+                                   target="_blank" 
+                                   class="btn btn-outline-success btn-sm" 
+                                   title="Ver Certificado de culminacion">
+                                   <i class="fas fa-file-pdf"></i>
+                                </a>';
                     }
 
                     // Botón Editar (solo para administradores)
