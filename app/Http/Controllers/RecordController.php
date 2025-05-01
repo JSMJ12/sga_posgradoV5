@@ -19,33 +19,50 @@ class RecordController extends Controller
     }
     public function show($alumno_dni)
     {
-        // Obtener el alumno y sus notas
         $alumno = Alumno::findOrFail($alumno_dni);
-        $notas = $alumno->notas()->with('asignatura', 'docente')->get();
+
+        // Obtener asignaturas de la maestría
+        $asignaturas = $alumno->maestria->asignaturas ?? collect();
+
+        // Obtener notas registradas con relaciones
+        $notasRegistradas = $alumno->notas()->with('asignatura', 'docente')->get();
+
+        // Crear estructura completa de "notas", incluyendo asignaturas sin nota
+        $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas) {
+            // Buscar si hay una nota para esta asignatura
+            $notaExistente = $notasRegistradas->firstWhere('asignatura_id', $asignatura->id);
+
+            if ($notaExistente) {
+                return $notaExistente;
+            }
+
+            // Crear objeto "falso" de Nota si no existe
+            $notaFalsa = new \stdClass();
+            $notaFalsa->asignatura = $asignatura;
+            $notaFalsa->docente = $asignatura->docente ?? null; // si hay relación
+            $notaFalsa->total = null;
+
+            return $notaFalsa;
+        });
 
         // Total de horas
-        $totalHoras = $notas->sum(function ($nota) {
-            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
+        $totalHoras = $notasCompletas->sum(function ($nota) {
+            return $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48);
         });
 
         // Promedio solo de notas no nulas
-        $notasValidas = $notas->filter(function ($nota) {
-            return !is_null($nota->total);
-        });
-
+        $notasValidas = $notasCompletas->filter(fn($nota) => !is_null($nota->total));
         $promedio = $notasValidas->avg('total');
 
-        // Contador de asignaturas
-        $cantidadAsignaturas = $notas->filter(function ($nota) {
-            return !is_null($nota->total) && $nota->total >= 7;
-        })->count();
-
+        // Asignaturas aprobadas (nota >= 7)
+        $cantidadAsignaturas = $notasValidas->filter(fn($nota) => $nota->total >= 7)->count();
 
         // Datos de cohorte
         $matricula = $alumno->matriculas->first();
         $cohorte = $matricula->cohorte;
+        $cohorteNombre = $cohorte->nombre ?? '--';
 
-        // Fecha actual formateada
+        // Fecha actual
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
         // Código QR
@@ -62,11 +79,12 @@ class RecordController extends Controller
         $coordinador = Docente::where('dni', $coordinadorDni)->first();
         $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
-        // Retornar el PDF
+        // Generar PDF
         $pdf = Pdf::loadView('record.show', compact(
             'alumno',
-            'notas',
+            'notasCompletas',
             'cohorte',
+            'cohorteNombre',
             'totalHoras',
             'fechaActual',
             'qrCode',
@@ -77,6 +95,7 @@ class RecordController extends Controller
 
         return $pdf->stream('record_academico_' . $alumno->dni . '.pdf');
     }
+
 
 
     public function certificado_matricula($alumno_dni)
@@ -117,27 +136,47 @@ class RecordController extends Controller
     }
     public function certificado($alumno_dni)
     {
-        // Obtener el alumno y sus notas
+        // Obtener el alumno
         $alumno = Alumno::findOrFail($alumno_dni);
-        $notas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-        $seccionId = $alumno->maestria->secciones->first()->id;
+        // Obtener asignaturas de la maestría
+        $asignaturas = $alumno->maestria->asignaturas ?? collect();
 
-        $totalHoras = $notas->sum(function ($nota) {
-            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
+        // Obtener notas registradas con relaciones
+        $notasRegistradas = $alumno->notas()->with('asignatura', 'docente')->get();
+
+        // Crear estructura completa de asignaturas (con o sin nota)
+        $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas) {
+            $notaExistente = $notasRegistradas->firstWhere('asignatura_id', $asignatura->id);
+
+            if ($notaExistente) {
+                return $notaExistente;
+            }
+
+            $notaFalsa = new \stdClass();
+            $notaFalsa->asignatura = $asignatura;
+            $notaFalsa->docente = $asignatura->docente ?? null;
+            $notaFalsa->total = null;
+
+            return $notaFalsa;
+        });
+
+        // Total de horas
+        $totalHoras = $notasCompletas->sum(function ($nota) {
+            return $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48);
         });
 
         $matricula = $alumno->matriculas->first();
         $cohorte = $matricula->cohorte;
 
+        // Extraer número romano del cohorte
         preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte->nombre, $matches);
         $numeroRomano = $matches[1] ?? '';
 
         $periodo_academico = $cohorte->periodo_academico;
-
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Generar el código QR con URL de visualización (si deseas usarlo aún)
+        // Código QR
         $url = route('certificado', $alumno->dni);
         $qrCode = QrCode::format('png')
             ->size(100)
@@ -146,14 +185,15 @@ class RecordController extends Controller
             ->errorCorrection('H')
             ->generate($url);
 
+        // Coordinador
         $coordinadorDni = $alumno->maestria->coordinador;
         $coordinador = Docente::where('dni', $coordinadorDni)->first();
         $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
-        // Generar y retornar el PDF en línea (sin guardar)
+        // Renderizar PDF
         $pdf = Pdf::loadView('record.certificacion', compact(
             'alumno',
-            'notas',
+            'notasCompletas',
             'periodo_academico',
             'cohorte',
             'totalHoras',
@@ -165,6 +205,7 @@ class RecordController extends Controller
 
         return $pdf->stream('certificado_' . $alumno->dni . '.pdf');
     }
+
 
     public function certificado_culminacion($alumno_dni)
     {

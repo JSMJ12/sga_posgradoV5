@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Alumno;
 use App\Models\Maestria;
 use App\Models\Retiro;
+use App\Models\Docente;
 use App\Models\Secretario;
 use App\Models\TasaTitulacion;
 use Illuminate\Support\Facades\Auth;
@@ -22,48 +23,66 @@ class AlumnoController extends Controller
 
     public function index(Request $request)
     {
-        // Verificar si la solicitud es AJAX para DataTables
         if ($request->ajax()) {
             $user = auth()->user();
 
             // Filtrar los alumnos según el rol del usuario
             if ($user->hasRole('Administrador')) {
-                $query = Alumno::with('maestria');
-            } else {
+                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula');
+            } elseif ($user->hasRole('Secretario')) {
                 $secretario = Secretario::where('nombre1', $user->name)
                     ->where('apellidop', $user->apellido)
                     ->where('email', $user->email)
                     ->firstOrFail();
+
                 $maestriasIds = $secretario->seccion->maestrias->pluck('id');
-                $query = Alumno::whereIn('maestria_id', $maestriasIds);
+                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
+                    ->whereIn('maestria_id', $maestriasIds);
+            } elseif ($user->hasRole('Coordinador')) {
+                $docente = Docente::where('nombre1', $user->name)
+                    ->where('apellidop', $user->apellido)
+                    ->where('email', $user->email)
+                    ->firstOrFail();
+
+                $maestria = $docente->maestria->first();
+                if (!$maestria) {
+                    abort(403, 'El coordinador no tiene ninguna maestría asignada.');
+                }
+
+                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
+                    ->where('maestria_id', $maestria->id);
+            } else {
+                abort(403, 'No autorizado');
             }
 
-            // Configurar DataTables con las columnas necesarias
+            // Configurar DataTables
             return datatables()->eloquent($query)
                 ->addColumn('maestria_nombre', function ($alumno) {
-                    return $alumno->maestria ? $alumno->maestria->nombre : 'Sin Maestría';
+                    return $alumno->maestria->nombre ?? 'Sin Maestría';
                 })
                 ->addColumn('foto', function ($alumno) {
                     return '<img src="' . asset('storage/' . $alumno->image) . '" alt="Foto de ' . $alumno->nombre1 . '" class="img-thumbnail rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">';
                 })
                 ->addColumn('nombre_completo', function ($alumno) {
-                    return "{$alumno->nombre1}<br>{$alumno->nombre2}<br>{$alumno->apellidop}<br>{$alumno->apellidom}";
+                    return trim("{$alumno->nombre1} {$alumno->nombre2} {$alumno->apellidop} {$alumno->apellidom}");
+                })
+                ->filterColumn('nombre_completo', function ($query, $keyword) {
+                    $query->whereRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) like ?", ["%{$keyword}%"]);
+                })
+                ->orderColumn('nombre_completo', function ($query, $order) {
+                    $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
                 })
                 ->addColumn('acciones', function ($alumno) {
                     $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
 
-                    // Botón Matricular (si no tiene ninguna matrícula)
-                    if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->count() == 0) {
-                        $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular">
-                                        <i class="fas fa-plus-circle"></i>
-                                      </a>';
+                    if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->isEmpty()) {
+                        $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular"><i class="fas fa-plus-circle"></i></a>';
                     }
 
-                    // Botón Ver Matrícula (si ya tiene al menos una matrícula)
                     if ($alumno->matriculas->count() > 0) {
                         $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
-                                        data-id="' . $alumno->dni . '" 
-                                        data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
+                            data-id="' . $alumno->dni . '" 
+                            data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
                             return [
                                 'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
                                 'docente' => $matricula->docente
@@ -74,68 +93,33 @@ class AlumnoController extends Controller
                                 'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
                             ];
                         })) . '\' title="Ver Matrícula">
-                                        <i class="fas fa-eye"></i>
-                                      </button>';
+                            <i class="fas fa-eye"></i>
+                        </button>';
 
-                        $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" 
-                                        target="_blank" 
-                                        class="btn btn-outline-danger btn-sm" 
-                                        title="Ver Certificado de Matrícula">
-                                        <i class="fas fa-file-pdf"></i>
-                                     </a>';
+                        $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
+                        $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
+                        $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
+                        $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
                     }
 
-
-                    // Botón Calificar (solo para administradores y si tiene alguna matrícula)
                     if (auth()->user()->can('dashboard_admin') && $alumno->matriculas->count() > 0) {
-                        $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar">
-                                        <i class="fas fa-pencil-alt"></i>
-                                      </a>';
+                        $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar"><i class="fas fa-pencil-alt"></i></a>';
                     }
 
-                    // Botón Record Académico (si tiene todas las notas de todas las asignaturas)
-                    if (
-                        $alumno->notas->count() > 0 &&
-                        $alumno->maestria &&
-                        $alumno->maestria->asignaturas->count() > 0 &&
-                        $alumno->notas->count() == $alumno->maestria->asignaturas->count()
-                    ) {
-                        $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank">
-                                        <i class="fas fa-file-alt"></i>
-                                      </a>';
-                        $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" 
-                                      target="_blank" 
-                                      class="btn btn-outline-info btn-sm" 
-                                      title="Ver Certificado">
-                                      <i class="fas fa-file-pdf"></i>
-                                   </a>';
-                        $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" 
-                                   target="_blank" 
-                                   class="btn btn-outline-success btn-sm" 
-                                   title="Ver Certificado de culminacion">
-                                   <i class="fas fa-file-pdf"></i>
-                                </a>';
-                    }
-
-                    // Botón Editar (solo para administradores)
                     if (auth()->user()->can('dashboard_admin')) {
-                        $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                      </a>';
+                        $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>';
                     }
 
                     $acciones .= '</div>';
                     return $acciones;
                 })
-
-
-                ->rawColumns(['foto', 'acciones', 'nombre_completo']) // Permitir HTML en estas columnas
-                ->toJson();
+                ->rawColumns(['foto', 'acciones'])
+                ->make(true);
         }
 
-        // Retornar la vista si no es una solicitud AJAX
         return view('alumnos.index');
     }
+
 
     public function create()
     {

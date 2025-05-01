@@ -55,11 +55,8 @@
                         searchable: false
                     },
                     {
-                        data: null,
-                        render: function(data) {
-                            return `${data.apellidop} ${data.apellidom} <br> ${data.nombre1} ${data.nombre2}`;
-                        },
-                        name: 'nombres'
+                        data: 'nombre_completo',
+                        name: 'nombre_completo'
                     },
                     {
                         data: 'email',

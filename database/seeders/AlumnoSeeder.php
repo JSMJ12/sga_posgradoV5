@@ -25,7 +25,7 @@ class AlumnoSeeder extends Seeder
         $arancel = $maestria->arancel;
 
         // Crear 5 alumnos
-        foreach (range(1, 5) as $index) {
+        foreach (range(1, 25) as $index) {
             // Generar un número de registro secuencial
             $nuevoRegistro = Alumno::where('maestria_id', $maestria->id)->count() + 1;
 

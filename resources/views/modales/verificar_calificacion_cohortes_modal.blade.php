@@ -14,6 +14,7 @@
                                 <th>Docente</th>
                                 <th>Asignatura</th>
                                 <th>Calificado</th>
+                                <th>Notas Alumnos</th>
                             </tr>
                         </thead>
                         <tbody id="verificacionesTableBody">

@@ -11,6 +11,7 @@ use App\Models\Aula;
 use App\Models\Docente;
 use App\Exports\CohorteAlumnosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Nota;
 use App\Models\CalificacionVerificacion;
 
 class CohorteController extends Controller
@@ -108,21 +109,47 @@ class CohorteController extends Controller
             ->where('cohorte_id', $cohorteId)
             ->get();
 
-      
-
         // Armar la respuesta combinando asignaturas y verificaciones
-        $resultado = $asignaturas->map(function ($asignatura) use ($verificaciones) {
+        $resultado = $asignaturas->map(function ($asignatura) use ($verificaciones, $cohorteId) {
             $verificacion = $verificaciones->firstWhere('asignatura_id', $asignatura->id);
+
+            $docente = $verificacion?->docente;
+
+            // Verificar si existen notas
+
+            $notasExisten = false;
+            $pdfNotasUrl = null;
+
+            if ($docente) {
+                $notasExisten = Nota::where([
+                    'docente_dni' => $docente->dni,
+                    'asignatura_id' => $asignatura->id,
+                    'cohorte_id' => $cohorteId,
+                ])->exists();
+
+                if ($notasExisten) {
+                    $pdfNotasUrl = route('pdf.notas.asignatura', [
+                        'docenteId' => $docente->dni,
+                        'asignaturaId' => $asignatura->id,
+                        'cohorteId' => $cohorteId,
+                        'aulaId' => $verificacion->aula_id ?? null,
+                        'paraleloId' => $verificacion->paralelo_id ?? null,
+                    ]);
+                }
+            }
 
             return [
                 'asignatura' => $asignatura->nombre,
-                'docente' => $verificacion?->docente?->getFullNameAttribute() ?? 'Sin docente',
+                'docente' => $docente?->getFullNameAttribute() ?? 'Sin docente',
                 'calificado' => $verificacion?->calificado ?? false,
+                'notas_existen' => $notasExisten,
+                'pdf_notas_url' => $pdfNotasUrl,
             ];
         });
 
         return response()->json($resultado);
     }
+
 
     public function create()
     {

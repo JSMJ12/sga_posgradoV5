@@ -363,12 +363,6 @@ return [
             'can' => 'dashboard_secretario_epsu',
         ],
         [
-            'text' => 'Pagos de Matricula',
-            'route'  => 'pagos.matricula',
-            'icon' => 'fas fa-fw fa-dollar-sign',
-            'can' => 'dashboard_secretario_epsu',
-        ],
-        [
             'text' => 'Pagos',
             'route' => 'pagos.pago',
             'icon' => 'fas fa-fw fa-dollar-sign',
@@ -402,19 +396,19 @@ return [
             'text' => 'Docentes',
             'route'  => 'docentes.index',
             'icon' => 'fas fa-fw fa-chalkboard-teacher',
-            'can' => 'secretarios.crear'
+            'can' => ['secretarios.crear', 'dashboard_coordinador']
         ],
         [
             'text' => 'Postulantes',
             'icon' => 'fas fa-book-reader',
             'route'  => 'postulaciones.index',
-            'can' => 'secretarios.crear'
+            'can' => ['secretarios.crear', 'dashboard_coordinador']
         ],
         [
             'text' => 'Alumnos',
             'route'  => 'alumnos.index',
             'icon' => 'fas fa-fw fa-user-graduate',
-            'can' => 'secretarios.crear'
+            'can' => ['secretarios.crear', 'dashboard_coordinador']
         ],
         [
             'text' => 'Examen Complexivo',
@@ -451,13 +445,19 @@ return [
             'text' => 'Cohortes',
             'route'  => 'cohortes.index',
             'icon' => 'fas fa-university',
-            'can' => 'secretarios.crear'
+            'can' => ['secretarios.crear', 'dashboard_coordinador']
         ],
         [
             'text' => 'Secciones',
             'route'  => 'secciones.index',
             'icon' => 'fas fa-cubes',
             'can' => 'dashboard_admin'
+        ],
+        [
+            'text' => 'Descuento',
+            'route' => 'descuentos.index',
+            'icon' => 'fa fa-percent',
+            'can' => 'dashboard_admin',
         ],
     ],
 

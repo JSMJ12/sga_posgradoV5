@@ -14,7 +14,7 @@ class Postulante extends Model
     protected $primaryKey = 'dni';
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = [
         'dni',
         'apellidop',
@@ -54,6 +54,8 @@ class Postulante extends Model
         'status',
         'carta_aceptacion',
         'pago_matricula',
+        'monto_matricula',
+        'monto_inscripcion',
     ];
     public function maestria()
     {
@@ -62,5 +64,21 @@ class Postulante extends Model
     public function documentos_verificados()
     {
         return $this->hasMany(DocumentoPostulante::class, 'dni_postulante', 'dni');
+    }
+    protected static function booted()
+    {
+        static::creating(function ($postulante) {
+            if ($postulante->maestria) {
+                $postulante->monto_matricula = $postulante->maestria->monto_matricula ?? 0;
+                $postulante->monto_inscripcion = $postulante->maestria->monto_inscripcion ?? 0;
+            }
+        });
+
+        static::updating(function ($postulante) {
+            if ($postulante->isDirty('maestria_id') && $postulante->maestria) {
+                $postulante->monto_matricula = $postulante->maestria->monto_matricula ?? 0;
+                $postulante->monto_inscripcion = $postulante->maestria->monto_inscripcion ?? 0;
+            }
+        });
     }
 }

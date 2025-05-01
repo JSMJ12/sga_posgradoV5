@@ -5,9 +5,14 @@
     <meta charset="UTF-8">
     <title>RECORD ACADÉMICO</title>
     <style>
+        @page {
+            margin: 2.54cm;
+        }
+
         body {
             font-family: "Times New Roman", serif;
             font-size: 11pt;
+
             margin: 40px;
             padding: 0;
         }
@@ -21,19 +26,20 @@
             text-align: center;
             position: relative;
             margin-bottom: 10px;
+            margin-top: -60px;
         }
 
         .logo {
             width: 64px;
             position: absolute;
-            top: -35px;
+            top: -25px;
             left: 0;
         }
 
         .seal {
             width: 104px;
             position: absolute;
-            top: -35;
+            top: -25;
             right: 0;
         }
 
@@ -48,9 +54,10 @@
         }
 
         .divider {
-            height: 3px;
-            background-color: gold;
-            margin: 10px 0 20px;
+            width: 100%;
+            height: 2px;
+            background-color: goldenrod;
+            margin: 10px 0;
         }
 
         .certificate-title {
@@ -108,13 +115,39 @@
 
 <body>
     <div class="container">
-        <div class="header">
-            <img src="{{ public_path() . '/images/unesum.png' }}" alt="Logo" class="logo">
-            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="Sello" class="seal">
-            <div class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
-            <div class="institute">INSTITUTO DE POSGRADO</div>
-            <div class="coordinator">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</div>
+        <img src="{{ public_path() . '/images/unesum.png' }}" alt="Logo" class="logo">
+        <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="Sello" class="seal">
+        <div class="header" style="text-align: center;">
+            <div class="university-name" style="font-weight: bold;">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
+            <div class="institute" style="font-weight: bold;">INSTITUTO DE POSGRADO</div>
+
+            <div class="coordinator" style="margin-top: 5px;">
+                COORDINACIÓN DE LA
+                @php
+                    $nombreMaestria = strtoupper($alumno->maestria->nombre);
+                    $palabras = explode(' ', $nombreMaestria);
+                    $lineas = [];
+                    $lineaActual = '';
+
+                    foreach ($palabras as $palabra) {
+                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
+                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
+                        } else {
+                            $lineas[] = $lineaActual;
+                            $lineaActual = $palabra;
+                        }
+                    }
+                    if ($lineaActual) {
+                        $lineas[] = $lineaActual;
+                    }
+                @endphp
+
+                @foreach ($lineas as $linea)
+                    <div style="text-transform: uppercase;">{{ $linea }}</div>
+                @endforeach
+            </div>
         </div>
+
 
         <div class="divider"></div>
 
@@ -144,15 +177,15 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($notas as $index => $nota)
+                @foreach ($notasCompletas as $index => $nota)
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $nota->asignatura->nombre }}</td>
                         <td>{{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}</td>
-                        <td>{{ $nota->total }}</td>
+                        <td>{{ $nota->total ?? '--' }}</td>
                         <td>
                             @if (is_null($nota->total))
-                                {{-- vacío --}}
+                                {{ '--' }}
                             @elseif ($nota->total >= 7)
                                 APROBADO
                             @else
@@ -168,21 +201,21 @@
             <strong>Total de horas:</strong> {{ $totalHoras }}<br>
             <strong>Total de asignaturas aprobadas:</strong> {{ $cantidadAsignaturas }}<br>
             <strong>Promedio general:</strong> {{ $promedio ? number_format($promedio, 2) : 'N/A' }}
-        </p>        
+        </p>
 
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
 
-        <div class="firmante" style="margin-top: 110px; text-align: center;">
+        <div style="margin-top: 100px; text-align: center;">
             <div
-                style="display: inline-block; border-top: 1px solid black; width: fit-content; padding: 0 10px; margin-bottom: 5px;">
-                <b>{{ $nombreCompleto }}</b>
+                style="border-top: 1px solid black; display: inline-block; padding: 5px 20px; font-weight: bold; text-transform: uppercase;">
+                {{ strtoupper($nombreCompleto) }}
             </div>
-            <div>Coordinador del Programa de {{ ucfirst(strtolower($alumno->maestria->nombre)) }}</div>
+            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
+            </div>
         </div>
 
-        <div id="qr-code">
-            <img src="data:image/png;base64,{{ base64_encode($qrCode) }}" alt="QR">
-        </div>
+
     </div>
 </body>
 

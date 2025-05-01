@@ -24,6 +24,7 @@
         .header {
             text-align: center;
             margin-bottom: 15px;
+            margin-top: -30px;
         }
 
         .logo {
@@ -108,7 +109,30 @@
         <div class="header">
             <div class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
             <div class="institute">INSTITUTO DE POSGRADO</div>
-            <div class="program-title">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</div>
+            <div class="program-title">COORDINACIÓN DE LA 
+                @php
+                    $nombreMaestria = strtoupper($alumno->maestria->nombre);
+                    $palabras = explode(' ', $nombreMaestria);
+                    $lineas = [];
+                    $lineaActual = '';
+
+                    foreach ($palabras as $palabra) {
+                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
+                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
+                        } else {
+                            $lineas[] = $lineaActual;
+                            $lineaActual = $palabra;
+                        }
+                    }
+                    if ($lineaActual) {
+                        $lineas[] = $lineaActual;
+                    }
+                @endphp
+
+                @foreach ($lineas as $linea)
+                    <div style="text-transform: uppercase;">{{ $linea }}</div>
+                @endforeach
+            </div>
         </div>
 
         <div class="divider"></div>
@@ -141,7 +165,9 @@
             <div style="display: inline-block; border-top: 1px solid black; width: fit-content; padding: 0 10px; margin-bottom: 5px;">
                 <b>{{ $nombreCompleto }}</b>
             </div>
-            <div>Coordinador del Programa de {{ ucfirst(strtolower($alumno->maestria->nombre)) }}</div>
+            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+                COORDINADOR DEL PROGRAMA DE  {{ strtoupper($alumno->maestria->nombre)}}
+            </div>
         </div>              
 
         <img class="qr" src="data:image/png;base64,{{ base64_encode($qrCode) }}">

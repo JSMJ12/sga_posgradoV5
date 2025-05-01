@@ -10,11 +10,17 @@ class Pago extends Model
     use HasFactory;
 
     protected $fillable = [
-        'dni', 'monto', 'fecha_pago', 'archivo_comprobante', 'verificado','modalidad_pago',
+        'user_id',
+        'monto',
+        'fecha_pago',
+        'archivo_comprobante',
+        'verificado',
+        'modalidad_pago',
+        'tipo_pago',
     ];
 
-    public function alumno()
+    public function user()
     {
-        return $this->belongsTo(Alumno::class, 'dni', 'dni');
+        return $this->belongsTo(User::class);
     }
 }

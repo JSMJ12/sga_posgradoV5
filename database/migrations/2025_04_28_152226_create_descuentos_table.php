@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('periodos_academicos', function (Blueprint $table) {
+        Schema::create('descuentos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->enum('status', ['ACTIVO', 'INACTIVO', 'INSCRIPCION'])->default('ACTIVO');
-            $table->date('fecha_inicio');
-            $table->date('fecha_fin');
+            $table->integer('porcentaje'); // porcentaje entero
+            $table->boolean('activo')->default(1);
             $table->timestamps();
         });
+        
     }
 
     /**
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('periodos_academicos');
+        Schema::dropIfExists('descuentos');
     }
 };

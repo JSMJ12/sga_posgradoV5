@@ -8,6 +8,7 @@ use App\Models\Maestria;
 use App\Models\Docente;
 use App\Models\Postulante;
 use App\Models\Pago;
+use App\Models\User;
 
 class CoordinadorController extends Controller
 {
@@ -15,9 +16,9 @@ class CoordinadorController extends Controller
     {
         $this->middleware('auth');
     }
+
     public function index(Request $request)
     {
-        // Obtener al usuario autenticado y su maestría
         $user = auth()->user();
         $docente = Docente::where('email', $user->email)->first();
 
@@ -26,13 +27,8 @@ class CoordinadorController extends Controller
         }
 
         $maestria = $docente->maestria->first();
-
-        // Obtener los alumnos, postulantes y otras estadísticas
-        $alumnos = Alumno::where('maestria_id', $maestria->id)->get();
+        $alumnos = Alumno::where('maestria_id', $maestria->id)->with('matriculas.cohorte')->get();
         $cantidadPostulantes = Postulante::where('maestria_id', $maestria->id)->count();
-        $matriculadosPorMaestria = Maestria::withCount('alumnos')->get();
-        $asignaturas = $maestria->asignaturas;
-
         $totalAlumnos = $alumnos->count();
         $totalPostulantes = $cantidadPostulantes;
         $totalDocentes = Docente::whereHas('asignaturas', function ($query) use ($maestria) {
@@ -41,57 +37,52 @@ class CoordinadorController extends Controller
             });
         })->count();
 
-        // Obtener los pagos de los alumnos
-        $pagos = Pago::with(['alumno.maestria', 'alumno.matriculas.cohorte'])
-            ->where('verificado', '1')
-            ->whereHas('alumno.maestria', function ($query) use ($maestria) {
-                $query->where('id', $maestria->id);
-            })
-            ->orderBy('fecha_pago')
-            ->get();
+        $cohortesMaestria = $maestria->cohortes()->with('matriculas.alumno')->get();
+        $cohortes = [];
+        $deudaArancelPorCohorte = [];
+        $deudaMatriculaPorCohorte = [];
+        $deudaInscripcionPorCohorte = [];
+        $recaudadoArancelPorCohorte = [];
+        $recaudadoMatriculaPorCohorte = [];
+        $recaudadoInscripcionPorCohorte = [];
 
-        // Agrupar los pagos por cohorte
-        $pagosPorCohorte = $pagos->groupBy(function ($pago) {
-            $cohorte = optional($pago->alumno->matriculas->first())->cohorte;
-            return $cohorte ? $cohorte->nombre : 'Sin Cohorte';
-        });
+        foreach ($cohortesMaestria as $cohorte) {
+            $cohortes[] = $cohorte->nombre;
+            $alumnosUnicos = $cohorte->matriculas->unique('alumno_dni');
+            $cantidadAlumnos = $alumnosUnicos->count();
+            $pagosCohorte = collect();
 
-        // Calcular el monto total pendiente por cohorte
-        $montoPendientePorCohorte = $alumnos->groupBy(function ($alumno) {
-            $cohorte = optional($alumno->matriculas->first())->cohorte;
-            return $cohorte ? $cohorte->nombre : 'Sin Cohorte';
-        });
-        // Sumar los montos pendientes (deuda) por cohorte
-        $montoPendientePorCohorte = $montoPendientePorCohorte->map(function ($alumnosPorCohorte) {
-            return $alumnosPorCohorte->sum(function ($alumno) {
-                return $alumno->monto_total; 
-            });
-        });
+            foreach ($alumnosUnicos as $matricula) {
+                $alumno = $matricula->alumno;
+                if ($alumno) {
+                    $userPago = User::where('email', $alumno->email_institucional)->first();
+                    if ($userPago) {
+                        $pagosVerificados = $userPago->pagos()->where('verificado', '1')->get();
+                        $pagosCohorte = $pagosCohorte->merge($pagosVerificados);
+                    }
+                }
+            }
 
+            $deudaArancel = $cantidadAlumnos * $maestria->arancel;
+            $deudaMatricula = $cantidadAlumnos * $maestria->matricula;
+            $deudaInscripcion = $cantidadAlumnos * $maestria->inscripcion;
+            $recaudadoArancel = $pagosCohorte->where('tipo_pago', 'arancel')->sum('monto');
+            $recaudadoMatricula = $pagosCohorte->where('tipo_pago', 'matricula')->sum('monto');
+            $recaudadoInscripcion = $pagosCohorte->where('tipo_pago', 'inscripcion')->sum('monto');
 
-        // Calcular el monto total y la cantidad de pagos por cohorte
-        $montoPorCohorte = $pagosPorCohorte->map->sum('monto');
-        $cantidadPorCohorte = $pagosPorCohorte->map->count();
+            $deudaArancelPorCohorte[$cohorte->nombre] = $deudaArancel;
+            $deudaMatriculaPorCohorte[$cohorte->nombre] = $deudaMatricula;
+            $deudaInscripcionPorCohorte[$cohorte->nombre] = $deudaInscripcion;
+            $recaudadoArancelPorCohorte[$cohorte->nombre] = $recaudadoArancel;
+            $recaudadoMatriculaPorCohorte[$cohorte->nombre] = $recaudadoMatricula;
+            $recaudadoInscripcionPorCohorte[$cohorte->nombre] = $recaudadoInscripcion;
+        }
 
-        // Preparar los datos para el gráfico
-        $cohortes = $montoPendientePorCohorte->keys();
-        $monto = $montoPendientePorCohorte->values(); // Usar el monto pendiente para el gráfico
-        $cantidad = $cantidadPorCohorte->values();
-
-        // Retornar los datos a la vista
         return view('dashboard.coordinador', compact(
-            'alumnos',
-            'matriculadosPorMaestria',
-            'totalAlumnos',
-            'totalPostulantes',
-            'maestria',
-            'totalDocentes',
-            'asignaturas',
-            'cohortes',
-            'monto',
-            'cantidad',
-            'montoPendientePorCohorte'
+            'maestria', 'totalAlumnos', 'totalDocentes', 'totalPostulantes',
+            'cohortes', 'deudaArancelPorCohorte', 'deudaMatriculaPorCohorte',
+            'deudaInscripcionPorCohorte', 'recaudadoArancelPorCohorte', 
+            'recaudadoMatriculaPorCohorte', 'recaudadoInscripcionPorCohorte'
         ));
     }
-
 }

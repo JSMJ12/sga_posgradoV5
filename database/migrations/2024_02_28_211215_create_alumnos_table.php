@@ -50,7 +50,6 @@ return new class extends Migration
             $table->string('pdf_hojavida')->nullable();
             $table->string('carta_aceptacion')->nullable();
             $table->string('pago_matricula')->nullable();
-            $table->string('descuento')->nullable();
             $table->decimal('monto_total', 10, 2);
             $table->string('documento')->nullable();
             $table->foreignId('maestria_id')->constrained('maestrias')->onDelete('cascade');

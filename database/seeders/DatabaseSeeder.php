@@ -2,10 +2,7 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
-use App\Models\Alumno;
-use App\Models\Maestria;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -19,13 +16,15 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AssignSecretarioCoordinadorPermissionSeeder::class,
             UserSeeder::class, 
-            /*DocenteSeeder::class,
+            DocenteSeeder::class,
             MaestriaSeeder::class,
             PeriodoAcademicoSeeder::class,
             AulaSeeder::class,
             AsignaturaSeeder::class,
             CohorteSeeder::class,
-            AlumnoSeeder::class,*/
+            AlumnoSeeder::class,
+            PostulantesTableSeeder::class,
+
         ]);
     }
 }

@@ -5,9 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Pago;
 use Carbon\Carbon;
+use App\Models\Postulante;
 use Barryvdh\DomPDF\Facade\Pdf;
-
-
 use App\Models\Alumno;
 
 class DashboardSecretarioEpsuController extends Controller
@@ -23,74 +22,92 @@ class DashboardSecretarioEpsuController extends Controller
         $mes = Carbon::now()->startOfMonth();
         $anio = Carbon::now()->startOfYear();
 
-        $pagos = Pago::with(['alumno.maestria'])
-            ->where('verificado', '1')
+        $pagos = Pago::where('verificado', '1')
+            ->with('user') // cargamos el user directamente
             ->orderBy('fecha_pago')
             ->get();
 
+        foreach ($pagos as $pago) {
+            // Cargar manualmente el alumno y postulante a partir del email del user
+            $email = $pago->user->email;
+
+            $alumno = Alumno::with(['maestria', 'matriculas.cohorte'])
+                ->where('email_institucional', $email)
+                ->first();
+
+            $postulante = Postulante::with('maestria')
+                ->where('correo_electronico', $email)
+                ->first();
+
+            // Guardar en el pago para acceder fácilmente
+            $pago->alumno_data = $alumno;
+            $pago->postulante_data = $postulante;
+        }
+
+        // Agrupar por cohorte
         $pagosPorCohorte = $pagos->groupBy(function ($pago) {
-            $cohorte = optional($pago->alumno->matriculas->first())->cohorte;
+            $cohorte = optional($pago->alumno_data?->matriculas->first())->cohorte;
             return $cohorte ? $cohorte->nombre : 'Sin Cohorte';
         });
 
         $montoPorCohorte = $pagosPorCohorte->map->sum('monto');
-
         $cantidadPorCohorte = $pagosPorCohorte->map->count();
 
+        // Agrupar por maestría
         $pagosPorMaestria = $pagos->groupBy(function ($pago) {
-            return $pago->alumno->maestria->nombre ?? 'Sin Maestría';
+            return $pago->alumno_data?->maestria?->nombre ??
+                $pago->postulante_data?->maestria?->nombre ??
+                'Sin Maestría';
         });
 
         $montoPorMaestria = $pagosPorMaestria->map->sum('monto');
         $cantidadPorMaestria = $pagosPorMaestria->map->count();
 
-        $pagosPorDia = $pagos->filter(function ($pago) use ($hoy) {
-            return Carbon::parse($pago->fecha_pago)->isToday();
-        })->sum('monto');
+        // Estadísticas por fecha
+        $pagosPorDia = $pagos->filter(fn($pago) => Carbon::parse($pago->fecha_pago)->isToday())->sum('monto');
         $pagosPorMes = $pagos->where('fecha_pago', '>=', $mes)->sum('monto');
         $pagosPorAnio = $pagos->where('fecha_pago', '>=', $anio)->sum('monto');
 
-        $cantidadPorDia = $pagos->filter(function ($pago) use ($hoy) {
-            return \Carbon\Carbon::parse($pago->fecha_pago)->isToday();
-        })->count();
-
+        $cantidadPorDia = $pagos->filter(fn($pago) => Carbon::parse($pago->fecha_pago)->isToday())->count();
         $cantidadPorMes = $pagos->where('fecha_pago', '>=', $mes)->count();
         $cantidadPorAnio = $pagos->where('fecha_pago', '>=', $anio)->count();
 
+        // Pagos por verificar y alumnos pendientes
         $pagosPorVerificar = Pago::where('verificado', false)->count();
 
-        $alumnosPendientes = Pago::where('verificado', false)
-            ->with('alumno')
-            ->get()
-            ->unique('alumno_id');
+        $pagosPendientes = Pago::where('verificado', false)
+            ->with('user') // Ahora solo usuario
+            ->get();
 
+        $alumnosPendientes = collect();
+        foreach ($pagosPendientes as $pendiente) {
+            $email = $pendiente->user->email;
+            $alumno = Alumno::where('email_institucional', $email)->first();
+            if ($alumno) {
+                $alumnosPendientes->push($alumno);
+            }
+        }
+        $alumnosPendientes = $alumnosPendientes->unique('id');
+
+        // Estadísticas por Maestría + Cohorte
         $maestriasConCohortes = [];
 
         foreach ($pagos as $pago) {
-            $maestriaNombre = $pago->alumno->maestria->nombre ?? 'Sin Maestría';
-            $cohorte = optional($pago->alumno->matriculas->first())->cohorte;
+            $alumno = $pago->alumno_data;
+            if (!$alumno) continue;
 
-            if (!$cohorte) {
-                continue;
-            }
+            $maestriaNombre = $alumno->maestria->nombre ?? 'Sin Maestría';
+            $cohorte = optional($alumno->matriculas->first())->cohorte;
+            if (!$cohorte) continue;
 
             $cohorteNombre = $cohorte->nombre;
 
-            if (!isset($maestriasConCohortes[$maestriaNombre])) {
-                $maestriasConCohortes[$maestriaNombre] = [];
-            }
-
-            if (!isset($maestriasConCohortes[$maestriaNombre][$cohorteNombre])) {
-                $maestriasConCohortes[$maestriaNombre][$cohorteNombre] = [
-                    'monto' => 0,
-                    'cantidad' => 0,
-                ];
-            }
-
+            $maestriasConCohortes[$maestriaNombre][$cohorteNombre] ??= ['monto' => 0, 'cantidad' => 0];
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['monto'] += $pago->monto;
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['cantidad'] += 1;
         }
 
+        // Retorno
         if ($request->ajax()) {
             return response()->json([
                 'pagosPorDia' => $pagosPorDia,
@@ -124,29 +141,47 @@ class DashboardSecretarioEpsuController extends Controller
             'maestriasConCohortes' => $maestriasConCohortes,
         ]);
     }
+
+
     public function generarPDF(Request $request, $cohorte)
     {
-        // Obtener pagos verificados de la cohorte específica con la relación 'alumno'
-        $pagos = Pago::where('verificado', true)
-            ->whereHas('alumno.matriculas.cohorte', function ($query) use ($cohorte) {
-                $query->where('nombre', $cohorte);
-            })
-            ->with('alumno.maestria')
-            ->get();
+        // Obtener pagos verificados
+        $pagos = Pago::with('user')->where('verificado', true)->get();
 
-        if ($pagos->isEmpty()) {
+        // Crear una colección de pagos que sí pertenecen a la cohorte
+        $pagosFiltrados = collect();
+
+        foreach ($pagos as $pago) {
+            $alumno = Alumno::with(['maestria', 'matriculas.cohorte'])
+                ->where('email_institucional', $pago->user->email)
+                ->first();
+
+            // Verificar si el alumno está en la cohorte indicada
+            if ($alumno && $alumno->matriculas->contains(function ($matricula) use ($cohorte) {
+                return optional($matricula->cohorte)->nombre === $cohorte;
+            })) {
+                // Agregamos los datos temporales
+                $pago->alumno_data = $alumno;
+                $pagosFiltrados->push($pago);
+            }
+        }
+
+        if ($pagosFiltrados->isEmpty()) {
             return back()->with('error', 'No hay pagos registrados para esta cohorte.');
         }
 
-        // Obtener la primera maestría asociada a la cohorte
-        $primerAlumno = $pagos->first()->alumno;
+        // Obtener la primera maestría
+        $primerAlumno = $pagosFiltrados->first()->alumno_data;
         $maestria = optional($primerAlumno->maestria)->nombre ?? 'Desconocida';
         $codigoMaestria = optional($primerAlumno->maestria)->codigo ?? '0000';
 
         $totalMontoPagado = 0;
 
-        $pagosAgrupados = $pagos->groupBy('alumno.dni')->map(function ($pagosPorAlumno) use (&$totalMontoPagado) {
-            $alumno = $pagosPorAlumno->first()->alumno;
+        // Agrupar pagos por alumno
+        $pagosAgrupados = $pagosFiltrados->groupBy(function ($p) {
+            return $p->alumno_data->dni ?? 'sin_dni';
+        })->map(function ($pagosPorAlumno) use (&$totalMontoPagado) {
+            $alumno = $pagosPorAlumno->first()->alumno_data;
             $montoTotal = $alumno->monto_total ?? 0;
             $montoPagado = $pagosPorAlumno->sum('monto');
             $totalMontoPagado += $montoPagado;
@@ -160,6 +195,7 @@ class DashboardSecretarioEpsuController extends Controller
             ];
         });
 
+        // Obtener todos los alumnos de la cohorte
         $alumnos = Alumno::whereHas('matriculas.cohorte', function ($query) use ($cohorte) {
             $query->where('nombre', $cohorte);
         })->get();
@@ -169,7 +205,7 @@ class DashboardSecretarioEpsuController extends Controller
         }
 
         $totalDeuda = 0;
-        $totalPagado = $pagos->sum('monto');
+        $totalPagado = $pagosFiltrados->sum('monto');
         $detallesPagos = [];
 
         foreach ($alumnos as $alumno) {
@@ -207,7 +243,19 @@ class DashboardSecretarioEpsuController extends Controller
                     ['label' => 'Deuda', 'backgroundColor' => 'red', 'data' => $deudas],
                 ],
             ],
-            'options' => ['responsive' => true, 'scales' => ['y' => ['beginAtZero' => true]]],
+            'options' => [
+                'responsive' => true,
+                'scales' => ['y' => ['beginAtZero' => true]],
+                'plugins' => [
+                    'datalabels' => [
+                        'anchor' => 'end',
+                        'align' => 'top',
+                        'color' => 'black',
+                        'font' => ['weight' => 'bold'],
+                        'formatter' => 'Math.round',
+                    ]
+                ]
+            ]
         ];
 
         $charturl1 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData1));
@@ -222,12 +270,12 @@ class DashboardSecretarioEpsuController extends Controller
                     [
                         'label' => 'Deuda por Cobrar',
                         'backgroundColor' => 'red',
-                        'data' => [$totalDeuda, 0]  // Asignando la deuda a "Total Deuda"
+                        'data' => [$totalDeuda, 0]
                     ],
                     [
                         'label' => 'Total Pagado',
                         'backgroundColor' => 'green',
-                        'data' => [0, $totalMontoPagado]  // Asignando el pago a "Total Pagado"
+                        'data' => [0, $totalMontoPagado]
                     ],
                 ],
             ],
@@ -237,15 +285,22 @@ class DashboardSecretarioEpsuController extends Controller
                     'y' => [
                         'beginAtZero' => true,
                         'ticks' => [
-                            'stepSize' => 1000,  // De mil en mil en el eje Y
-                            'callback' => function ($value) {
-                                return number_format($value);  // Formato de números
-                            }
+                            'stepSize' => 1000
                         ],
                     ],
                 ],
-            ],
+                'plugins' => [
+                    'datalabels' => [
+                        'anchor' => 'end',
+                        'align' => 'top',
+                        'color' => 'black',
+                        'font' => ['weight' => 'bold'],
+                        'formatter' => 'Math.round',
+                    ]
+                ]
+            ]
         ];
+
         $charturl2 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData2));
         file_put_contents($chartPath2, file_get_contents($charturl2));
 

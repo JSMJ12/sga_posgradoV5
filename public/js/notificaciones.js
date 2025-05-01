@@ -409,6 +409,51 @@ if (userId) {
         } else {
             console.log("❌ No hay mensaje de archivo en los datos:", data);
         }
+
+    });
+
+    //Evento: Pago rechazado
+
+    sistemaChannel.bind('pago.rechazado', function (data) {
+        console.log('📢 Notificación de pago rechazado:', data);
+
+        if (data.message) {
+            // 🔔 Sonido
+            playNotificationSound();
+
+            // 📨 Toastr
+            toastr.danger(
+                `<div class="notification-content">
+                    <i class="fas fa-file-upload text-green-500"></i>
+                    <span><strong>${data.message}</strong></span><br>
+                    <small><i class="fas fa-clock"></i> ${currentTime}</small>
+                </div>`,
+                'Pago eliminado', {
+                closeButton: true,
+                progressBar: true,
+                timeOut: 5000,
+                positionClass: 'toast-top-right',
+                enableHtml: true
+            }
+            );
+
+            // Actualizar el contador de notificaciones
+            sistemaCount++;
+            document.getElementById('sistema-badge').innerText = sistemaCount;
+            document.getElementById('sistema-header').innerText = `${sistemaCount} Notificaciones del sistema`;
+            const nuevaNoti = `
+                <a href="#" class="dropdown-item">
+                    <i class="fas fa-info-circle text-info mr-2"></i>
+                    ${data.message}
+                    <span class="float-right text-muted text-sm">Justo ahora</span>
+                </a>
+                <div class="dropdown-divider"></div>
+            `;
+            document.getElementById('sistema-lista').insertAdjacentHTML('afterbegin', nuevaNoti);
+
+        } else {
+            console.log("❌ No hay mensaje de archivo en los datos:", data);
+        }
     });
 
 }

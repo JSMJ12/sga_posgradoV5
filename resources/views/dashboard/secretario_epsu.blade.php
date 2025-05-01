@@ -48,16 +48,6 @@
             </div>
             <div class="card-body">
                 <p>Total Pendientes: {{ $pagosPorVerificar }}</p>
-                <ul class="list-group">
-                    @foreach ($alumnosPendientes as $pendiente)
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ $pendiente->alumno->nombre1 }} {{ $pendiente->alumno->nombre2 }}
-                            {{ $pendiente->alumno->apellidop }} {{ $pendiente->alumno->apellidom }} (Cedula-Pasaporte:
-                            {{ $pendiente->alumno->dni }})
-                            <span class="badge bg-danger text-white">Pendiente</span>
-                        </li>
-                    @endforeach
-                </ul>
             </div>
         </div>
 

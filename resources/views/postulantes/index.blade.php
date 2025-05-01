@@ -95,14 +95,13 @@
                                                         'Papel de Votación',
                                                         'Título de Universidad',
                                                         'Hoja de Vida',
-                                                        'Carta de Aceptación'
+                                                        'Carta de Aceptación',
                                                     ];
 
                                                     $documentos_verificados = $postulante->documentos_verificados->where(
                                                         'verificado',
                                                         1,
                                                     );
-
                                                     $verificados = $documentos_verificados
                                                         ->pluck('tipo_documento')
                                                         ->toArray();
@@ -110,10 +109,16 @@
                                                     $apto =
                                                         count(array_intersect($documentos_requeridos, $verificados)) ===
                                                         count($documentos_requeridos);
-                                                    $comprobante_pago_verificado = in_array(
-                                                        'Comprobante de Pago',
-                                                        $verificados,
-                                                    );
+
+                                                    // Buscar pago de matrícula verificado
+                                                    $pago_matricula_verificado = \App\Models\Pago::whereHas(
+                                                        'user',
+                                                        function ($query) use ($postulante) {
+                                                            $query->where('email', $postulante->correo_electronico);
+                                                        },
+                                                    )
+                                                        ->where('verificado', true)
+                                                        ->exists();
                                                 @endphp
 
                                                 @if (!$postulante->status && $apto)
@@ -129,7 +134,7 @@
                                                             </button>
                                                         </form>
                                                     </li>
-                                                @elseif ($comprobante_pago_verificado)
+                                                @elseif ($pago_matricula_verificado)
                                                     <li class="list-group-item text-center">
                                                         <form
                                                             action="{{ route('postulantes.convertir', $postulante->dni) }}"
@@ -144,7 +149,6 @@
                                                         </form>
                                                     </li>
                                                 @endif
-
                                             </ul>
                                         </div>
                                     </td>

@@ -7,7 +7,7 @@ use App\Notifications\NewMessageNotification2;
 use Illuminate\Http\Request;
 use App\Models\Message;
 use Yajra\DataTables\DataTables;
-use Illuminate\Support\Str;
+use App\Models\User;
 
 class MessageController extends Controller
 {
@@ -19,21 +19,39 @@ class MessageController extends Controller
     {
         $user = auth()->user();
 
-        // Marca como leída todas las notificaciones del tipo especificado
+        // Marcar notificaciones como leídas
         $user->unreadNotifications->where('type', 'App\Notifications\NewMessageNotification2')->each(function ($notification) {
             $notification->markAsRead();
         });
+
         $perPage = $request->input('perPage', 5);
 
-        // Si es una solicitud AJAX, retornamos los datos en formato DataTable
+        $rolesPermitidos = ['Administrador', 'Coordinador', 'Secretario', 'Secretario/a EPSU', 'Docente'];
+
+        $usuarios = User::role($rolesPermitidos)
+            ->where('id', '!=', auth()->id())
+            ->select('id', 'name', 'apellido', 'email')
+            ->with('roles')
+            ->get();
+
+        $contactos = $usuarios->map(function ($usuario) {
+            return [
+                'id' => $usuario->id,
+                'nombre' => $usuario->name,
+                'apellido' => $usuario->apellido,
+                'email' => $usuario->email,
+                'roles' => $usuario->getRoleNames()->toArray(),
+            ];
+        });
+
+        // AJAX para DataTables
         if ($request->ajax()) {
-            $messages = auth()->user()->receivedMessages()
+            $messages = $user->receivedMessages()
                 ->orderBy('created_at', 'desc')
                 ->with('sender', 'receiver')
                 ->paginate($perPage);
 
             $data = $messages->map(function ($message) {
-                // Generamos el HTML para las acciones y el botón de mensajería
                 $accionesHtml = '
                 <form action="' . route('messages.destroy', $message->id) . '" method="POST" style="display:inline">
                     ' . csrf_field() . '
@@ -44,7 +62,6 @@ class MessageController extends Controller
                 </form>
             ';
 
-                // Agregar columna de "mensajería" (botón de enviar mensaje)
                 $mensajeriaHtml = '
                 <button type="button" 
                         class="btn btn-outline-info btn-sm btn-message"  
@@ -65,23 +82,21 @@ class MessageController extends Controller
                         '<a href="' . asset('storage/' . $message->attachment) . '" target="_blank" class="btn btn-outline-info btn-sm"><i class="fas fa-paperclip"></i> Ver adjunto</a>' :
                         '<span class="badge badge-secondary">Sin adjunto</span>',
                     'fecha' => $message->created_at->format('d-m-Y H:i:s'),
-                    'acciones' => $accionesHtml,  // Las acciones de responder y eliminar
-                    'mensajeria' => $mensajeriaHtml  // El botón de mensajería
+                    'acciones' => $accionesHtml,
+                    'mensajeria' => $mensajeriaHtml
                 ];
             });
 
-            return DataTables::of($data)
-                ->escapeColumns([]) // Evitar que los datos HTML sean escapados
-                ->make(true);
+            return DataTables::of($data)->escapeColumns([])->make(true);
         }
 
-        // Si no es una solicitud AJAX, retornamos la vista normal
-        $messages = auth()->user()->receivedMessages()
+        // Vista normal
+        $messages = $user->receivedMessages()
             ->orderBy('created_at', 'desc')
             ->with('sender', 'receiver')
             ->paginate($perPage);
 
-        return view('messages.index', compact('messages', 'perPage'));
+        return view('messages.index', compact('messages', 'perPage', 'contactos'));
     }
 
 

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('alumno_dni', 15)->constrained('alumnos', 'dni')->onDelete('cascade');
             $table->foreignId('asignatura_id')->constrained('asignaturas')->onDelete('cascade');
             $table->foreignId('cohorte_id')->constrained('cohortes')->onDelete('cascade');
-            $table->string('docente_dni', 15)->constrained('docentes', 'dni')->onDelete('cascade');
+            $table->string('docente_dni', 15)->constrained('docentes', 'dni')->onDelete('cascade')->nullable();
             $table->timestamps();
         });
     }

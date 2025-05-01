@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Postulante;
 use App\Models\Maestria;
 use App\Models\Secretario;
+use Illuminate\Support\Facades\DB;
 use App\Models\Alumno;
 use App\Notifications\MatriculaExito;
 use Illuminate\Support\Facades\Storage;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Notification;
 use App\Notifications\NuevoUsuarioNotification;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\PostulanteAceptadoNotification;
-use Illuminate\Support\Facades\Session;
+use App\Models\Docente;
 
 
 class PostulanteController extends Controller
@@ -26,16 +27,35 @@ class PostulanteController extends Controller
 
         if ($user->hasRole('Administrador')) {
             $postulantes = Postulante::with('documentos_verificados')->get();
-        } else {
+        } elseif ($user->hasRole('Secretario')) {
             $secretario = Secretario::where('nombre1', $user->name)
                 ->where('apellidop', $user->apellido)
                 ->where('email', $user->email)
                 ->firstOrFail();
+
             $maestriasIds = $secretario->seccion->maestrias->pluck('id');
             $postulantes = Postulante::whereIn('maestria_id', $maestriasIds)
                 ->with('documentos_verificados')
                 ->get();
+        } elseif ($user->hasRole('Coordinador')) {
+            $docente = Docente::where('nombre1', $user->name)
+                ->where('apellidop', $user->apellido)
+                ->where('email', $user->email)
+                ->firstOrFail();
+
+            $maestria = $docente->maestria->first();
+
+            if (!$maestria) {
+                abort(403, 'El coordinador no tiene ninguna maestría asignada.');
+            }
+
+            $postulantes = Postulante::where('maestria_id', $maestria->id)
+                ->with('documentos_verificados')
+                ->get();
+        } else {
+            abort(403, 'No autorizado');
         }
+
 
         return view('postulantes.index', compact('postulantes', 'perPage'));
     }
@@ -193,7 +213,7 @@ class PostulanteController extends Controller
 
         $postulante->delete();
 
-        return redirect()->route('postulantes.index')->with('success', 'Postulante y usuario eliminado exitosamente.');
+        return redirect()->route('postulaciones.index')->with('success', 'Postulante y usuario eliminado exitosamente.');
     }
 
     public function acep_neg($dni)
@@ -282,6 +302,8 @@ class PostulanteController extends Controller
                 'carta_aceptacion' => $carta_aceptacion_path,
                 'pago_matricula' => $pago_matricula_path,
                 'monto_total' => $postulante->maestria->arancel,
+                'monto_matricula' => $postulante->monto_matricula,
+                'monto_inscripcion' => $postulante->monto_inscripcion,
             ]);
 
             $user = User::where('name', $postulante->nombre1)
@@ -298,6 +320,10 @@ class PostulanteController extends Controller
 
                 Notification::route('mail', $user->email)
                     ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
+
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
             }
 
             $postulante->delete();

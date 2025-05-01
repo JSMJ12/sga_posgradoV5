@@ -19,26 +19,31 @@ class SecretarioController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $secretarios = Secretario::with('seccion')->get();
+            $secretarios = Secretario::with('seccion')->select('secretarios.*'); // ¡No uses get()!
 
             return datatables()->of($secretarios)
+                ->addColumn('nombre_completo', function ($row) {
+                    return $row->nombre1 . ' ' . $row->nombre2 . ' ' . $row->apellidop . ' ' . $row->apellidom;
+                })
+                ->filterColumn('nombre_completo', function ($query, $keyword) {
+                    $query->whereRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) like ?", ["%{$keyword}%"]);
+                })
+                ->orderColumn('nombre_completo', function ($query, $order) {
+                    $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
+                })
                 ->addColumn('acciones', function ($row) {
-                    $editBtn = '<a href="' . route('secretarios.edit', $row->id) . '" class="btn btn-primary" title="Editar Secretario">
-                                <i class="fas fa-edit"></i>
-                            </a>';
-                    return $editBtn;
+                    return '<a href="' . route('secretarios.edit', $row->id) . '" class="btn btn-primary" title="Editar Secretario"><i class="fas fa-edit"></i></a>';
                 })
                 ->addColumn('foto', function ($row) {
-                    $img = '<img src="' . asset('storage/' . $row->image) . '" alt="Imagen de ' . $row->nombre1 . '" style="max-width: 60px; border-radius: 50%;">';
-                    return $img;
+                    return '<img src="' . asset('storage/' . $row->image) . '" alt="Imagen de ' . $row->nombre1 . '" style="max-width: 60px; border-radius: 50%;">';
                 })
                 ->rawColumns(['acciones', 'foto'])
                 ->make(true);
         }
 
+
         return view('secretarios.index');
     }
-
 
     public function create()
     {

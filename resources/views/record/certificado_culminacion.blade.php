@@ -10,9 +10,9 @@
             font-size: 16px;
             text-align: justify;
             margin: 60px;
-            margin-top: 240px; 
+            margin-top: 240px;
         }
-    
+
         .header-bar {
             position: fixed;
             top: 0;
@@ -21,7 +21,7 @@
             width: 100%;
             z-index: 999;
         }
-    
+
         .barra-verde {
             position: absolute;
             top: 0;
@@ -30,7 +30,7 @@
             height: 10px;
             background-color: green;
         }
-    
+
         .barra-roja {
             position: absolute;
             top: 0;
@@ -39,18 +39,18 @@
             height: 10px;
             background-color: red;
         }
-    
+
         .header {
             text-align: center;
         }
-    
+
         .logo {
             position: absolute;
             top: 0;
             left: -13;
             width: 360px;
         }
-    
+
         .titulo {
             font-size: 16px;
             font-weight: bold;
@@ -58,19 +58,19 @@
             margin-top: 40px;
 
         }
-    
+
         .nombre {
             text-align: center;
             font-size: 15px;
             font-weight: bold;
             margin-top: 15px;
         }
-    
+
         .contenido {
             margin-top: 20px;
             line-height: 1.8;
         }
-    
+
         .footer {
             position: absolute;
             bottom: 80px;
@@ -78,11 +78,11 @@
             right: 0;
             text-align: center;
         }
-    
+
         .firma {
             margin-top: 50px;
         }
-    
+
         .watermark {
             position: absolute;
             top: 50%;
@@ -93,7 +93,7 @@
             z-index: 0;
         }
     </style>
-    
+
 </head>
 
 <body>
@@ -135,10 +135,14 @@
     </div>
 
     <div class="footer">
-        <div class="firma">
-            <hr style="width: 250px; margin: auto;">
-            <p><strong>{{ $nombreCompleto }}</strong><br>
-                Coordinador del Programa de Maestría en {{ $alumno->maestria->nombre }}</p>
+        <div style="margin-top: 100px; text-align: center;">
+            <div
+                style="border-top: 1px solid black; display: inline-block; padding: 5px 20px; font-weight: bold; text-transform: uppercase;">
+                {{ strtoupper($nombreCompleto) }}
+            </div>
+            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
+            </div>
         </div>
     </div>
 

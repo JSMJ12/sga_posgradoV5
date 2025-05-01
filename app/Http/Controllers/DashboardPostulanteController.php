@@ -11,7 +11,7 @@ use App\Notifications\Postulacion2;
 use App\Notifications\SubirArchivoNotification;
 use App\Notifications\NuevoPagoMatricula;
 use App\Models\DocumentoPostulante;
-
+use App\Models\Pago;
 class DashboardPostulanteController extends Controller
 {
 
@@ -99,7 +99,6 @@ class DashboardPostulanteController extends Controller
                     $path = $request->file($inputName)->store('postulantes/pdf', 'public');
                     $updateData[$column] = $path;
                     $uploadedFiles++;
-
                 } catch (\Exception $e) {
                     return back()->with('error', "Error al subir {$inputName}: " . $e->getMessage());
                 }
@@ -111,7 +110,7 @@ class DashboardPostulanteController extends Controller
             $archivo = $request->file('pago_matricula');
             $path = $archivo->store('postulantes/pdf', 'public');
             $updateData['pago_matricula'] = $path;
-        
+
             // Crear nuevo DocumentoPostulante
             DocumentoPostulante::create([
                 'dni_postulante' => $postulante->dni,
@@ -119,11 +118,11 @@ class DashboardPostulanteController extends Controller
                 'ruta_documento' => $path,
                 'verificado' => 0,
             ]);
-        
+
             Notification::route('mail', $postulante->correo_electronico)
                 ->notify(new NuevoPagoMatricula($postulante));
         }
-        
+
 
 
         // Si no se subió ningún archivo, mostrar advertencia
@@ -142,6 +141,51 @@ class DashboardPostulanteController extends Controller
         }
 
         return back()->with('success', 'Archivo(s) subido(s) exitosamente.');
+    }
+
+    public function pagoMatricula(Request $request)
+    {
+        $request->validate([
+
+            'archivo_comprobante' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4048',
+        ]);
+
+        $user = auth()->user();
+        // Buscar al postulante
+        $postulante = Postulante::where('nombre1', $user->name)
+            ->where('apellidop', $user->apellido)
+            ->where('correo_electronico', $user->email)
+            ->first();
+
+        if (!$postulante) {
+            return back()->with('error', 'No se encontró al postulante en la base de datos.');
+        }
+
+        // Obtener el monto de matrícula de la maestría asociada al postulante
+        $montoMatricula = $postulante->maestria->matricula;
+        if (!$montoMatricula) {
+            return back()->with('error', 'No se encontró monto de matrícula para esta maestría.');
+        }
+
+        // Guardar el pago en la base de datos
+        $pago = Pago::create([
+            'user_id' => $user->id,
+            'monto' => $montoMatricula,
+            'tipo_pago' => 'matricula',
+            'modalidad_pago' => 'unico',
+            'archivo_comprobante' => $request->file('archivo_comprobante')->store('comprobantes', 'public'),
+            'fecha_pago' => now(),
+        ]);
+
+        // Notificar al postulante que el pago fue realizado exitosamente
+        try {
+            Notification::route('mail', $postulante->correo_electronico)
+                ->notify(new Postulacion2($postulante));
+        } catch (\Exception $e) {
+            // Si ocurre un error al enviar la notificación, solo lo registramos
+        }
+
+        return back()->with('success', 'Pago de matrícula realizado exitosamente.');
     }
 
     public function carta_aceptacionPdf(Request $request, $dni)

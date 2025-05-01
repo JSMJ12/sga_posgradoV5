@@ -1,3 +1,6 @@
+@page {
+    margin: 2.54cm;
+}
 #fecha-actual {
     font-size: 12pt;
     text-align: right;
@@ -18,22 +21,22 @@ body {
 }
 .header {
     text-align: center;
-    margin-top: 10px;
+    margin-bottom: 15px;
+    position: relative;
+    margin-top: -60px;
 }
 .logo {
-    width: 74px;
-    height: 89px;
+    width: 64px;
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: -25px;
+    left: 20px;
 }
 
 .seal {
-    width: 100px;
-    height: 113px;
+    width: 104px;
     position: absolute;
-    top: 7px;
-    right: 10px;
+    top: -25;
+    right: -30px;
 }
 .university-name {
     font-size: 14pt;

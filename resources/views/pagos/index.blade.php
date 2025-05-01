@@ -18,9 +18,11 @@
                             <tr>
                                 <th>Imagen</th>
                                 <th>Cédula/Pasaporte</th>
-                                <th>Email Institucional</th>
+                                <th>Email</th>
                                 <th>Celular</th>
                                 <th>Monto</th>
+                                <th>Modalidad de Pago</th>
+                                <th>Tipo de Pago</th>
                                 <th>Fecha de Pago</th>
                                 <th>Comprobante</th>
                                 <th>Acciones</th>
@@ -42,12 +44,12 @@
                 serverSide: true,
                 ajax: "{{ route('pagos.index') }}",
                 columns: [{
-                        data: 'alumno.image',
-                        name: 'alumno.image',
-                        orderable: false,
-                        searchable: false,
+                        data: 'image',
+                        name: 'image',
                         render: function(data) {
-                            return `<img src="/storage/${data}" alt="Imagen del Alumno" class="img-thumbnail" style="width: 50px; height: 50px;">`;
+                            return data ?
+                                `<img src="/storage/${data}" class="img-thumbnail" style="width: 50px; height: 50px;">` :
+                                '<span class="text-muted">Sin imagen</span>';
                         }
                     },
                     {
@@ -55,31 +57,35 @@
                         name: 'dni'
                     },
                     {
-                        data: 'alumno.email_institucional',
-                        name: 'alumno.email_institucional'
+                        data: 'email',
+                        name: 'email'
                     },
                     {
-                        data: 'alumno.celular',
-                        name: 'alumno.celular'
+                        data: 'celular',
+                        name: 'celular'
                     },
                     {
                         data: 'monto',
                         name: 'monto'
                     },
                     {
+                        data: 'modalidad_pago',
+                        name: 'modalidad_pago'
+                    },
+                    {
+                        data: 'tipo_pago',
+                        name: 'tipo_pago'
+                    },
+                    {
                         data: 'fecha_pago',
                         name: 'fecha_pago'
                     },
+
                     {
                         data: 'archivo_comprobante',
                         name: 'archivo_comprobante',
-                        orderable: false,
-                        searchable: false,
                         render: function(data) {
-                            return `
-                            <a href="/storage/${data}" target="_blank" class="btn btn-info btn-sm" title="Ver Comprobante">
-                                <i class="fas fa-file-alt"></i>
-                            </a>`;
+                            return `<a href="/storage/${data}" target="_blank" class="btn btn-info btn-sm"><i class="fas fa-file-alt"></i></a>`;
                         }
                     },
                     {
@@ -112,6 +118,23 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById(`form-verificar-${pagoId}`).submit();
+                }
+            });
+        }
+
+        function confirmarRechazo(pagoId) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Este pago será rechazado y eliminado permanentemente. El usuario será notificado.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, rechazar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`form-rechazar-${pagoId}`).submit();
                 }
             });
         }

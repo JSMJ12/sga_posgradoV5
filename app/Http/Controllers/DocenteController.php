@@ -6,10 +6,7 @@ use App\Models\Asignatura;
 use Illuminate\Http\Request;
 use App\Models\Docente;
 use App\Models\User;
-use App\Models\Nota;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\File;
 use App\Models\CalificacionVerificacion;
 use App\Models\Cohorte;
 use App\Models\CohorteDocente;
@@ -22,9 +19,33 @@ class DocenteController extends Controller
     }
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $docentes = Docente::query();
+        $user = auth()->user();
 
+        $docentes = Docente::query();
+
+        if ($user->hasRole('Coordinador')) {
+            // Buscar al docente-coordinador actual
+            $coordinador = Docente::where('nombre1', $user->name)
+                ->where('apellidop', $user->apellido)
+                ->where('email', $user->email)
+                ->firstOrFail();
+
+            // Obtener asignaturas asociadas a su(s) maestría(s)
+            $asignaturaIds = $coordinador->maestria()
+                ->with('asignaturas')
+                ->get()
+                ->pluck('asignaturas')
+                ->flatten()
+                ->pluck('id')
+                ->unique();
+
+            // Filtrar docentes que tengan asignaturas en común
+            $docentes = $docentes->whereHas('asignaturas', function ($query) use ($asignaturaIds) {
+                $query->whereIn('asignatura_id', $asignaturaIds);
+            });
+        }
+
+        if ($request->ajax()) {
             return datatables()->eloquent($docentes)
                 ->addColumn('foto', function ($docente) {
                     return '<img src="' . asset('storage/' . $docente->image) . '" 
@@ -32,8 +53,13 @@ class DocenteController extends Controller
                     style="max-width: 60px; border-radius: 50%;">';
                 })
                 ->addColumn('nombre_completo', function ($docente) {
-                    return $docente->nombre1 . '<br>' . $docente->nombre2 . '<br>' .
-                        $docente->apellidop . '<br>' . $docente->apellidom;
+                    return $docente->nombre1 . ' ' . $docente->nombre2 . ' ' . $docente->apellidop . ' ' . $docente->apellidom;
+                })
+                ->filterColumn('nombre_completo', function ($query, $keyword) {
+                    $query->whereRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) like ?", ["%{$keyword}%"]);
+                })
+                ->orderColumn('nombre_completo', function ($query, $order) {
+                    $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
                 })
                 ->addColumn('asignaturas', function ($docente) {
                     return '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -77,12 +103,13 @@ class DocenteController extends Controller
                             <i class="fas fa-edit"></i>
                         </a>';
                 })
-                ->rawColumns(['foto', 'nombre_completo', 'asignaturas', 'cohortes', 'editar']) // Permitir contenido HTML
+                ->rawColumns(['foto', 'asignaturas', 'cohortes', 'editar'])
                 ->toJson();
         }
 
         return view('docentes.index');
     }
+
 
     public function cargarAsignaturas($dni)
     {

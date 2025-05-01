@@ -49,8 +49,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: '{{ route('cohortes.index') }}', // URL para cargar los datos
-                columns: [
-                    {
+                columns: [{
                         data: 'id',
                         name: 'id'
                     },
@@ -67,7 +66,7 @@
                         name: 'periodo_academico.nombre'
                     },
                     {
-                        data: 'aula_nombre',  // Aquí usamos la columna 'aula_nombre'
+                        data: 'aula_nombre', // Aquí usamos la columna 'aula_nombre'
                         name: 'aula_nombre'
                     },
                     {
@@ -120,13 +119,11 @@
                 table.ajax.reload(null, false);
             }, 10000);
         });
-
-        
     </script>
     <script>
         $(document).on('click', '.btn-verificaciones', function() {
             let cohorteId = $(this).data('cohorte-id');
-    
+
             $.ajax({
                 url: '/cohortes/' + cohorteId + '/verificaciones',
                 method: 'GET',
@@ -137,27 +134,37 @@
                             let icon = item.calificado ?
                                 '<i class="fas fa-check-circle text-success"></i>' :
                                 '<i class="fas fa-times-circle text-danger"></i>';
+
+                            // Agregar el botón de descarga de PDF si las notas existen
+                            let pdfButton = item.notas_existen ?
+                                `<a href="${item.pdf_notas_url}" class="btn btn-danger btn-sm" title="Descargar PDF" target="_blank">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>` :
+                                'No disponible';
+
                             tbody += `
                             <tr>
                                 <td>${item.docente}</td>
                                 <td>${item.asignatura}</td>
                                 <td>${icon}</td>
+                                <td>${pdfButton}</td> <!-- Columna para el botón de PDF -->
                             </tr>
                         `;
                         });
                     } else {
                         tbody =
-                            '<tr><td colspan="3" class="text-muted">No hay registros de verificación.</td></tr>';
+                            '<tr><td colspan="4" class="text-muted">No hay registros de verificación.</td></tr>';
                     }
                     $('#verificacionesTableBody').html(tbody);
                 },
                 error: function() {
                     $('#verificacionesTableBody').html(
-                        '<tr><td colspan="3" class="text-danger">Error al cargar los datos.</td></tr>'
-                        );
+                        '<tr><td colspan="4" class="text-danger">Error al cargar los datos.</td></tr>'
+                    );
                 }
             });
         });
     </script>
+
 
 @stop

@@ -1,28 +1,54 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Notas</title>
     <link rel="stylesheet" href="{{ public_path('css/pdf.css') }}">
 </head>
+
 <body>
     <div class="container">
+        <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
+        <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
         <div class="header">
-            <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
-            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ strtoupper($asignatura->maestria->nombre) }}</span>
+            <div class="coordinator" style="margin-top: 5px; font-size: 11pt;">
+                COORDINACIÓN DE LA
+                @php
+                    $nombreMaestria = strtoupper($asignatura->maestria->nombre);
+                    $palabras = explode(' ', $nombreMaestria);
+                    $lineas = [];
+                    $lineaActual = '';
+
+                    foreach ($palabras as $palabra) {
+                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
+                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
+                        } else {
+                            $lineas[] = $lineaActual;
+                            $lineaActual = $palabra;
+                        }
+                    }
+                    if ($lineaActual) {
+                        $lineas[] = $lineaActual;
+                    }
+                @endphp
+
+                @foreach ($lineas as $linea)
+                    <div style="text-transform: uppercase;">{{ $linea }}</div>
+                @endforeach
+            </div>
         </div>
         <div class="divider"></div>
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
         <div style="text-align: center; font-size: 12px; margin-bottom: 20px;">
             <strong>Información de la </strong>
             <strong>Asignatura:</strong> {{ $asignatura->nombre }}
-            @if($aula)
+            @if ($aula)
                 <strong>Aula:</strong> {{ $aula->nombre }}
             @endif
-            @if($paralelo)
+            @if ($paralelo)
                 <strong>Paralelo:</strong> {{ $paralelo }}
             @endif
             <strong>Periodo:</strong> {{ $periodo_academico->nombre }}
@@ -47,28 +73,33 @@
             <tbody>
                 @foreach ($alumnosMatriculados as $alumno)
                     <tr>
-                        <!-- Datos de cada alumno -->
                         <td>
-                            {{ $alumno->nombre1 }} 
-                            {{ $alumno->nombre2 }} 
-                            {{ $alumno->apellidop }} 
+                            {{ $alumno->nombre1 }}
+                            {{ $alumno->nombre2 }}
+                            {{ $alumno->apellidop }}
                             {{ $alumno->apellidom }}
                         </td>
                         <td>{{ $alumno->dni }}</td>
-                        @foreach ($alumno->notas as $nota)
-                            @if ($nota->asignatura_id == $asignatura->id && $nota->alumno_id == $alumno->id && $nota->docente_dni == $docente->dni)
-                                <td>{{ $nota->nota_actividades }}</td>
-                                <td>{{ $nota->nota_practicas }}</td>
-                                <td>{{ $nota->nota_autonomo }}</td>
-                                <td>{{ $nota->examen_final }}</td>
-                                <td>{{ $nota->recuperacion }}</td>
-                                <td>{{ $nota->total }}</td>
-                            @endif
-                        @endforeach
+
+                        @php
+                            $nota = $alumno->notas
+                                ->where('asignatura_id', $asignatura->id)
+                                ->where('alumno_id', $alumno->id)
+                                ->where('docente_dni', $docente->dni)
+                                ->first();
+                        @endphp
+
+                        <td>{{ $nota->nota_actividades ?? '--' }}</td>
+                        <td>{{ $nota->nota_practicas ?? '--' }}</td>
+                        <td>{{ $nota->nota_autonomo ?? '--' }}</td>
+                        <td>{{ $nota->examen_final ?? '--' }}</td>
+                        <td>{{ $nota->recuperacion ?? '--' }}</td>
+                        <td>{{ $nota->total ?? '--' }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+
         <div style="margin-top: 20px;">
             <div style="text-align: left; width: 40%; float: left;">
                 <!-- Espacio para la firma del docente (puedes agregar una línea o un espacio en blanco) -->
@@ -91,4 +122,5 @@
         </div>
     </div>
 </body>
+
 </html>

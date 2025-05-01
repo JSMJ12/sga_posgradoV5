@@ -81,7 +81,7 @@ Route::put('/usuarios/{usuario}/disable', [UsuarioController::class, 'disable'])
 Route::put('/usuarios/{usuario}/enable', [UsuarioController::class, 'enable'])->name('usuarios.enable')->middleware('can:dashboard_admin');
 
 //CRUD DOCENTES
-Route::resource('docentes', DocenteController::class)->middleware(['can:dashboard_secretario']);
+Route::resource('docentes', DocenteController::class)->middleware(['can:secretario_coordinador']);
 Route::get('/docentes/{docente}/asignaturas', [DocenteController::class, 'cargarAsignaturas']);
 Route::get('/docentes/{dni}/cohortes', [DocenteController::class, 'obtenerCohortes'])->name('docentes.cohortes');
 
@@ -105,7 +105,7 @@ Route::resource('asignaturas', AsignaturaController::class)->middleware(['can:da
 Route::post('/dashboard/docente/update-silabo', [DashboardDocenteController::class, 'updateSilabo'])->name('updateSilabo');
 
 //ALUMNOS
-Route::resource('alumnos', AlumnoController::class)->middleware(['can:dashboard_secretario']);
+Route::resource('alumnos', AlumnoController::class)->middleware(['can:secretario_coordinador']);
 Route::post('/alumno/retirarse_maestria/{dni}', [AlumnoController::class, 'retirarse'])->name('alumno.retirarse');
 
 
@@ -125,6 +125,7 @@ Route::get('/cohortes/{cohorte_id}/exportar-alumnos', [CohorteController::class,
 Route::get('/cohortes/{id}/verificaciones', [CohorteController::class, 'verificaciones'])->middleware('can:secretario_coordinador');
 
 
+
 //Postulaciones
 Route::resource('postulaciones', PostulanteController::class);
 
@@ -132,6 +133,7 @@ Route::post('postulante/store', [DashboardPostulanteController::class, 'store'])
 Route::get('postulantes/{dni}/carta-aceptacion', [DashboardPostulanteController::class, 'carta_aceptacionPdf'])->middleware('can:dashboard_postulante')->name('postulantes.carta_aceptacion');
 Route::post('/postulantes/{dni}/convertir', [PostulanteController::class, 'convertirEnEstudiante'])->middleware('can:dashboard_secretario')->name('postulantes.convertir');
 Route::post('postulacion/{dni}/aceptar', [PostulanteController::class, 'acep_neg'])->where('dni', '.*')->name('postulantes.aceptar');
+Route::post('postulante/pago-matricula', [DashboardPostulanteController::class, 'pagoMatricula'])->name('postulante.pagoMatricula')->middleware('can:dashboard_postulante');
 
 //COHORTES DOCENTES
 Route::get('cohortes_docentes/create/{docente_dni}/{asignatura_id?}', [CohorteDocenteController::class, 'create'])
@@ -165,8 +167,9 @@ Route::middleware(['can:dashboard_secretario_epsu'])->group(function () {
 
     // Eliminar un pago (equivalente a destroy)
     Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
-    Route::get('/descuentos/alumnos/aplicar', [DescuentoController::class, 'alumnos'])->name('descuentos.alumnos');
 });
+Route::delete('/pagos/{id}/rechazar', [PagoController::class, 'rechazar_pago'])->name('pagos.rechazar')->middleware('can:secretario_coordinador');
+
 
 //Matriculas
 Route::get('/matriculas/create/{alumno_dni}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
@@ -179,7 +182,7 @@ Route::resource('notas', NotaController::class)->except(['create'])->middleware(
 
 //PDFS ASIGNATURAS NOTAS
 Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [NotasAsignaturaController::class, 'show'])
-    ->middleware(['can:dashboard_docente'])
+    ->middleware(['can:secretario_coordinador'])
     ->name('pdf.notas.asignatura');
 
 //PDFS RECORD ACADEMICO ADMINISTRADOR
@@ -195,7 +198,7 @@ Route::get('/calificaciones/edit/{alumno_dni}/{docente_id}/{asignatura_id}/{coho
 Route::resource('calificaciones', CalificacionController::class)->middleware('can:dashboard_docente');
 
 //EXCEL LISTA DE ALUMNOS
-Route::get('/exportar-excel/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [DashboardDocenteController::class, 'exportarExcel'])
+Route::get('/exportar-excel/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [DashboardDocenteController::class, 'exportarExcel'])->middleware(['can:secretario_coordinador'])
     ->name('exportar.excel');
 
 //NOTIFICACIONES
@@ -220,16 +223,21 @@ Route::post('/notificaciones/mensajes/leidas', function () {
     return response()->json(['success' => true]);
 })->name('notificaciones.mensajes.leidas');
 
+// DESCUENTOS
+Route::middleware(['auth'])->group(function () {
 
-// Mostrar el formulario para descuento
-Route::get('/descuento/{dni}', [PagoController::class, 'showDescuentoForm'])
-    ->name('pago.descuento.form')
-    ->middleware('auth');
+    // Vista principal de alumnos para asignar descuentos
+    Route::get('/descuentos/alumnos', [DescuentoController::class, 'alumnos'])->name('descuentos.alumnos');
 
-// Procesar el descuento
-Route::post('/descuento', [PagoController::class, 'processDescuento'])
-    ->name('pago.descuento.process')
-    ->middleware('auth');
+    // Obtener info de descuentos para un alumno (AJAX)
+    Route::get('/descuentos/alumno/{dni}', [DescuentoController::class, 'showDescuentoForm'])->name('descuentos.show-form');
+
+    // Procesar descuento aplicado por el alumno
+    Route::post('/descuentos/procesar', [DescuentoController::class, 'processDescuento'])->name('descuentos.procesar');
+
+    // CRUD de descuentos como entidad (solo administradores)
+    Route::resource('descuentos', DescuentoController::class)->except(['create', 'edit', 'show']);
+});
 
 // Guardar un nuevo pago (equivalente a store)
 Route::post('/pagos', [PagoController::class, 'store'])

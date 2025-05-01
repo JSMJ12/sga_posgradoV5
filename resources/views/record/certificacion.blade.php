@@ -24,6 +24,8 @@
         .header {
             text-align: center;
             margin-bottom: 15px;
+            position: relative;
+            margin-top: -60px;
         }
 
         .logo {
@@ -117,12 +119,36 @@
 
 <body>
     <div class="container">
+        <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
+        <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
         <div class="header">
-            <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
-            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ strtoupper($alumno->maestria->nombre) }}</span>
+            <div class="coordinator" style="margin-top: 5px; font-size: 11pt;">
+                COORDINACIÓN DE LA
+                @php
+                    $nombreMaestria = strtoupper($alumno->maestria->nombre);
+                    $palabras = explode(' ', $nombreMaestria);
+                    $lineas = [];
+                    $lineaActual = '';
+
+                    foreach ($palabras as $palabra) {
+                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
+                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
+                        } else {
+                            $lineas[] = $lineaActual;
+                            $lineaActual = $palabra;
+                        }
+                    }
+                    if ($lineaActual) {
+                        $lineas[] = $lineaActual;
+                    }
+                @endphp
+
+                @foreach ($lineas as $linea)
+                    <div style="text-transform: uppercase;">{{ $linea }}</div>
+                @endforeach
+            </div>
         </div>
         <div class="divider"></div>
         <p class="certificate-title">CERTIFICA</p>
@@ -153,28 +179,27 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($notas as $nota)
+                @foreach ($notasCompletas  as $nota)
                     <tr>
                         <td>{{ $nota->asignatura->nombre }}</td>
                         <td>
                             {{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}
                         </td>
-                        <td>{{ $nota->total }}</td>
+                        <td>{{ $nota->total ?? '--' }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
-        <div class="firmante" style="margin-top: 130px; text-align: center;">
+        <div style="margin-top: 100px; text-align: center;">
             <div
-                style="display: inline-block; border-top: 1px solid black; width: fit-content; padding: 0 10px; margin-bottom: 5px;">
-                <b>{{ $nombreCompleto }}</b>
+                style="border-top: 1px solid black; display: inline-block; padding: 5px 20px; font-weight: bold; text-transform: uppercase;">
+                {{ strtoupper($nombreCompleto) }}
             </div>
-            <div>Coordinador del Programa de {{ ucfirst(strtolower($alumno->maestria->nombre)) }}</div>
-        </div>
-        <div id="qr-code">
-            <img src="data:image/png;base64,{{ base64_encode($qrCode) }}" alt="Código QR">
+            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
+            </div>
         </div>
     </div>
 </body>

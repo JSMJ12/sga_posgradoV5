@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Illuminate\Support\Facades\DB;
+use App\Models\Alumno;
 use App\Models\Asignatura;
 use App\Models\Aula;
 use App\Models\Docente;
 use App\Models\Cohorte;
-use App\Models\Alumno;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str;
 
 class NotasAsignaturaController extends Controller
 {
@@ -19,37 +18,33 @@ class NotasAsignaturaController extends Controller
     {
         $this->middleware('auth');
     }
+
     public function show($docenteDni, $asignaturaId, $cohorteId, $aulaId = null)
     {
         // Obtain enrolled students, considering optional aula
         $alumnosMatriculados = Alumno::whereHas('matriculas', function ($query) use ($asignaturaId, $cohorteId, $docenteDni) {
             $query->where('asignatura_id', $asignaturaId)
-                ->where('cohorte_id', $cohorteId)
-                ->where('docente_dni', $docenteDni);
-
+                  ->where('cohorte_id', $cohorteId)
+                  ->where('docente_dni', $docenteDni);
         })
-            ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente'])
-            ->get();
+        ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente'])
+        ->get();
 
-        // Fetch related data, allowing for null values
+        // Fetch related data
         $asignatura = Asignatura::find($asignaturaId);
         $aula = $aulaId ? Aula::find($aulaId) : null;
         $docente = Docente::find($docenteDni);
         $cohorte = Cohorte::find($cohorteId);
         $paralelo = $aula ? $aula->paralelo : null;
-
-        // Access academic period data in the cohort
         $periodo_academico = $cohorte->periodo_academico;
 
         // Current date
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Construct PDF path
-        $pdfFileName = $docente->apellidop . $docente->nombre1 . $cohorte->nombre . $asignatura->nombre . '_notas.pdf';
-        $pdfPath = 'pdfs/' . $pdfFileName;
-        $url = url($pdfPath);
+        // Generate a fake URL for QR purposes (optional)
+        $url = url('/'); // Puedes apuntar a la página principal u otro recurso
 
-        // Generate QR code with logo
+        // Generate QR code
         $qrCode = QrCode::format('png')
             ->size(100)
             ->eye('circle')
@@ -57,7 +52,7 @@ class NotasAsignaturaController extends Controller
             ->errorCorrection('H')
             ->generate($url);
 
-        // Create PDF and pass data to the view
+        // Create PDF in memory without saving
         $pdf = Pdf::loadView('record.notas_asignatura', compact(
             'alumnosMatriculados',
             'asignatura',
@@ -68,21 +63,16 @@ class NotasAsignaturaController extends Controller
             'cohorte',
             'paralelo',
             'qrCode'
-        ));
+        ))
+        ->setPaper('a4')
+        ->setWarnings(false);
 
-        // Ensure the PDF directory exists
-        $pdfDirectory = public_path('pdfs');
-        if (!file_exists($pdfDirectory)) {
-            mkdir($pdfDirectory, 0755, true);
-        }
+        // Generate a friendly filename
+        $pdfFileName = Str::slug(
+            $docente->apellidop . ' ' . $docente->nombre1 . ' ' . $cohorte->nombre . ' ' . $asignatura->nombre
+        ) . '_notas.pdf';
 
-        // Save the PDF
-        $pdf->save(public_path($pdfPath));
-
-        // Set paper size and suppress warnings
-        $pdf->setPaper('a4')->setWarnings(false);
-
-        // Stream the PDF for viewing or download
+        // Stream the PDF directly
         return $pdf->stream($pdfFileName);
     }
 }

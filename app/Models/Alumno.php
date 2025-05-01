@@ -51,11 +51,13 @@ class Alumno extends Model
         'pdf_hojavida',
         'carta_aceptacion',
         'pago_matricula',
-        'descuento',
         'monto_total',
         'documento',
         'registro',
         'sexo',
+        'monto_matricula',
+        'monto_inscripcion',
+        'descuento_id',
     ];
     public function notas()
     {
@@ -90,7 +92,7 @@ class Alumno extends Model
         parent::boot();
 
         static::creating(function ($alumno) {
-            if (empty($alumno->registro)) { // Solo asignar si 'registro' está vacío
+            if (empty($alumno->registro)) {
                 $alumno->registro = self::getNextRegistro();
             }
         });
@@ -108,5 +110,9 @@ class Alumno extends Model
     {
         return $this->hasOne(ExamenComplexivo::class, 'alumno_dni', 'dni');
     }
-    
+
+    public function descuento()
+    {
+        return $this->belongsTo(Descuento::class);
+    }
 }
