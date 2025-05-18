@@ -43,6 +43,7 @@ use App\Http\Controllers\TasaTitulacionController;
 use App\Http\Controllers\TitulacionAlumnoController;
 use App\Http\Controllers\TitulacionesController;
 use App\Http\Controllers\TutoriaController;
+use Illuminate\Support\Facades\Artisan;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +60,11 @@ use App\Http\Controllers\TutoriaController;
 Route::get('/', function () {
     return Auth::check() ? redirect()->route('inicio') : redirect()->route('login');
 });
+Route::get('/limpiar-cache', function () {
+    Artisan::call('optimize:clear');
+    return 'Cache limpiada correctamente.';
+});
+
 
 //Redireccionador
 Route::get('/inicio', [InicioController::class, 'redireccionarDashboard'])->name('inicio');

@@ -11,7 +11,7 @@
 
         body {
             font-family: "Times New Roman", serif;
-            font-size: 12pt;
+            font-size: 10pt;
             margin: 0;
             padding: 0;
         }
@@ -29,21 +29,21 @@
         }
 
         .logo {
-            width: 64px;
+            width: 60px;
             position: absolute;
-            top: -25px;
+            top: -30px;
             left: 0;
         }
 
         .seal {
-            width: 104px;
+            width: 100px;
             position: absolute;
-            top: -25;
+            top: -35;
             right: 0;
         }
 
         .university-name {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: bold;
         }
 
@@ -52,7 +52,7 @@
         }
 
         .program-title {
-            font-size: 10pt;
+            font-size: 9pt;
             margin-top: 5px;
         }
 
@@ -64,14 +64,14 @@
         }
 
         .certificate-title {
-            font-size: 12pt;
+            font-size: 10.5pt;
             font-weight: bold;
             text-align: center;
             margin-top: 10px;
         }
 
         .certificate-details {
-            font-size: 12pt;
+            font-size: 10pt;
             text-align: justify;
             margin: 10px 0;
         }
@@ -87,7 +87,7 @@
         }
 
         .student-info {
-            font-size: 10pt;
+            font-size: 9pt;
             border-collapse: collapse;
             width: 100%;
             margin-top: 10px;
@@ -96,7 +96,7 @@
         .student-info th,
         .student-info td {
             border: 1px solid #666;
-            padding: 5px;
+            padding: 4px;
         }
 
         .student-info th {
@@ -104,7 +104,7 @@
         }
 
         .footer {
-            font-size: 10pt;
+            font-size: 9pt;
             text-align: right;
             margin-top: 10px;
         }
@@ -124,7 +124,7 @@
         <div class="header">
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <div class="coordinator" style="margin-top: 5px; font-size: 11pt;">
+            <div class="coordinator" style="margin-top: 5px; font-size: 10pt;">
                 COORDINACIÓN DE LA
                 @php
                     $nombreMaestria = strtoupper($alumno->maestria->nombre);

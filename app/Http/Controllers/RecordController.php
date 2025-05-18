@@ -96,8 +96,6 @@ class RecordController extends Controller
         return $pdf->stream('record_academico_' . $alumno->dni . '.pdf');
     }
 
-
-
     public function certificado_matricula($alumno_dni)
     {
         $alumno = Alumno::findOrFail($alumno_dni);

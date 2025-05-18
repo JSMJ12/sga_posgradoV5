@@ -126,6 +126,12 @@ class PostulanteController extends Controller
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        $maestria = Maestria::find($request->input('maestria_id'));
+
+        // Valores por defecto si no hay maestría
+        $montoMatricula = $maestria ? $maestria->matricula : 0;
+        $montoInscripcion = $maestria ? $maestria->inscripcion : 0;
+
         $imagenPath = null;
 
         // Inicializar el objeto Postulante
@@ -169,6 +175,8 @@ class PostulanteController extends Controller
             'origen_recursos_estudios' => $request->input('origen_recursos_estudios'),
             'maestria_id' => $request->input('maestria_id'),
             'imagen' => $imagenPath,
+            'monto_matricula' => $montoMatricula,
+            'monto_inscripcion' => $montoInscripcion,
         ]);
         $postulante->save();
 

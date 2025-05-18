@@ -11,8 +11,7 @@
 
         body {
             font-family: "Times New Roman", serif;
-            font-size: 11pt;
-
+            font-size: 9pt;
             margin: 40px;
             padding: 0;
         }
@@ -30,27 +29,27 @@
         }
 
         .logo {
-            width: 64px;
+            width: 60px;
             position: absolute;
             top: -25px;
             left: 0;
         }
 
         .seal {
-            width: 104px;
+            width: 100px;
             position: absolute;
             top: -25;
             right: 0;
         }
 
         .university-name {
-            font-size: 13pt;
+            font-size: 11pt;
             font-weight: bold;
         }
 
         .institute,
         .coordinator {
-            font-size: 10pt;
+            font-size: 9pt;
         }
 
         .divider {
@@ -62,19 +61,20 @@
 
         .certificate-title {
             text-align: center;
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: bold;
             margin-bottom: 10px;
         }
 
         .student-details {
             margin-bottom: 15px;
-            line-height: 1.5;
+            line-height: 1.4;
+            font-size: 9pt;
         }
 
         .student-info {
             width: 100%;
-            font-size: 10pt;
+            font-size: 8.5pt;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
@@ -82,7 +82,7 @@
         .student-info th,
         .student-info td {
             border: 1px solid #333;
-            padding: 5px;
+            padding: 4px;
             text-align: center;
         }
 
@@ -93,6 +93,7 @@
         #fecha-actual {
             text-align: right;
             margin-top: 30px;
+            font-size: 9pt;
         }
 
         .firmante {

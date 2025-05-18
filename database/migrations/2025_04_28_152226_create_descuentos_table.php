@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('descuentos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->integer('porcentaje'); // porcentaje entero
+            $table->integer('porcentaje');
             $table->boolean('activo')->default(1);
             $table->timestamps();
         });

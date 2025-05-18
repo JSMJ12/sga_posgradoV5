@@ -65,6 +65,19 @@ class UsuarioController extends Controller
                     }
 
                     return $btn;
+                })->filterColumn('roles', function ($query, $keyword) {
+                    // Filtrado para la columna roles (búsqueda)
+                    $query->whereHas('roles', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->orderColumn('roles', function ($query, $order) {
+                    // Ordenamiento para la columna roles
+                    $query->leftJoin('role_user', 'users.id', '=', 'role_user.user_id')
+                        ->leftJoin('roles', 'role_user.role_id', '=', 'roles.id')
+                        ->select('users.*')
+                        ->groupBy('users.id')
+                        ->orderByRaw("GROUP_CONCAT(roles.name ORDER BY roles.name SEPARATOR ', ') $order");
                 })
                 ->rawColumns(['foto', 'mensajeria', 'action']) // Permitir HTML sin escapar para estas columnas
                 ->make(true);
@@ -189,30 +202,29 @@ class UsuarioController extends Controller
     public function actualizarPerfil(Request $request)
     {
         $user = User::find(Auth::id());
-    
+
         $request->validate([
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|min:8|confirmed',
         ]);
-    
+
         if ($request->hasFile('image')) {
             // Eliminar imagen anterior si es local (no un avatar por URL)
             if ($user->image && !str_starts_with($user->image, 'http')) {
                 Storage::disk('public')->delete($user->image);
             }
-    
+
             // Guardar nueva imagen
             $path = $request->file('image')->store('imagenes_usuarios', 'public');
             $user->image = $path;
         }
-    
+
         if ($request->filled('password')) {
             $user->password = bcrypt($request->password);
         }
-    
+
         $user->save();
-    
+
         return redirect()->back()->with('success', 'Perfil actualizado correctamente.');
     }
-
 }

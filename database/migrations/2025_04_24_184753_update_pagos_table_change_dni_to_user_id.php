@@ -12,10 +12,6 @@ return new class extends Migration
     public function up()
     {
         Schema::table('pagos', function (Blueprint $table) {
-            $table->dropForeign(['dni']);
-            $table->dropColumn('dni');
-
-            $table->unsignedBigInteger('user_id')->after('id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

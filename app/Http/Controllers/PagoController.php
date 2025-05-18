@@ -114,7 +114,6 @@ class PagoController extends Controller
         return view('pagos.pago', compact('programa', 'alumno', 'pagos', 'pagosPreviosArancel'));
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -182,12 +181,12 @@ class PagoController extends Controller
 
     public function verificar_pago($id)
     {
+        
         // Encontrar el pago por su ID
         $pago = Pago::with('user')->findOrFail($id);
 
         // Verificar el tipo de pago
         $pago_tipo = $pago->tipo_pago;
-
 
         // Buscar primero en alumnos
         $alumno = Alumno::where('email_institucional', $pago->user->email)->first();
@@ -270,7 +269,6 @@ class PagoController extends Controller
         // Si no es ni alumno ni postulante
         return redirect()->route('pagos.index')->with('error', 'No se encontró un alumno o postulante asociado al pago.');
     }
-
 
     public function rechazar_pago($id)
     {
