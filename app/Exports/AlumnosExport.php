@@ -28,7 +28,8 @@ class AlumnosExport implements FromCollection, WithHeadings
                 'Apellido Paterno' => $alumno->apellidop,
                 'Apellido Materno' => $alumno->apellidom,
                 'Correo Institucional' => $alumno->email_institucional,
-                
+                'Correo Personal' => $alumno->email_personal,
+                'Celular' => $alumno->celular,
             ];
         });
     }
@@ -41,6 +42,8 @@ class AlumnosExport implements FromCollection, WithHeadings
             'Apellido Paterno',
             'Apellido Materno',
             'Correo Institucional',
+            'Correo Personal',
+            'Celular',
             // Agrega más columnas según tus necesidades
         ];
     }
