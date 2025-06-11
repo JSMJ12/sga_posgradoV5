@@ -119,9 +119,6 @@
                                 <label for="monto">Monto a Pagar:</label>
                                 <input type="number" class="form-control" id="monto" name="monto" step="0.01"
                                     value="{{ $alumno->monto_total }}" readonly>
-                                <p class="text-success mt-2" id="descuento_aplicado" style="display: none;">
-                                    Descuento del 5% aplicado por pago único de arancel.
-                                </p>
                             </div>
 
                             <!-- Fecha -->
@@ -159,62 +156,51 @@
 
 @section('js')
     <script>
-        function updatePaymentDetails() {
-            let modalidadPago = document.getElementById('modalidad_pago').value;
-            let tipoPago = document.getElementById('tipo_pago').value;
-            let montoInput = document.getElementById('monto');
-            let mensajeDescuento = document.getElementById('descuento_aplicado');
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalidadPago = document.getElementById('modalidad_pago');
+            const tipoPago = document.getElementById('tipo_pago');
+            const montoInput = document.getElementById('monto');
+            const mensajeDescuento = document.getElementById('descuento_aplicado');
 
-            let montoBaseArancel = {{ $alumno->maestria->arancel }};
-            let montoMatricula = {{ $alumno->monto_matricula }};
-            let montoInscripcion = {{ $alumno->monto_inscripcion }};
-            let montoTotalAlumno = {{ $alumno->monto_total }};
-            let tienePagoPrevioArancel = {{ $pagosPreviosArancel ? 'true' : 'false' }};
+            const montoBaseArancel = parseFloat(@json($alumno->maestria->arancel));
+            const montoMatricula = parseFloat(@json($alumno->monto_matricula));
+            const montoInscripcion = parseFloat(@json($alumno->monto_inscripcion));
+            const montoTotalAlumno = parseFloat(@json($alumno->monto_total));
+            const montoArancel = parseFloat(@json($alumno->maestria->arancel));
+            const montoMatricula_t = parseFloat(@json($alumno->maestria->matricula));
+            const montoInscripcion_t = parseFloat(@json($alumno->maestria->inscripcion));
 
-            let montoFinal = 0;
-            let aplicarDescuento = false;
+            function updatePaymentDetails() {
+                const modalidad = modalidadPago.value;
+                const tipo = tipoPago.value;
+                let montoFinal = 0;
 
-            if (tipoPago === 'arancel') {
-                if (modalidadPago === 'unico') {
-                    montoFinal = montoTotalAlumno;
-                    aplicarDescuento = !tienePagoPrevioArancel;
-                } else if (modalidadPago === 'trimestral') {
-                    montoFinal = montoBaseArancel / 3;
+                if (tipo === 'arancel') {
+                    if (modalidad === 'unico') {
+                        montoFinal = montoTotalAlumno;
+                    } else if (modalidad === 'trimestral') {
+                        montoFinal = montoBaseArancel / 3;
+                    }
+                } else if (tipo === 'matricula') {
+                    montoFinal = (modalidad === 'trimestral') ? montoMatricula_t / 3 : montoMatricula_t;
+                } else if (tipo === 'inscripcion') {
+                    montoFinal = (modalidad === 'trimestral') ? montoInscripcion_t / 3 : montoInscripcion_t;
                 }
-            } else if (tipoPago === 'matricula') {
-                if (modalidadPago === 'unico') {
-                    montoFinal = montoMatricula;
-                } else if (modalidadPago === 'trimestral') {
-                    montoFinal = montoMatricula / 3;
-                }
-            } else if (tipoPago === 'inscripcion') {
-                if (modalidadPago === 'unico') {
-                    montoFinal = montoInscripcion;
-                } else if (modalidadPago === 'trimestral') {
-                    montoFinal = montoInscripcion / 3;
-                }
-            }
 
-            if (modalidadPago === 'unico' || modalidadPago === 'trimestral') {
-                if (aplicarDescuento) {
-                    let descuento = montoTotalAlumno * 0.05;
-                    montoFinal = montoFinal - descuento;
-                    mensajeDescuento.style.display = 'block';
+                if (modalidad === 'otro') {
+                    montoInput.value = '';
+                    montoInput.readOnly = false;
                 } else {
-                    mensajeDescuento.style.display = 'none';
+                    montoInput.value = montoFinal.toFixed(2);
+                    montoInput.readOnly = true;
                 }
-                montoInput.value = montoFinal.toFixed(2);
-                montoInput.readOnly = true;
-            } else { // modalidad "otro"
-                montoInput.value = '';
-                montoInput.readOnly = false;
-                mensajeDescuento.style.display = 'none';
             }
-        }
 
-        document.getElementById('modalidad_pago').addEventListener('change', updatePaymentDetails);
-        document.getElementById('tipo_pago').addEventListener('change', updatePaymentDetails);
-        document.addEventListener('DOMContentLoaded', updatePaymentDetails);
+
+            modalidadPago.addEventListener('change', updatePaymentDetails);
+            tipoPago.addEventListener('change', updatePaymentDetails);
+
+            updatePaymentDetails();
+        });
     </script>
-
 @stop

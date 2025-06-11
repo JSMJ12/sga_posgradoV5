@@ -337,13 +337,6 @@ return [
             'icon' => 'fas fa-fw fa-pencil-alt',
             'can' => 'dashboard_coordinador'
         ],
-        ['header' => 'Tutorias de Tesis', 'can' => 'revisar_tesis'],
-        [
-            'text' => 'Tutorias',
-            'route'  => 'tutorias.index',
-            'icon' => 'fas fa-fw fa-chalkboard-teacher',
-            'can' => 'revisar_tesis'
-        ],
         [
             'text' => 'Usuarios',
             'route'  => 'usuarios.index',
@@ -458,6 +451,13 @@ return [
             'route' => 'descuentos.index',
             'icon' => 'fa fa-percent',
             'can' => 'dashboard_admin',
+        ],
+        ['header' => 'Tutorias de Tesis', 'can' => 'revisar_tesis'],
+        [
+            'text' => 'Tutorias',
+            'route'  => 'tutorias.index',
+            'icon' => 'fas fa-fw fa-chalkboard-teacher',
+            'can' => 'revisar_tesis'
         ],
     ],
 

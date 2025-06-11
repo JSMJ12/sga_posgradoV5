@@ -146,26 +146,27 @@ class Examen_ComplexivoController extends Controller
                 })
                 ->addColumn('acciones', function ($alumno) {
                     $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
-                    
+
                     // Validar si nota no es null o 0
-                    if ($alumno->titulaciones->first() && $alumno->titulaciones->first()->nota != null || $alumno->titulaciones->first()->nota != 0) {
+                    $titulacion = $alumno->examenComplexivo->first();
+                    if (!$titulacion || $titulacion->nota === null)  {
+                        // Mostrar botón para calificar
                         $acciones .= '<button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" 
-                                      data-bs-toggle="modal" 
-                                      data-bs-target="#modalCalificarExamen" 
-                                      data-dni="' . $alumno->dni . '" 
-                                      data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '">
-                                      <i class="bi bi-pencil-square"></i> Calificar
-                                  </button>';
-                    }else {
-                        // Mostrar label si ya está calificado
+                                data-dni="' . $alumno->dni . '" 
+                                data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '">
+                                <i class="bi bi-pencil-square"></i> Calificar
+                            </button>';
+                    } else {
+                        // Mostrar "Ya calificado"
                         $acciones .= '<span class="badge bg-secondary d-flex align-items-center gap-2">
-                                        <i class="bi bi-check-circle"></i> Ya calificado
-                                      </span>';
-                    }                
-                
+                    <i class="bi bi-check-circle"></i> Ya calificado
+                  </span>';
+                    }
+
+
                     $acciones .= '</div>';
                     return $acciones;
-                })                
+                })
                 ->rawColumns(['foto', 'acciones', 'nombre_completo']) // Permitir HTML en estas columnas
                 ->toJson();
         }
@@ -235,5 +236,4 @@ class Examen_ComplexivoController extends Controller
 
         return redirect()->back()->with('success', 'Datos actualizados correctamente.');
     }
-
 }

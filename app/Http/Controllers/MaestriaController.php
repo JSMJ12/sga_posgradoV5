@@ -17,13 +17,21 @@ class MaestriaController extends Controller
     {
         $perPage = $request->input('perPage', 10);
 
-        $maestrias = Maestria::with('asignaturas', )->get();
+        $maestrias = Maestria::with('asignaturas',)->get();
         $docentes = Docente::all();
         return view('maestrias.index', compact('maestrias', 'docentes', 'perPage'));
     }
 
     public function store(Request $request)
-    {   
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'codigo' => 'required|string|max:50|unique:maestrias,codigo',
+            'coordinador' => 'required|exists:docentes,dni',
+            'matricula' => 'required|numeric|min:0',
+            'arancel' => 'required|numeric|min:0',
+            'inscripcion' => 'required|numeric|min:0',
+        ]);
         $maestria = new Maestria;
         $maestria->nombre = $request->input('nombre');
         $maestria->codigo = $request->input('codigo');
@@ -45,8 +53,6 @@ class MaestriaController extends Controller
         }
         session()->flash('success', 'La maestria se guardo con exito.');
         return redirect()->route('maestrias.index');
-        
-
     }
 
 
@@ -74,7 +80,7 @@ class MaestriaController extends Controller
         // Quitamos el rol de coordinador al usuario anterior si existe
         $viejoCoordinadorDNI = $maestria->coordinador;
         $viejoCoordinador = Docente::where('dni', $viejoCoordinadorDNI)->first();
-        
+
         if ($viejoCoordinador) {
             $viejoCoordinadorEmail = $viejoCoordinador->email;
             $viejoCoordinadorUser = User::where('email', $viejoCoordinadorEmail)->first();
@@ -100,14 +106,14 @@ class MaestriaController extends Controller
     {
         $maestria->status = 'ACTIVO';
         $maestria->save();
-    
+
         return redirect()->route('maestrias.index')->with('success', 'Maestria habilitada exitosamente.');
     }
     public function disable(Maestria $maestria)
     {
         $maestria->status = 'INACTIVO';
         $maestria->save();
-    
+
         return redirect()->route('maestrias.index')->with('success', 'Maestria deshabilitada exitosamente.');
     }
 }

@@ -68,7 +68,7 @@ class DescuentoController extends Controller
         $descuentos = Descuento::where('activo', true)->get()->mapWithKeys(function ($descuento) use ($maestria) {
             $montoDescuento = ($descuento->porcentaje / 100) * $maestria->arancel;
             return [
-                strtolower(str_replace(' ', '_', $descuento->nombre)) => [
+                strtolower($descuento->nombre) => [
                     'id' => $descuento->id,
                     'nombre' => $descuento->nombre,
                     'descuento' => $montoDescuento,

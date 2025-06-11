@@ -3,7 +3,7 @@
 @section('title', 'Proceso de Titulación')
 
 @section('content_header')
-    <h1 class="text-center text-success">Solicitud de Aprobación de Tema</h1>
+    <h1 class="text-center text-success">Examen Complexivo</h1>
 @stop
 
 @section('content')

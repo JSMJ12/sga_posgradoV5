@@ -95,10 +95,40 @@
                         data: 'alumno.celular'
                     },
                     {
-                        data: 'tema'
+                        data: 'tema',
+                        render: function(data, type, row) {
+                            const maxChars = 40;
+                            if (data.length > maxChars) {
+                                const short = data.slice(0, maxChars) + '...';
+                                return `
+                <span class="toggle-text" 
+                      data-full="${data}" 
+                      data-short="${short}" 
+                      onclick="toggleText(this)" 
+                      style="cursor:pointer;" 
+                      title="Click para expandir/contraer">${short}</span>
+            `;
+                            }
+                            return data;
+                        }
                     },
                     {
-                        data: 'descripcion'
+                        data: 'descripcion',
+                        render: function(data, type, row) {
+                            const maxChars = 40;
+                            if (data.length > maxChars) {
+                                const short = data.slice(0, maxChars) + '...';
+                                return `
+                <span class="toggle-text" 
+                      data-full="${data}" 
+                      data-short="${short}" 
+                      onclick="toggleText(this)" 
+                      style="cursor:pointer;" 
+                      title="Click para expandir/contraer">${short}</span>
+            `;
+                            }
+                            return data;
+                        }
                     },
                     {
                         data: 'estado',
@@ -189,6 +219,11 @@
                     }
                 });
             }
+        }
+
+        function toggleText(element) {
+            const isShort = element.innerText.endsWith('...');
+            element.innerText = isShort ? element.dataset.full : element.dataset.short;
         }
     </script>
 @stop

@@ -21,7 +21,7 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     {
         $this->postulante = $postulante;
 
-        // Buscar al usuario por su email y extraer el DNI
+        // Buscar al usuario por su email y extraer el id
         $user = User::where('email', $postulante->correo_electronico)->first();
         $this->userId = $user ? $user->id : null;
     }
@@ -43,8 +43,8 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     public function toArray($notifiable)
     {
         return [
-            'type' => 'SubirArchivoNotification',
-            'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
+            'type' => 'PagoRechazado',
+            'message' => 'Tu comprobante de pago fue rechazado.',
         ];
     }
 
@@ -54,12 +54,12 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     }
     public function broadcastAs()
     {
-        return 'subir.archivo';
+        return 'pago.rechazado';
     }
     public function broadcastWith()
     {
         return [
-            'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
+            'message' => 'Tu comprobante de pago fue rechazado.',
         ];
     }
 }

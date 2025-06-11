@@ -94,7 +94,7 @@
             });
 
 
-            $('#alumnos').on('click', '.btn-primary', function() {
+            $('#alumnos').on('click', '.btn-outline-success', function() {
                 let alumnoId = $(this).data('dni');
                 let alumnoNombre = $(this).data('nombre');
 

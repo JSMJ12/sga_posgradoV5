@@ -1,21 +1,27 @@
-<!-- Botón para abrir modal -->
-@if($item->alumno->titulaciones != null)
-    <span class="badge badge-warning" style="background-color: #f39c12; color: white; padding: 5px 10px;">
-        Alumno Graduado
-    </span>
+@if ($item->alumno->titulaciones)
+    <div class="d-flex flex-column align-items-start">
+        <span class="badge badge-warning mb-2" style="background-color: #f39c12; color: white; padding: 5px 10px;">
+            Alumno Graduado
+        </span>
+    </div>
 @endif
-@if($item->alumno->tesis && $item->alumno->tesis->first()->estado == 'titulado' && $item->alumno->titulaciones == null)
-    <span class="badge badge-warning" style="background-color: #f39c12; color: white; padding: 5px 10px;">
-        Alumno titulado
-    </span>
+@if ($item->alumno->tesis && $item->alumno->tesis->first()->estado == 'titulado' && $item->alumno->titulaciones->isEmpty())
+    <div class="d-flex flex-column align-items-start">
+        <div class="mb-2">
+            <span class="badge badge-warning mb-2" style="background-color: #f39c12; color: white; padding: 5px 10px;">
+                Alumno titulado
+            </span>
 
-    <!-- Botón para abrir el modal -->
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalTitulacion">
-        Completar Titulación
-    </button>
+            <!-- Botón para abrir el modal de titulación -->
+            <button type="button" class="btn btn-sm btn-primary ms-2" data-toggle="modal" data-target="#modalTitulacion">
+                <i class="fas fa-user-graduate"></i> Completar Titulación
+            </button>
+        </div>
+    </div>
 
     <!-- Modal -->
-    <div class="modal fade" id="modalTitulacion" tabindex="-1" role="dialog" aria-labelledby="modalTitulacionLabel" aria-hidden="true">
+    <div class="modal fade" id="modalTitulacion" tabindex="-1" role="dialog" aria-labelledby="modalTitulacionLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -29,19 +35,21 @@
                     <div class="modal-body">
                         <!-- Campo oculto para el DNI del alumno -->
                         <input type="hidden" name="alumno_dni" value="{{ $item->alumno->dni }}">
-    
+
                         <!-- El campo 'titulado' se establece en 1 por defecto -->
                         <input type="hidden" name="titulado" value="1">
-    
+
                         <!-- Campo para subir archivos (solo PDF y múltiples archivos) -->
                         <div class="form-group">
                             <label for="tesis_path">Archivo(s) de Tesis (solo PDF)</label>
-                            <input type="file" class="form-control" id="tesis_path" name="tesis_path[]" accept="application/pdf" multiple>
+                            <input type="file" class="form-control" id="tesis_path" name="tesis_path[]"
+                                accept="application/pdf" multiple>
                         </div>
-    
+
                         <div class="form-group">
                             <label for="fecha_graduacion">Fecha de Graduación</label>
-                            <input type="date" class="form-control" id="fecha_graduacion" name="fecha_graduacion" required>
+                            <input type="date" class="form-control" id="fecha_graduacion" name="fecha_graduacion"
+                                required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -52,22 +60,31 @@
             </div>
         </div>
     </div>
-    
 @endif
 
-@if($item->tutorias->count() < 3)
-    <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#crearTutoriaModal{{ $item->id }}">
-        <i class="fas fa-plus"></i> Asignar Tutoría
-    </button>
+@if ($item->tutorias->count() < 3)
+    <div class="d-flex flex-column align-items-start">
+        <div class="mb-2">
+            <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
+                data-target="#crearTutoriaModal{{ $item->id }}">
+                <i class="fas fa-plus"></i> Asignar Tutoría
+            </button>
+        </div>
+    </div>
 @endif
-@if($item->tutorias->count() >= 1 && $item->alumno->tesis->first()->estado !== 'titulado')
-    <a href="{{ route('tutorias.listar', $item->id) }}" class="btn btn-sm btn-primary">
-        <i class="fas fa-list"></i> Ver Tutorías
-    </a>
+@if ($item->tutorias->count() >= 1 && $item->alumno->tesis->first()->estado !== 'titulado')
+    <div class="d-flex flex-column align-items-start">
+        <div class="mb-2">
+            <a href="{{ route('tutorias.listar', $item->id) }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-list"></i> Ver Tutorías
+            </a>
+        </div>
+    </div>
 @endif
 
 <!-- Modal -->
-<div class="modal fade" id="crearTutoriaModal{{ $item->id }}" tabindex="-1" aria-labelledby="crearTutoriaModalLabel{{ $item->id }}" aria-hidden="true">
+<div class="modal fade" id="crearTutoriaModal{{ $item->id }}" tabindex="-1"
+    aria-labelledby="crearTutoriaModalLabel{{ $item->id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header" style="background-color: #003366; color: white;">
@@ -93,10 +110,11 @@
                     <div class="mb-3">
                         <label id="dynamic-label" for="dynamic-input" class="form-label">
                             <i class="fas fa-map-marker-alt" id="icon-lugar"></i>
-                            <i class="fas fa-link" id="icon-link" style="display: none;"></i> 
+                            <i class="fas fa-link" id="icon-link" style="display: none;"></i>
                             Lugar / Link de la Reunión
                         </label>
-                        <input type="text" id="dynamic-input" name="detalle" class="form-control" placeholder="Ingrese el lugar o el link">
+                        <input type="text" id="dynamic-input" name="detalle" class="form-control"
+                            placeholder="Ingrese el lugar o el link">
                     </div>
 
                     <div class="mb-3">
@@ -129,7 +147,7 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         const selectTipo = document.getElementById('tipo-tutoria');
         const dynamicLabel = document.getElementById('dynamic-label');
         const dynamicInput = document.getElementById('dynamic-input');

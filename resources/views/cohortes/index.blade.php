@@ -40,6 +40,9 @@
         </div>
     </div>
 @stop
+@include('modales.titulaciones_modal')
+@include('modales.examen_complexivo_modal')
+
 @include('modales.verificar_calificacion_cohortes_modal')
 
 @section('js')

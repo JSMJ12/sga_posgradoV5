@@ -10,13 +10,16 @@
             </button>
         @endif
     @else
-        <button class="btn btn-outline-info btn-sm" onclick="verSolicitud('{{ asset('storage/' . $tesis->solicitud_pdf) }}')">
+        <button class="btn btn-outline-info btn-sm"
+            onclick="verSolicitud('{{ asset('storage/' . $tesis->solicitud_pdf) }}')" title="Ver solicitud PDF">
             <i class="fas fa-eye"></i>
         </button>
-        <button class="btn btn-outline-success btn-sm" onclick="aceptarTema({{ $tesis->id }})">
+
+        <button class="btn btn-outline-success btn-sm" onclick="aceptarTema({{ $tesis->id }})" title="Aceptar tema">
             <i class="fas fa-check"></i>
         </button>
-        <button class="btn btn-outline-danger btn-sm" onclick="rechazarTema({{ $tesis->id }})">
+
+        <button class="btn btn-outline-danger btn-sm" onclick="rechazarTema({{ $tesis->id }})" title="Rechazar tema">
             <i class="fas fa-times"></i>
         </button>
     @endif

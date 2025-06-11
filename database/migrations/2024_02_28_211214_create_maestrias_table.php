@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //codigos unicos 
         Schema::create('maestrias', function (Blueprint $table) {
             $table->id();
             $table->string('codigo');

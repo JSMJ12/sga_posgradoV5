@@ -8,6 +8,7 @@ use App\Models\Alumno;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Postulante;
 use App\Notifications\PagoRechazado;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Notification;
 
 class PagoController extends Controller
@@ -97,7 +98,7 @@ class PagoController extends Controller
         // Cálculo del descuento y total a pagar
         $arancel = $maestria->arancel;
         $porcentajeDescuento = $descuentoRelacion?->porcentaje ?? 0;
-        $montoDescuento = $arancel * $porcentajeDescuento;
+        $montoDescuento = ($arancel * $porcentajeDescuento) / 100;
         $total_pagar = $arancel - $montoDescuento;
 
         $programa = [
@@ -181,7 +182,7 @@ class PagoController extends Controller
 
     public function verificar_pago($id)
     {
-        
+
         // Encontrar el pago por su ID
         $pago = Pago::with('user')->findOrFail($id);
 
@@ -269,23 +270,22 @@ class PagoController extends Controller
         // Si no es ni alumno ni postulante
         return redirect()->route('pagos.index')->with('error', 'No se encontró un alumno o postulante asociado al pago.');
     }
-
     public function rechazar_pago($id)
     {
         // Cargar el pago con su relación user
         $pago = Pago::with('user')->findOrFail($id);
         $usuario = $pago->user;
-        // Validar que el user esté presente
+
         if (!$usuario) {
             return redirect()->route('pagos.index')->with('error', 'Usuario no asociado al pago.');
         }
-        // Enviar notificación al usuario
-        $usuario->notify(new PagoRechazado($pago, $pago->user));
+        $usuario->notify(new PagoRechazado($pago, $usuario));
+        if ($pago->archivo_comprobante && Storage::disk('public')->exists($pago->archivo_comprobante)) {
+            Storage::disk('public')->delete($pago->archivo_comprobante);
+        }
 
-        // Eliminar el pago
         $pago->delete();
 
-        // Redirigir con un mensaje
         return redirect()->route('pagos.index')->with('success', 'Pago rechazado y eliminado correctamente. Se ha notificado al usuario.');
     }
 }

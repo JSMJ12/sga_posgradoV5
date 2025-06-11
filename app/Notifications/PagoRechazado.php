@@ -6,8 +6,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
+use Carbon\Carbon;
 
 class PagoRechazado extends Notification implements ShouldQueue, ShouldBroadcast
 {
@@ -24,23 +25,18 @@ class PagoRechazado extends Notification implements ShouldQueue, ShouldBroadcast
         $this->userId = $user->id;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via($notifiable)
     {
         return ['mail', 'database', 'broadcast'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail($notifiable)
     {
-        
-        $fechaPago = optional($this->pago->fecha_pago)->format('d/m/Y') ?? 'Fecha no disponible';
+        $fechaPago = 'Fecha no disponible';
+        if ($this->pago && $this->pago->fecha_pago) {
+            $fechaPago = Carbon::parse($this->pago->fecha_pago)->format('d/m/Y');
+        }
+
 
         return (new MailMessage)
             ->subject('Tu comprobante de pago fue rechazado')
@@ -51,16 +47,11 @@ class PagoRechazado extends Notification implements ShouldQueue, ShouldBroadcast
             ->line('Gracias por usar nuestro sistema.');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toDatabase($notifiable)
+    public function toArray($notifiable)
     {
         return [
-            'type' => 'PagoRechazado',
-            'message' => 'Tu comprobante de pago fue rechazado.',
+            'type' => 'SubirArchivoNotification',
+            'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
         ];
     }
 
@@ -68,22 +59,14 @@ class PagoRechazado extends Notification implements ShouldQueue, ShouldBroadcast
     {
         return new PrivateChannel('user.' . $this->userId);
     }
-
-    /**
-     * Nombre del evento de transmisión.
-     */
     public function broadcastAs()
     {
-        return 'pago.rechazado';
+        return 'subir.archivo';
     }
-
-    /**
-     * Datos que se enviarán con la notificación en tiempo real.
-     */
     public function broadcastWith()
     {
         return [
-            'message' => 'Tu comprobante de pago fue rechazado.',
+            'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
         ];
     }
 }

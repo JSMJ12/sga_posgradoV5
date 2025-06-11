@@ -106,7 +106,6 @@ class DashboardSecretarioEpsuController extends Controller
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['monto'] += $pago->monto;
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['cantidad'] += 1;
         }
-
         // Retorno
         if ($request->ajax()) {
             return response()->json([
@@ -141,7 +140,6 @@ class DashboardSecretarioEpsuController extends Controller
             'maestriasConCohortes' => $maestriasConCohortes,
         ]);
     }
-
 
     public function generarPDF(Request $request, $cohorte)
     {

@@ -16,6 +16,8 @@ use App\Notifications\NuevoUsuarioNotification;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\PostulanteAceptadoNotification;
 use App\Models\Docente;
+use Illuminate\Validation\Rule;
+
 
 
 class PostulanteController extends Controller
@@ -120,13 +122,32 @@ class PostulanteController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
-            'dni' => 'required|unique:postulantes',
-            'correo_electronico' => 'required|email|unique:postulantes',
+            'dni' => [
+                'required',
+                Rule::unique('postulantes', 'dni'),
+                function ($attribute, $value, $fail) {
+                    if (DB::table('alumnos')->where('dni', $value)->exists()) {
+                        $fail('El DNI ya está registrado en alumnos.');
+                    }
+                },
+            ],
+            'correo_electronico' => [
+                'required',
+                'email',
+                Rule::unique('postulantes', 'correo_electronico'),
+                function ($attribute, $value, $fail) {
+                    if (DB::table('alumnos')->where('email_institucional', $value)->exists()) {
+                        $fail('El correo ya está registrado en alumnos.');
+                    }
+                },
+            ],
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $maestria = Maestria::find($request->input('maestria_id'));
+
+        $maestria = Maestria::where('id', $request->input('maestria_id'))->first();
 
         // Valores por defecto si no hay maestría
         $montoMatricula = $maestria ? $maestria->matricula : 0;
@@ -144,7 +165,6 @@ class PostulanteController extends Controller
             $primeraLetra = substr($request->input('nombre1'), 0, 1);
             $imagenPath = 'https://ui-avatars.com/api/?name=' . urlencode($primeraLetra);
         }
-
         // Guardar el postulante
         $postulante->fill([
             'dni' => $request->input('dni'),
@@ -318,6 +338,9 @@ class PostulanteController extends Controller
                 ->where('apellido', $postulante->apellidop)
                 ->where('email', $postulante->correo_electronico)
                 ->first();
+            
+            Notification::route('mail', $user->email)
+                ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
 
             if ($user) {
                 $user->assignRole('Alumno');
@@ -325,9 +348,6 @@ class PostulanteController extends Controller
 
                 $user->email = $email_institucional;
                 $user->save();
-
-                Notification::route('mail', $user->email)
-                    ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
 
                 DB::table('sessions')
                     ->where('user_id', $user->id)

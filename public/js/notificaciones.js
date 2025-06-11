@@ -245,13 +245,14 @@ if (userId) {
             document.getElementById('sistema-badge').innerText = sistemaCount;
             document.getElementById('sistema-header').innerText = `${sistemaCount} Notificaciones del sistema`;
             const nuevaNoti = `
-                <a href="#" class="dropdown-item">
+                <a href="#" class="dropdown-item" onclick="event.preventDefault(); location.reload();">
                     <i class="fas fa-info-circle text-info mr-2"></i>
                     ${data.message}
                     <span class="float-right text-muted text-sm">Justo ahora</span>
                 </a>
                 <div class="dropdown-divider"></div>
             `;
+
             document.getElementById('sistema-lista').insertAdjacentHTML('afterbegin', nuevaNoti);
         } else {
             console.log("❌ No hay mensaje en los datos:", data);

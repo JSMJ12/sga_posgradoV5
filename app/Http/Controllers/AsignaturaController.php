@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Models\Maestria;
+use Illuminate\Validation\Rule;
 use App\Models\Asignatura;
 use App\Models\Docente;
 
@@ -18,12 +19,22 @@ class AsignaturaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required',
-            'codigo_asignatura' => 'required',
+            'nombre' => [
+                'required',
+                Rule::unique('asignaturas')->where(function ($query) use ($request) {
+                    return $query->where('maestria_id', $request->maestria_id);
+                }),
+            ],
+            'codigo_asignatura' => [
+                'required',
+                Rule::unique('asignaturas')->where(function ($query) use ($request) {
+                    return $query->where('maestria_id', $request->maestria_id);
+                }),
+            ],
             'credito' => 'required|numeric',
             'horas_duracion' => 'nullable|integer',
             'itinerario' => 'nullable',
-            'unidad_curricular'=> 'nullable',
+            'unidad_curricular' => 'nullable',
             'maestria_id' => 'required|exists:maestrias,id',
         ]);
 
@@ -48,7 +59,7 @@ class AsignaturaController extends Controller
             'credito' => 'required|numeric',
             'horas_duracion' => 'nullable|integer',
             'itinerario' => 'nullable',
-            'unidad_curricular'=> 'nullable',
+            'unidad_curricular' => 'nullable',
             'maestria_id' => 'required|exists:maestrias,id',
         ]);
 

@@ -9,12 +9,13 @@
 
     {{-- Navbar right links --}}
     <ul class="navbar-nav ml-auto">
-        
+
         <label for="toggle-sound" style="cursor: pointer;">
-            <i id="sound-icon" class="fas fa-volume-up" style="font-size: 10px; margin-left: 10px;" title="Apagar sonido notificacion"></i>
+            <i id="sound-icon" class="fas fa-volume-up" style="font-size: 10px; margin-left: 10px;"
+                title="Apagar sonido notificacion"></i>
         </label>
         <input type="checkbox" id="toggle-sound" checked style="display: none;" />
-        
+
         @php
             $notificaciones = auth()->user()->unreadNotifications;
 
@@ -43,7 +44,7 @@
                     @foreach ($sistema->take(5) as $noti)
                         <a href="#" class="dropdown-item" onclick="marcarLeido('{{ $noti->id }}')">
                             <i class="fas fa-info-circle text-info mr-2"></i>
-                            {{ Str::limit($noti->data['message'], 100) }}
+                            {{ isset($noti->data['message']) ? Str::limit($noti->data['message'], 100) : 'Mensaje no disponible' }}
                             <span class="float-right text-muted text-sm">{{ $noti->created_at->diffForHumans() }}</span>
                         </a>
                         <div class="dropdown-divider"></div>
@@ -79,7 +80,8 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="#" data-toggle="modal" data-target="#cambiarPerfilModal" title="Editar Perfil">
+            <a class="nav-link" href="#" data-toggle="modal" data-target="#cambiarPerfilModal"
+                title="Editar Perfil">
                 <i class="fas fa-user-cog" style="font-size: 22px;"></i>
             </a>
         </li>

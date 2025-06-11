@@ -129,8 +129,8 @@ Route::resource('cohortes', CohorteController::class)->middleware('can:secretari
 Route::get('/cohortes/{cohorte_id}/exportar-alumnos', [CohorteController::class, 'exportarAlumnos'])
     ->name('cohortes.exportarAlumnos')->middleware('can:secretario_coordinador');
 Route::get('/cohortes/{id}/verificaciones', [CohorteController::class, 'verificaciones'])->middleware('can:secretario_coordinador');
-
-
+Route::get('/cohortes/{id}/proceso-titulacion', [CohorteController::class, 'proceso_titulacion'])->name('cohortes.proceso_titulacion')->middleware('auth');
+Route::get('/cohortes/{id}/examen-complexivo', [CohorteController::class, 'examenComplexivo'])->name('cohortes.examenComplexivo')->middleware('auth');
 
 //Postulaciones
 Route::resource('postulaciones', PostulanteController::class);

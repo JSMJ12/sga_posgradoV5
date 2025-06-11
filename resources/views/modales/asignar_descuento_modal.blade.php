@@ -8,6 +8,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
+            
             <form id="formSeleccionarDescuento" action="{{ route('descuentos.procesar') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="dni" id="dniAlumnoInput">

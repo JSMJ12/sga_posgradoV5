@@ -13,7 +13,7 @@
                 <h3 class="card-title">Listado de Alumnos</h3>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="">
                     <table class="table table-hover table-bordered table-striped" id="alumnos">
                         <thead style="background-color: #28a745; color: white;">
                             <tr>
@@ -139,8 +139,11 @@
                                     </ul>
                                 </td>
                                 <td>
-                                    <input class="form-check-input" type="radio" name="descuento_id" value="${d.id}" data-tipo="${tipo}">
+                                    <div class="form-check d-flex justify-content-center">
+                                        <input class="form-check-input" type="radio" name="descuento_id" value="${d.id}" data-tipo="${tipo}">
+                                    </div>
                                 </td>
+
                             </tr>
                         `).join('');
                         } else {

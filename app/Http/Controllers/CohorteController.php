@@ -13,6 +13,7 @@ use App\Exports\CohorteAlumnosExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Nota;
 use App\Models\CalificacionVerificacion;
+use App\Models\User;
 
 class CohorteController extends Controller
 {
@@ -85,10 +86,21 @@ class CohorteController extends Controller
                 })
                 ->addColumn('verificaciones', function ($cohorte) {
                     return '
-                    <button class="btn btn-info btn-sm btn-verificaciones" data-cohorte-id="' . $cohorte->id . '" data-toggle="modal" data-target="#verificacionModal">
-                        <i class="fas fa-clipboard-check"></i> Verificación
-                    </button>';
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-info btn-sm btn-verificaciones" data-cohorte-id="' . $cohorte->id . '" data-toggle="modal" data-target="#verificacionModal">
+                                <i class="fas fa-clipboard-check"></i> Verificación
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm btn-proceso-titulacion" data-toggle="modal" data-target="#procesoTitulacionModal" data-id="' . $cohorte->id . '">
+                                <i class="fas fa-graduation-cap"></i> Titulación
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm btn-examen-complexivo" data-toggle="modal" data-target="#examenComplexivoModal" data-id="' . $cohorte->id . '">
+                                <i class="fas fa-book"></i> Examen Complexivo
+                            </button>
+                        </div>
+                    ';
                 })
+
+
                 ->rawColumns(['acciones', 'alumnos', 'verificaciones'])
                 ->toJson();
         }
@@ -280,5 +292,84 @@ class CohorteController extends Controller
         $fileName = "Alumnos_{$maestriaNombre}_{$cohorteNombre}_" . now()->format('Y-m-d') . ".xlsx";
 
         return Excel::download(new CohorteAlumnosExport($cohorte_id), $fileName);
+    }
+    public function proceso_titulacion($id)
+    {
+        $cohorte = Cohorte::with([
+            'matriculas.alumno.tesis.tutorias',
+            'matriculas.alumno.tesis.tutor',
+            'matriculas.alumno.titulaciones'
+        ])->findOrFail($id);
+
+        $alumnosUnicos = $cohorte->matriculas
+            ->pluck('alumno')
+            ->unique('dni')
+            ->filter(function ($alumno) {
+                return $alumno->examenComplexivo === null;
+            })
+            ->values();
+
+        $alumnosProcesados = $alumnosUnicos->map(function ($alumno) {
+            $primerTesis = $alumno->tesis->first();
+            $tutorias = $primerTesis ? $primerTesis->tutorias : collect();
+            $tutor = $primerTesis?->tutor;
+
+            // Buscar usuario por email si existe
+            $tutorUserId = null;
+            if ($tutor && $tutor->email) {
+                $user = User::where('email', $tutor->email)->first();
+                $tutorUserId = $user?->id;
+            }
+
+            return [
+                'alumno' => [
+                    'dni' => $alumno->dni,
+                    'full_name' => $alumno->full_name,
+                ],
+                'estado_tesis' => optional($primerTesis)->estado ?? 'sin tesis',
+                'tiene_tesis' => (bool) $primerTesis,
+                'tutorias' => $tutorias->map(function ($tutoria) {
+                    return [
+                        'estado' => $tutoria->estado,
+                        'fecha' => $tutoria->fecha ?? null,
+                    ];
+                })->values(),
+                'tutorias_completadas' => $tutorias->where('estado', 'realizada')->count(),
+                'tutor' => $tutor?->full_name,
+                'tutor_user_id' => $tutorUserId,
+                'graduado' => optional($alumno->titulaciones->first())->fecha_graduacion ?? null,
+            ];
+        });
+
+        return response()->json($alumnosProcesados);
+    }
+    public function examenComplexivo($id)
+    {
+        $cohorte = Cohorte::with([
+            'matriculas.alumno.examenComplexivo'
+        ])->findOrFail($id);
+
+        $alumnosUnicos = $cohorte->matriculas
+            ->pluck('alumno')
+            ->unique('dni')
+            ->values();
+
+        // Filtrar solo los alumnos que tienen examen complexivo registrado
+        $alumnosConExamen = $alumnosUnicos->filter(function ($alumno) {
+            return $alumno->examenComplexivo !== null;
+        });
+
+        $datos = $alumnosConExamen->map(function ($alumno) {
+            $examen = $alumno->examenComplexivo;
+
+            return [
+                'alumno' => $alumno->full_name,
+                'lugar' => $examen->lugar ?? 'No registrado',
+                'fecha_hora' => $examen->fecha_hora ?? 'No programada',
+                'nota' => $examen->nota !== null ? $examen->nota : 'No asignada aún',
+            ];
+        });
+
+        return response()->json($datos->values());
     }
 }

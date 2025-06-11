@@ -81,6 +81,7 @@ class Alumno extends Model
     }
     public function retiros()
     {
+        
         return $this->hasMany(Retiro::class, 'alumno_dni');
     }
     public function titulaciones()
@@ -114,5 +115,9 @@ class Alumno extends Model
     public function descuento()
     {
         return $this->belongsTo(Descuento::class);
+    }
+    public function getFullNameAttribute()
+    {
+        return "{$this->nombre1} {$this->nombre2} {$this->apellidop} {$this->apellidom}";
     }
 }

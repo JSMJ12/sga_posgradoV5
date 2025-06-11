@@ -18,14 +18,15 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
     protected $nombre;
     protected $dni;
     protected $userId;
+    protected $email_institucional;
 
-    public function __construct($user, $email, $nombre, $dni, $userId)
+    public function __construct($user, $email_institucional, $nombre, $dni, $userId)
     {
         $this->user = $user;
-        $this->email = $email;
+        $this->email = $email_institucional;
         $this->nombre = $nombre;
         $this->dni = $dni;
-        $this->user->id = $userId;
+        $this->userId = $userId;
     }
 
     /**
@@ -36,7 +37,7 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
      */
     public function via($notifiable)
     {
-        return ['mail', 'database', 'broadcast']; 
+        return ['mail', 'database', 'broadcast'];
     }
 
     /**
@@ -54,7 +55,7 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
             ->line('Tu correo electrónico institucional ha sido creado: ' . $this->email)
             ->line('Puedes iniciar sesión con tu correo institucional y tu cedula como contraseña.')
             ->line('Tu contraseña es: ' . $this->dni)
-            ->action('Iniciar sesión', url('/login'))
+            ->action('Iniciar sesión', route('login'))
             ->line('Si tienes alguna pregunta, no dudes en contactarnos.')
             ->line('¡Te damos la bienvenida a la comunidad universitaria!');
     }
@@ -93,5 +94,4 @@ class MatriculaExito extends Notification implements ShouldQueue, ShouldBroadcas
             'message' => "🎓 Tu matrícula ha sido exitosa y el pago ha sido procesado. Ahora puedes acceder con tu correo institucional: {$this->email}. Tu contraseña temporal es tu número de cédula o pasaporte registrado. Toca esta notificación o cierra sesión para ingresar con tus nuevas credenciales.",
         ];
     }
-    
 }

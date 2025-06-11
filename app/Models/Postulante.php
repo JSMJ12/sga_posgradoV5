@@ -65,20 +65,4 @@ class Postulante extends Model
     {
         return $this->hasMany(DocumentoPostulante::class, 'dni_postulante', 'dni');
     }
-    protected static function booted()
-    {
-        static::creating(function ($postulante) {
-            if ($postulante->maestria) {
-                $postulante->monto_matricula = $postulante->maestria->monto_matricula ?? 0;
-                $postulante->monto_inscripcion = $postulante->maestria->monto_inscripcion ?? 0;
-            }
-        });
-
-        static::updating(function ($postulante) {
-            if ($postulante->isDirty('maestria_id') && $postulante->maestria) {
-                $postulante->monto_matricula = $postulante->maestria->monto_matricula ?? 0;
-                $postulante->monto_inscripcion = $postulante->maestria->monto_inscripcion ?? 0;
-            }
-        });
-    }
 }

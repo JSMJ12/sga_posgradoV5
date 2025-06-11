@@ -22,7 +22,6 @@ class NuevoPagoMatricula extends Notification implements ShouldQueue, ShouldBroa
     {
         $this->postulante = $postulante;
 
-        // Buscar al primer usuario con el rol "Secretario/a EPSU"
         $user = User::role('Secretario/a EPSU')->first();
         $this->userId = $user ? $user->id : null;
     }

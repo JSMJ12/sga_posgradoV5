@@ -13,6 +13,7 @@ use App\Models\Nota;
 use App\Models\CalificacionVerificacion;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 
 class CohorteDocenteController extends Controller
 {
@@ -106,14 +107,14 @@ class CohorteDocenteController extends Controller
             // Remover los cohortes que ya no están seleccionados
             if (!empty($cohortesADesasignar)) {
                 foreach ($cohortesADesasignar as $cohorteId) {
-                    $asignaturasIds = CohorteDocente::where('cohorte_id', $cohorteId)
+                    $asignaturasIds = CohorteDocente::where('cohort_id', $cohorteId)
                         ->where('docente_dni', $docenteDni)
                         ->pluck('asignatura_id');
 
                     foreach ($asignaturasIds as $asignaturaId) {
                         // Eliminar el registro de CohorteDocente
                         CohorteDocente::where([
-                            'cohorte_id' => $cohorteId,
+                            'cohort_id' => $cohorteId,
                             'docente_dni' => $docenteDni,
                             'asignatura_id' => $asignaturaId,
                         ])->delete();
@@ -202,6 +203,12 @@ class CohorteDocenteController extends Controller
             // Manejar el caso donde no se encuentre el docente
             return redirect()->route('docentes.index')->with('error', 'Docente no encontrado.');
         } catch (\Exception $e) {
+            Log::error('Error al asignar cohortes al docente', [
+                'mensaje' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             // Manejar cualquier otro error
             return redirect()->route('docentes.index')->with('error', 'Ocurrió un error al actualizar los cohortes.');
         }

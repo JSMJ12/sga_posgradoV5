@@ -18,7 +18,7 @@ class TitulacionesController extends Controller
         // Validar que los archivos sean PDFs
         $request->validate([
             'tesis_path.*' => 'required|mimes:pdf|max:2048',
-            'fecha_graduacion' => 'required|date',
+            'fecha_graduacion' => 'required',
         ]);
 
         // Guardar los archivos

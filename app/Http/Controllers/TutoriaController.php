@@ -36,19 +36,15 @@ class TutoriaController extends Controller
                         'Sin contacto';
                 })
                 ->addColumn('acciones', function ($item) {
-                    // Validar si se cumplen las condiciones para titular al alumno
                     $puedeTitular = $item->tutorias &&
                         $item->tutorias->where('estado', 'realizada')->count() >= 3 &&
                         $item->alumno &&
                         $item->alumno->monto_total == 0;
                 
-                    // Obtener la tesis del alumno (asegúrate de que la relación está correctamente definida)
                     $tesis = $item->alumno ? $item->alumno->tesis()->first() : null;
                 
-                    // Verificar que la tesis esté aprobada
                     $tesisAprobada = $tesis && $tesis->estado === 'aprobado';
                 
-                    // Verificar si se cumplen todas las condiciones para titular y si la tesis está aprobada
                     if ($puedeTitular && $tesisAprobada) {
                         return '
                             <div style="display: flex; gap: 10px; align-items: center;">
