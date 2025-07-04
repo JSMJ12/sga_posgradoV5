@@ -18,6 +18,6 @@ class Seccion extends Model
 
     public function secretarios()
     {
-        return $this->belongsToMany(Secretario::class);
+        return $this->hasMany(Secretario::class);
     }
 }

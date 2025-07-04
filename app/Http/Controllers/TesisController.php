@@ -42,13 +42,13 @@ class TesisController extends Controller
 
         if ($request->ajax()) {
             $solicitudes = Tesis::with('alumno', 'tutor')
+                ->where('tipo', '!=', 'examen complexivo')
                 ->whereHas('alumno', function ($query) use ($maestriaId) {
                     $query->where('maestria_id', $maestriaId);
                 })
                 ->orderByRaw('tutor_dni IS NULL DESC')
                 ->orderBy('estado', 'asc')
                 ->get();
-
             return DataTables::of($solicitudes)
                 ->addColumn('nombre_completo', function ($tesis) {
                     return $tesis->alumno

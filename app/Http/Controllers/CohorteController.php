@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Nota;
 use App\Models\CalificacionVerificacion;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class CohorteController extends Controller
 {
@@ -86,18 +87,18 @@ class CohorteController extends Controller
                 })
                 ->addColumn('verificaciones', function ($cohorte) {
                     return '
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-info btn-sm btn-verificaciones" data-cohorte-id="' . $cohorte->id . '" data-toggle="modal" data-target="#verificacionModal">
-                                <i class="fas fa-clipboard-check"></i> Verificación
-                            </button>
-                            <button type="button" class="btn btn-primary btn-sm btn-proceso-titulacion" data-toggle="modal" data-target="#procesoTitulacionModal" data-id="' . $cohorte->id . '">
-                                <i class="fas fa-graduation-cap"></i> Titulación
-                            </button>
-                            <button type="button" class="btn btn-warning btn-sm btn-examen-complexivo" data-toggle="modal" data-target="#examenComplexivoModal" data-id="' . $cohorte->id . '">
-                                <i class="fas fa-book"></i> Examen Complexivo
-                            </button>
-                        </div>
-                    ';
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-info btn-sm btn-verificaciones" data-cohorte-id="' . $cohorte->id . '" data-toggle="modal" data-target="#verificacionModal" title="Verificación">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm btn-proceso-titulacion" data-toggle="modal" data-target="#procesoTitulacionModal" data-id="' . $cohorte->id . '" title="Titulación">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </button>
+                                <button type="button" class="btn btn-warning btn-sm btn-examen-complexivo" data-toggle="modal" data-target="#examenComplexivoModal" data-id="' . $cohorte->id . '" title="Examen Complexivo">
+                                    <i class="fas fa-book"></i>
+                                </button>
+                            </div>
+                        ';
                 })
 
 
@@ -203,7 +204,13 @@ class CohorteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string',
+            'nombre' => [
+                'required',
+                'string',
+                Rule::unique('cohortes')->where(function ($query) use ($request) {
+                    return $query->where('maestria_id', $request->maestria_id);
+                }),
+            ],
             'maestria_id' => 'required|exists:maestrias,id',
             'periodo_academico_id' => 'required|exists:periodos_academicos,id',
             'aula_id' => 'nullable',
@@ -211,7 +218,25 @@ class CohorteController extends Controller
             'modalidad' => 'required|in:presencial,hibrida,virtual',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+        ], [
+            'nombre.required' => 'El nombre de la cohorte es obligatorio.',
+            'nombre.string' => 'El nombre debe ser un texto válido.',
+            'nombre.unique' => 'Ya existe una cohorte con ese nombre en la maestría seleccionada.',
+            'maestria_id.required' => 'Debe seleccionar una maestría.',
+            'maestria_id.exists' => 'La maestría seleccionada no es válida.',
+            'periodo_academico_id.required' => 'Debe seleccionar un periodo académico.',
+            'periodo_academico_id.exists' => 'El periodo académico no es válido.',
+            'aforo.required' => 'El aforo es obligatorio.',
+            'aforo.integer' => 'El aforo debe ser un número entero.',
+            'modalidad.required' => 'La modalidad es obligatoria.',
+            'modalidad.in' => 'La modalidad seleccionada no es válida.',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
+            'fecha_inicio.date' => 'La fecha de inicio no es válida.',
+            'fecha_fin.required' => 'La fecha de fin es obligatoria.',
+            'fecha_fin.date' => 'La fecha de fin no es válida.',
+            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
         ]);
+
 
         Cohorte::create($request->only([
             'nombre',
@@ -226,7 +251,6 @@ class CohorteController extends Controller
 
         return redirect()->route('cohortes.index')->with('success', 'La cohorte ha sido creada exitosamente.');
     }
-
 
     public function edit($cohorte)
     {

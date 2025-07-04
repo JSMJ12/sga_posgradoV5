@@ -28,7 +28,10 @@ class AlumnoController extends Controller
 
             // Filtrar los alumnos según el rol del usuario
             if ($user->hasRole('Administrador')) {
-                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula');
+                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
+                    ->withCount('matriculas')
+                    ->orderBy('matriculas_count')
+                    ->orderBy('created_at', 'desc');
             } elseif ($user->hasRole('Secretario')) {
                 $secretario = Secretario::where('nombre1', $user->name)
                     ->where('apellidop', $user->apellido)
@@ -37,7 +40,10 @@ class AlumnoController extends Controller
 
                 $maestriasIds = $secretario->seccion->maestrias->pluck('id');
                 $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
-                    ->whereIn('maestria_id', $maestriasIds);
+                    ->withCount('matriculas')
+                    ->whereIn('maestria_id', $maestriasIds)
+                    ->orderBy('matriculas_count')
+                    ->orderBy('created_at', 'desc');
             } elseif ($user->hasRole('Coordinador')) {
                 $docente = Docente::where('nombre1', $user->name)
                     ->where('apellidop', $user->apellido)
@@ -50,7 +56,10 @@ class AlumnoController extends Controller
                 }
 
                 $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
-                    ->where('maestria_id', $maestria->id);
+                    ->withCount('matriculas')
+                    ->where('maestria_id', $maestria->id)
+                    ->orderBy('matriculas_count')
+                    ->orderBy('created_at', 'desc');
             } else {
                 abort(403, 'No autorizado');
             }
@@ -81,8 +90,8 @@ class AlumnoController extends Controller
 
                     if ($alumno->matriculas->count() > 0) {
                         $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
-                            data-id="' . $alumno->dni . '" 
-                            data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
+                        data-id="' . $alumno->dni . '" 
+                        data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
                             return [
                                 'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
                                 'docente' => $matricula->docente
@@ -93,8 +102,8 @@ class AlumnoController extends Controller
                                 'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
                             ];
                         })) . '\' title="Ver Matrícula">
-                            <i class="fas fa-eye"></i>
-                        </button>';
+                        <i class="fas fa-eye"></i>
+                    </button>';
 
                         $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
                         $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
@@ -119,7 +128,6 @@ class AlumnoController extends Controller
 
         return view('alumnos.index');
     }
-
 
     public function create()
     {
@@ -181,7 +189,7 @@ class AlumnoController extends Controller
         $alumno->maestria_id = $request->input('maestria_id');
         $alumno->porcentaje_discapacidad = $request->input('porcentaje_discapacidad');
         $alumno->registro = $nuevoRegistro;
-        $alumno->monto_total = $arancel; // Asignar el valor del arancel
+        $alumno->monto_total = $arancel;
 
         // Procesar la imagen
         $primeraLetra = substr($alumno->nombre1, 0, 1);

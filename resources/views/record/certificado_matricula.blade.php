@@ -37,7 +37,7 @@
         .seal {
             width: 104px;
             position: absolute;
-            top: -25;
+            top: -35;
             right: 0;
         }
 

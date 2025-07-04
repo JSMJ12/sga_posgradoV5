@@ -31,14 +31,14 @@
         .logo {
             width: 60px;
             position: absolute;
-            top: -25px;
+            top: -30px;
             left: 0;
         }
 
         .seal {
             width: 100px;
             position: absolute;
-            top: -25;
+            top: -35;
             right: 0;
         }
 
@@ -155,14 +155,15 @@
         <p class="certificate-title">RECORD ACADÉMICO</p>
 
         <div class="student-details">
-            Estudiante: {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }}
+            <strong>Estudiante:</strong> {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }}
             {{ $alumno->nombre2 }}<br>
-            Período académico: {{ $cohorte->periodo_academico->nombre }}<br>
-            Cohorte: {{ $cohorte->nombre }}<br>
-            Modalidad: {{ $cohorte->modalidad }}<br>
-            Fecha de inicio:
+            <strong>Cédula/Pasaporte:</strong> {{ $alumno->dni }}<br>
+            <strong>Período académico:</strong> {{ $cohorte->periodo_academico->nombre }}<br>
+            <strong>Cohorte:</strong> {{ $cohorte->nombre }}<br>
+            <strong>Modalidad:</strong> {{ $cohorte->modalidad }}<br>
+            <strong>Fecha de inicio:</strong>
             {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->translatedFormat('d \d\e F \d\e Y') }}<br>
-            Fecha de fin:
+            <strong>Fecha de fin:</strong>
             {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->translatedFormat('d \d\e F \d\e Y') }}
 
         </div>
@@ -206,16 +207,42 @@
 
         <p id="fecha-actual">Jipijapa, {{ $fechaActual }}</p>
 
-        <div style="margin-top: 100px; text-align: center;">
-            <div
-                style="border-top: 1px solid black; display: inline-block; padding: 5px 20px; font-weight: bold; text-transform: uppercase;">
-                {{ strtoupper($nombreCompleto) }}
-            </div>
-            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
-                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
-            </div>
-        </div>
+        <table style="width:100%; margin-top: 30px; border-collapse: collapse; font-size:8pt;">
+            <tr>
+                <!-- ELABORADO POR -->
+                <td style="border:1px solid #000; padding:10px; width:33%; vertical-align:top; text-align:center;">
+                    <b style="font-size:8pt;">Elaborado por:</b><br><br>
+                    <hr style="margin: 8px 20px; border: none; border-top: 1px solid #000;">
+                    @if (isset($secretario))
+                        <span style="text-transform:uppercase; font-size:6pt;">{{ $secretario->full_name }}</span><br>
+                    @else
+                        <span style="font-size:6pt;">--</span><br>
+                    @endif
+                    <span style="font-size:7pt; font-weight:bold;">SECRETARIA ACADÉMICA</span>
+                </td>
 
+                <!-- REVISADO POR -->
+                <td style="border:1px solid #000; padding:10px; width:33%; vertical-align:top; text-align:center;">
+                    <b style="font-size:8pt;">Revisado por:</b><br><br>
+                    <hr style="margin: 8px 20px; border: none; border-top: 1px solid #000;">
+                    <span style="text-transform:uppercase; font-size:6pt;">{{ strtoupper($nombreCompleto) }}</span><br>
+                    <span style="font-size:7pt; font-weight:bold;">COORDINADOR(A) DEL PROGRAMA</span>
+                </td>
+
+                <!-- APROBADO POR -->
+                <td style="border:1px solid #000; padding:10px; width:34%; vertical-align:top; text-align:center;">
+                    <b style="font-size:8pt;">Aprobado por:</b><br><br>
+                    <hr style="margin: 8px 20px; border: none; border-top: 1px solid #000;">
+                    @if (isset($directorDocente))
+                        <span
+                            style="text-transform:uppercase; font-size:6pt;">{{ $directorDocente->full_name }}</span><br>
+                    @else
+                        <span style="font-size:6pt;">Ing. Leopoldo Venegas Loor, PhD</span><br>
+                    @endif
+                    <span style="font-size:7pt; font-weight:bold;">DIRECTOR DEL INSTITUTO DE POSGRADO</span>
+                </td>
+            </tr>
+        </table>
 
     </div>
 </body>

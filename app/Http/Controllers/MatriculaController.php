@@ -25,12 +25,12 @@ class MatriculaController extends Controller
         $alumno = Alumno::where('dni', $alumno_dni)->firstOrFail();
         $maestria = Maestria::findOrFail($alumno->maestria_id);
 
-        // Filtrar cohortes con aforo mayor a 0
-        $cohortes = $maestria->cohortes->filter(function ($cohorte) {
-            return $cohorte->aforo > 0;
-        });
+        $cohortes = $maestria->cohortes
+            ->filter(function ($cohorte) {
+                return $cohorte->aforo > 0;
+            })
+            ->sortByDesc('id');
 
-        // Verificar si el alumno ya está matriculado en alguna asignatura de este cohorte
         $estaMatriculado = $this->verificarMatriculacion($alumno);
 
         if ($estaMatriculado) {
@@ -39,6 +39,7 @@ class MatriculaController extends Controller
 
         return view('matriculas.create', compact('alumno', 'cohortes'));
     }
+
 
     private function verificarMatriculacion($alumno)
     {

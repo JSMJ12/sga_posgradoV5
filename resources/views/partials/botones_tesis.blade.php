@@ -9,7 +9,7 @@
                 <i class="fas fa-user-edit"></i> Actualizar Tutor
             </button>
         @endif
-    @else
+    @elseif ($tesis->estado === 'pendiente')
         <button class="btn btn-outline-info btn-sm"
             onclick="verSolicitud('{{ asset('storage/' . $tesis->solicitud_pdf) }}')" title="Ver solicitud PDF">
             <i class="fas fa-eye"></i>

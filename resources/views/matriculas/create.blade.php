@@ -32,20 +32,26 @@
                                     <thead class="thead-dark">
                                         <tr>
                                             <th>Asignatura</th>
-                                            <th>Docente</th>
+                                            <th>Docente(s)</th>
                                             <th>Aforo</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($cohorte->maestria->asignaturas as $asignatura)
+                                            @php
+                                                $docentes = \App\Models\CohorteDocente::where('cohort_id', $cohorte->id)
+                                                    ->where('asignatura_id', $asignatura->id)
+                                                    ->with('docente')
+                                                    ->get();
+                                            @endphp
                                             <tr>
                                                 <td>{{ $asignatura->nombre }}</td>
                                                 <td>
-                                                    @if ($asignatura->docentes->isEmpty())
+                                                    @if ($docentes->isEmpty())
                                                         <span class="text-danger"><i class="fas fa-user-times"></i> Sin asignar</span>
                                                     @else
-                                                        @foreach ($asignatura->docentes as $docente)
-                                                            {{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }} {{ $docente->apellidom }}<br>
+                                                        @foreach ($docentes as $registro)
+                                                            {{ $registro->docente->nombre1 }} {{ $registro->docente->nombre2 }} {{ $registro->docente->apellidop }} {{ $registro->docente->apellidom }}<br>
                                                         @endforeach
                                                     @endif
                                                 </td>
@@ -62,10 +68,16 @@
                                 <input type="hidden" name="cohorte_id" value="{{ $cohorte->id }}">
 
                                 @foreach ($cohorte->maestria->asignaturas as $asignatura)
+                                    @php
+                                        $docenteRegistro = \App\Models\CohorteDocente::where('cohort_id', $cohorte->id)
+                                            ->where('asignatura_id', $asignatura->id)
+                                            ->first();
+                                    @endphp
+
                                     <input type="hidden" name="asignatura_ids[]" value="{{ $asignatura->id }}">
 
-                                    @if (!$asignatura->docentes->isEmpty())
-                                        <input type="hidden" name="docente_dnis[{{ $asignatura->id }}]" value="{{ $asignatura->docentes->first()->dni }}">
+                                    @if ($docenteRegistro)
+                                        <input type="hidden" name="docente_dnis[{{ $asignatura->id }}]" value="{{ $docenteRegistro->docente_dni }}">
                                     @endif
                                 @endforeach
 

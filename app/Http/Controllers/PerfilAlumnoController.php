@@ -83,33 +83,14 @@ class PerfilAlumnoController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'estado_civil' => 'nullable|string|max:50',
-            'provincia' => 'nullable|string|max:100',
-            'canton' => 'nullable|string|max:100',
-            'barrio' => 'nullable|string|max:100',
-            'direccion' => 'nullable|string|max:255',
-            'email_personal' => 'nullable|email|max:255',
-            'carnet_discapacidad' => 'nullable|string|max:50',
-            'tipo_discapacidad' => 'nullable|string|max:50',
-            'porcentaje_discapacidad' => 'nullable|numeric|min:0|max:100',
+            
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'celular' => 'nullable|string|max:20',
-            'titulo_profesional' => 'nullable|string|max:255',
-            'universidad_titulo' => 'nullable|string|max:255',
-            'nacionalidad_indigena' => 'nullable|string|max:50',
-            'tipo_colegio' => 'nullable|string|max:50',
-            'cantidad_miembros_hogar' => 'nullable|numeric|min:1',
-            'ingreso_total_hogar' => 'nullable|numeric|min:0',
-            'nivel_formacion_padre' => 'nullable|string|max:255',
-            'nivel_formacion_madre' => 'nullable|string|max:255',
-            'origen_recursos_estudios' => 'nullable|string|max:255',
-            'sexo' => 'required|string|in:M,F',
         ]);
         $user = Auth::user();
         $alumno = Alumno::where('email_institucional', $user->email)->firstOrFail();
 
         // Actualizar todos los datos excepto la imagen
-        $alumno->update($request->except(['image']));
+        $alumno->update($request->except(['image', 'discapacidad']));
 
         // Manejo de la imagen
         if ($request->hasFile('image')) {

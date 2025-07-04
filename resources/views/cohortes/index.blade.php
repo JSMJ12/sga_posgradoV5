@@ -51,7 +51,7 @@
             let table = $('#cohortes').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('cohortes.index') }}', // URL para cargar los datos
+                ajax: '{{ route('cohortes.index') }}',
                 columns: [{
                         data: 'id',
                         name: 'id'
@@ -168,6 +168,4 @@
             });
         });
     </script>
-
-
 @stop

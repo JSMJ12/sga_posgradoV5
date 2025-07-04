@@ -68,7 +68,7 @@ class CohorteDocenteController extends Controller
                     continue;
                 }
 
-                $cohortes = $maestria->cohortes()->whereDate('fecha_fin', '>', Carbon::now())->get();
+                $cohortes = $maestria->cohortes()->get();
 
                 if ($cohortes->isNotEmpty()) {
                     $maestriaCohortes[] = [

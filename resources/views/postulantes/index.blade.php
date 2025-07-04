@@ -76,6 +76,12 @@
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                 </li>
+                                                <li class="list-group-item text-center">
+                                                    <a href="{{ route('postulante.ficha_inscripcion_pdf', $postulante->dni) }}"
+                                                        target="_blank" class="btn btn-outline-danger btn-sm" title="Ver Ficha de Admisión PDF">
+                                                        <i class="fas fa-file-pdf"></i>
+                                                    </a>
+                                                </li>
 
                                                 <li class="list-group-item text-center">
                                                     <form action="{{ route('postulaciones.destroy', $postulante->dni) }}"

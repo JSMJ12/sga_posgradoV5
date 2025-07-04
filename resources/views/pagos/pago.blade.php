@@ -18,9 +18,33 @@
                     <div class="payment-history-body">
                         <p><strong>Cédula/Pasaporte:</strong> {{ $alumno->dni }}</p>
                         <p><strong>Maestría:</strong> {{ $programa['nombre'] }}</p>
-                        <p><strong>Deuda de Arancel:</strong> ${{ number_format($alumno->monto_total, 2) }}</p>
-                        <p><strong>Deuda de Matrícula:</strong> ${{ number_format($alumno->monto_matricula, 2) }}</p>
-                        <p><strong>Deuda de Inscripción:</strong> ${{ number_format($alumno->monto_inscripcion, 2) }}</p>
+                        <p><strong>Deuda de Arancel:</strong>
+                            @if ($alumno->monto_total < 0)
+                                <span style="color: green;">Reembolso a recibir:
+                                    ${{ number_format(abs($alumno->monto_total), 2) }}</span>
+                            @else
+                                ${{ number_format($alumno->monto_total, 2) }}
+                            @endif
+                        </p>
+
+                        <p><strong>Deuda de Matrícula:</strong>
+                            @if ($alumno->monto_matricula < 0)
+                                <span style="color: green;">Reembolso a recibir:
+                                    ${{ number_format(abs($alumno->monto_matricula), 2) }}</span>
+                            @else
+                                ${{ number_format($alumno->monto_matricula, 2) }}
+                            @endif
+                        </p>
+
+                        <p><strong>Deuda de Inscripción:</strong>
+                            @if ($alumno->monto_inscripcion < 0)
+                                <span style="color: green;">Reembolso a recibir:
+                                    ${{ number_format(abs($alumno->monto_inscripcion), 2) }}</span>
+                            @else
+                                ${{ number_format($alumno->monto_inscripcion, 2) }}
+                            @endif
+                        </p>
+
 
                         <!-- Contenedor para hacer que la tabla sea desplazable -->
                         <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
@@ -81,11 +105,11 @@
                                 ${{ number_format($programa['descuento'], 2) }}
                             </p>
                             <p>Arancel Total a Pagar con Descuento {{ $alumno->descuento->nombre }}:
-                                ${{ number_format($alumno->monto_total, 2) }}
+                                ${{ number_format($alumno->maestria->arancel - $programa['descuento'], 2) }}
                             </p>
                         @else
                             <p>Sin descuento aplicado</p>
-                            <p>Total a Pagar de Arancel: ${{ number_format($alumno->monto_total, 2) }}</p>
+                            <p>Total a Pagar de Arancel: ${{ number_format($alumno->maestria->arancel, 2) }}</p>
                         @endif
 
 
@@ -177,14 +201,22 @@
 
                 if (tipo === 'arancel') {
                     if (modalidad === 'unico') {
-                        montoFinal = montoTotalAlumno;
+                        montoFinal = montoTotalAlumno < 0 ? 0 : montoTotalAlumno; // si negativo, 0
                     } else if (modalidad === 'trimestral') {
-                        montoFinal = montoBaseArancel / 3;
+                        montoFinal = montoArancel / 3;
                     }
                 } else if (tipo === 'matricula') {
-                    montoFinal = (modalidad === 'trimestral') ? montoMatricula_t / 3 : montoMatricula_t;
+                    if (modalidad === 'unico') {
+                        montoFinal = montoMatricula < 0 ? 0 : montoMatricula;
+                    } else if (modalidad === 'trimestral') {
+                        montoFinal = montoMatricula_t / 3;
+                    }
                 } else if (tipo === 'inscripcion') {
-                    montoFinal = (modalidad === 'trimestral') ? montoInscripcion_t / 3 : montoInscripcion_t;
+                    if (modalidad === 'unico') {
+                        montoFinal = montoInscripcion < 0 ? 0 : montoInscripcion;
+                    } else if (modalidad === 'trimestral') {
+                        montoFinal = montoInscripcion_t / 3;
+                    }
                 }
 
                 if (modalidad === 'otro') {

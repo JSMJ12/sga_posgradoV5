@@ -6,6 +6,13 @@
 
 @section('content')
     <div class="container">
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-12">
+                <h2 class="text-center">Bienvenido, {{ auth()->user()->name }}</h2>
+                <p class="text-center">Aquí puedes gestionar tu proceso de inscripción y matrícula.</p>
+            </div>
+        </div>
+
 
         <div class="row justify-content-center">
             <div class="col-md-12">
@@ -88,11 +95,18 @@
                                 archivos.
                             </div>
                         @endif
+                        <div class="d-flex flex-wrap mb-3" style="gap: 12px;">
+                            <a href="{{ route('postulantes.carta_aceptacion', $postulante->dni) }}"
+                                class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-download"></i> Descargar el formato de la Carta de Aceptación
+                            </a>
 
-                        <a href="{{ route('postulantes.carta_aceptacion', $postulante->dni) }}"
-                            class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-download"></i> Descargar el formato de la Carta de Aceptación
-                        </a>
+                            <a href="{{ route('postulante.ficha_inscripcion_pdf', $postulante->dni) }}" target="_blank"
+                                class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-file-pdf"></i> Ver ficha de admisión (PDF)
+                            </a>
+                        </div>
+
                         <div class="card-body">
                             <div class="form-group">
                                 <table class="table table-bordered">

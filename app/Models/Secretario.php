@@ -21,4 +21,8 @@ class Secretario extends Model
     {
         return $this->belongsTo(Seccion::class);
     }
+    public function getFullNameAttribute()
+    {
+        return trim("{$this->nombre1} {$this->nombre2} {$this->apellidop} {$this->apellidom}");
+    }
 }

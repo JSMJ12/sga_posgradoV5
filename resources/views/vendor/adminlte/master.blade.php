@@ -51,6 +51,12 @@
             <livewire:styles />
         @endif
     @endif
+    <style>
+        .main-sidebar {
+            overflow-y: auto !important;
+            max-height: 100vh;
+        }
+    </style>
 
     {{-- Custom Stylesheets (post AdminLTE) --}}
     @yield('adminlte_css')

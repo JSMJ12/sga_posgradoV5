@@ -306,37 +306,8 @@ return [
             'text' => 'Buscar',
         ],
 
-
-        ['header' => 'Administracion', 'can' => 'dashboard_admin'],
-        ['header' => 'Postulación', 'can' => 'dashboard_postulante'],
-        [
-            'text' => 'Documentación',
-            'route'  => 'dashboard_postulante',
-            'icon' => 'far fa-fw fa-file-alt',
-            'can' => 'dashboard_postulante'
-        ],
-
-        ['header' => 'Coordinación', 'can' => 'dashboard_coordinador'],
-        [
-            'text' => 'Coordinación de Mestria',
-            'route'  => 'dashboard_coordinador',
-            'icon' => 'fas fa-fw fa-home',
-            'can' => 'dashboard_coordinador'
-
-        ],
-        [
-            'text' => 'Solicitudes de Tesis',
-            'route'  => 'tesis.index',
-            'icon' => 'fas fa-fw fa-graduation-cap',
-            'can' => 'dashboard_coordinador'
-
-        ],
-        [
-            'text' => 'Examen Complexivo',
-            'route' => 'examen_complexivo.index',
-            'icon' => 'fas fa-fw fa-pencil-alt',
-            'can' => 'dashboard_coordinador'
-        ],
+        // Acceso General
+        ['header' => 'Administración', 'can' => 'dashboard_admin'],
         [
             'text' => 'Usuarios',
             'route'  => 'usuarios.index',
@@ -350,40 +321,62 @@ return [
             'can' => 'dashboard_admin'
         ],
         [
-            'text' => 'Pagos',
-            'route'  => 'pagos.index',
-            'icon' => 'fas fa-fw fa-dollar-sign',
-            'can' => 'dashboard_secretario_epsu',
+            'text' => 'Maestrías',
+            'route'  => 'maestrias.index',
+            'icon' => 'fas fa-fw fa-graduation-cap',
+            'can' => 'dashboard_admin'
         ],
         [
-            'text' => 'Pagos',
-            'route' => 'pagos.pago',
-            'icon' => 'fas fa-fw fa-dollar-sign',
-            'can' => 'alumno_descuento',
+            'text' => 'Aulas',
+            'route'  => 'aulas.index',
+            'icon' => 'fas fa-chalkboard',
+            'can' => 'dashboard_admin'
         ],
         [
-            'text' => 'Datos Personales',
-            'route' => 'edit_datosAlumnos',
-            'icon' => 'fas fa-fw fa-user',
-            'can' => 'alumno_descuento',
+            'text' => 'Periodos Académicos',
+            'route'  => 'periodos_academicos.index',
+            'icon' => 'fas fa-clipboard-list',
+            'can' => 'dashboard_admin'
         ],
         [
-            'text' => 'Notas',
-            'route'  => 'dashboard_alumno.notas',
-            'icon' => 'far fa-fw fa-file-alt',
-            'can' => 'dashboard_alumno'
+            'text' => 'Secciones',
+            'route'  => 'secciones.index',
+            'icon' => 'fas fa-cubes',
+            'can' => 'dashboard_admin'
         ],
         [
             'text' => 'Descuento',
-            'route' => 'descuentos.alumnos',
+            'route' => 'descuentos.index',
             'icon' => 'fa fa-percent',
-            'can' => 'dashboard_secretario_epsu',
+            'can' => 'dashboard_admin'
+        ],
+
+        ['header' => 'Dirección Académica', 'can' => 'dashboard_director'],
+        [
+            'text' => 'Dirección',
+            'route' => 'dashboard_director',
+            'icon' => 'fas fa-fw fa-tachometer-alt',
+            'can' => 'dashboard_director'
+        ],
+
+        ['header' => 'Coordinación', 'can' => 'dashboard_coordinador'],
+        [
+            'text' => 'Coordinación de Maestría',
+            'route'  => 'dashboard_coordinador',
+            'icon' => 'fas fa-fw fa-home',
+            'can' => 'dashboard_coordinador'
         ],
         [
-            'text' => 'Tesis',
-            'route'  => 'tesis.create',
+            'text' => 'Solicitudes de Tesis',
+            'route'  => 'tesis.index',
             'icon' => 'fas fa-fw fa-graduation-cap',
-            'can' => 'titulado_proceso'
+            'can' => 'dashboard_coordinador'
+        ],
+        [
+            'text' => 'Examen Complexivo',
+            'route' => 'examen_complexivo.index',
+            'icon' => 'fas fa-fw fa-pencil-alt',
+            'can' => 'dashboard_coordinador'
         ],
         [
             'text' => 'Docentes',
@@ -404,62 +397,91 @@ return [
             'can' => ['secretarios.crear', 'dashboard_coordinador']
         ],
         [
+            'text' => 'Cohortes',
+            'route'  => 'cohortes.index',
+            'icon' => 'fas fa-university',
+            'can' => ['secretarios.crear', 'dashboard_coordinador']
+        ],
+
+        ['header' => 'Docencia', 'can' => 'dashboard_docente'],
+        [
+            'text' => 'Administración Docencia',
+            'route' => 'dashboard_docente',
+            'icon' => 'fas fa-chalkboard-teacher',
+            'can' => 'dashboard_docente'
+        ],
+
+        ['header' => 'Secretaría EPSU', 'can' => 'dashboard_secretario_epsu'],
+        [
+            'text' => 'Pagos',
+            'route'  => 'pagos.index',
+            'icon' => 'fas fa-fw fa-dollar-sign',
+            'can' => 'dashboard_secretario_epsu'
+        ],
+        [
+            'text' => 'Descuento',
+            'route' => 'descuentos.alumnos',
+            'icon' => 'fa fa-percent',
+            'can' => 'dashboard_secretario_epsu'
+        ],
+
+        ['header' => 'Secretaría Académica', 'can' => 'dashboard_secretario'],
+        [
             'text' => 'Examen Complexivo',
             'route' => 'examen-complexivo.calificar',
             'icon' => 'fas fa-fw fa-pencil-alt',
             'can' => 'secretarios.crear'
         ],
         [
-            'text' => 'Tasa de Titulacion',
+            'text' => 'Tasa de Titulación',
             'route' => 'tasa_titulacion.index',
             'icon' => 'fas fa-fw fa-chart-line',
             'can' => 'secretarios.crear'
         ],
+
+        ['header' => 'Estudiantes', 'can' => 'dashboard_alumno'],
         [
-            'text' => 'Maestrias',
-            'route'  => 'maestrias.index',
-            'icon' => 'fas fa-fw fa-graduation-cap',
-            'can' => 'dashboard_admin'
+            'text' => 'Pagos',
+            'route' => 'pagos.pago',
+            'icon' => 'fas fa-fw fa-dollar-sign',
+            'can' => 'alumno_descuento'
+        ],
+        [
+            'text' => 'Datos Personales',
+            'route' => 'edit_datosAlumnos',
+            'icon' => 'fas fa-fw fa-user',
+            'can' => 'alumno_descuento'
+        ],
+        [
+            'text' => 'Notas',
+            'route'  => 'dashboard_alumno.notas',
+            'icon' => 'far fa-fw fa-file-alt',
+            'can' => 'dashboard_alumno'
         ],
 
+        ['header' => 'Postulación', 'can' => 'dashboard_postulante'],
         [
-            'text' => 'Aulas',
-            'route'  => 'aulas.index',
-            'icon' => 'fas fa-chalkboard',
-            'can' => 'dashboard_admin'
+            'text' => 'Documentación',
+            'route'  => 'dashboard_postulante',
+            'icon' => 'far fa-fw fa-file-alt',
+            'can' => 'dashboard_postulante'
         ],
         [
-            'text' => 'Periodos Academicos',
-            'route'  => 'periodos_academicos.index',
-            'icon' => 'fas fa-clipboard-list',
-            'can' => 'dashboard_admin'
+            'text' => 'Editar Postulación',
+            'route' => 'postulaciones.edit',
+            'icon' => 'fas fa-user-edit',
+            'can'  => 'dashboard_postulante'
         ],
+
+        ['header' => 'Tutorías de Tesis', 'can' => 'revisar_tesis'],
         [
-            'text' => 'Cohortes',
-            'route'  => 'cohortes.index',
-            'icon' => 'fas fa-university',
-            'can' => ['secretarios.crear', 'dashboard_coordinador']
-        ],
-        [
-            'text' => 'Secciones',
-            'route'  => 'secciones.index',
-            'icon' => 'fas fa-cubes',
-            'can' => 'dashboard_admin'
-        ],
-        [
-            'text' => 'Descuento',
-            'route' => 'descuentos.index',
-            'icon' => 'fa fa-percent',
-            'can' => 'dashboard_admin',
-        ],
-        ['header' => 'Tutorias de Tesis', 'can' => 'revisar_tesis'],
-        [
-            'text' => 'Tutorias',
+            'text' => 'Tutorías',
             'route'  => 'tutorias.index',
             'icon' => 'fas fa-fw fa-chalkboard-teacher',
             'can' => 'revisar_tesis'
         ],
     ],
+
 
     /*
     |--------------------------------------------------------------------------

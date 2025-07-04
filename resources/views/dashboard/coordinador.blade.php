@@ -102,12 +102,15 @@
                                         <td>${{ number_format($recaudadoInscripcion, 2) }}</td>
                                         <td>{{ number_format($porcentaje, 2) }}%</td>
                                         <td>
-                                            <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
-                                                class="btn btn-danger btn-sm" target="_blank" title="Descargar PDF">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </a>
+                                            @if ($recaudadoArancel > 0 || $recaudadoMatricula > 0 || $recaudadoInscripcion > 0)
+                                                <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
+                                                    class="btn btn-danger btn-sm" target="_blank" title="Descargar PDF">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </a>
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
                                         </td>
-
                                     </tr>
                                 @endforeach
                             </tbody>

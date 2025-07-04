@@ -31,14 +31,14 @@
         .logo {
             width: 60px;
             position: absolute;
-            top: -30px;
+            top: -40px;
             left: 0;
         }
 
         .seal {
             width: 100px;
             position: absolute;
-            top: -35;
+            top: -45;
             right: 0;
         }
 

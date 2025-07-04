@@ -43,6 +43,7 @@ use App\Http\Controllers\TasaTitulacionController;
 use App\Http\Controllers\TitulacionAlumnoController;
 use App\Http\Controllers\TitulacionesController;
 use App\Http\Controllers\TutoriaController;
+use App\Http\Controllers\DashboardDirectorController;
 use Illuminate\Support\Facades\Artisan;
 
 /*
@@ -67,15 +68,21 @@ Route::get('/limpiar-cache', function () {
 
 
 //Redireccionador
-Route::get('/inicio', [InicioController::class, 'redireccionarDashboard'])->name('inicio');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/inicio', [InicioController::class, 'redireccionarDashboard'])->name('inicio');
+});
 
-Auth::routes();
+Auth::routes(['verify' => true]);
 
 //DASHBOARD
 Route::get('/dashboard/admin', [DashboardAdminController::class, 'index'])->middleware('can:dashboard_admin')->name('dashboard_admin');
 Route::get('/dashboard/docente', [DashboardDocenteController::class, 'index'])->middleware('can:dashboard_docente')->name('dashboard_docente');
 Route::get('/dashboard/secretario', [DashboardSecretarioController::class, 'index'])->middleware('can:dashboard_secretario')->name('dashboard_secretario');
 Route::get('/dashboard/secretario/epsu', [DashboardSecretarioEpsuController::class, 'index'])->middleware('can:dashboard_secretario_epsu')->name('dashboard_secretario_epsu');
+Route::get('/dashboard/director', [DashboardDirectorController::class, 'index'])->middleware('can:dashboard_director')->name('dashboard_director');
+Route::get('/dashboard/director/maestria/{id}/resumen', [DashboardDirectorController::class, 'getMaestriaResumen'])
+    ->name('dashboard.director.maestriaResumen')->middleware('can:dashboard_director');
+
 
 Route::get('/dashboard/alumno', [DashboardAlumnoController::class, 'index'])->middleware('can:dashboard_alumno')->name('dashboard_alumno');
 Route::get('/dashboard/alumno/notas', [DashboardAlumnoController::class, 'alumnos_notas'])->middleware('can:dashboard_alumno')->name('dashboard_alumno.notas');
@@ -128,12 +135,15 @@ Route::resource('periodos_academicos', PeriodoAcademicoController::class)->middl
 Route::resource('cohortes', CohorteController::class)->middleware('can:secretario_coordinador');
 Route::get('/cohortes/{cohorte_id}/exportar-alumnos', [CohorteController::class, 'exportarAlumnos'])
     ->name('cohortes.exportarAlumnos')->middleware('can:secretario_coordinador');
-Route::get('/cohortes/{id}/verificaciones', [CohorteController::class, 'verificaciones'])->middleware('can:secretario_coordinador');
+Route::get('/cohortes/{id}/verificaciones', [CohorteController::class, 'verificaciones'])->middleware('auth');
 Route::get('/cohortes/{id}/proceso-titulacion', [CohorteController::class, 'proceso_titulacion'])->name('cohortes.proceso_titulacion')->middleware('auth');
 Route::get('/cohortes/{id}/examen-complexivo', [CohorteController::class, 'examenComplexivo'])->name('cohortes.examenComplexivo')->middleware('auth');
 
 //Postulaciones
-Route::resource('postulaciones', PostulanteController::class);
+Route::get('postulaciones/edit', [PostulanteController::class, 'edit'])->name('postulaciones.edit')->middleware('can:dashboard_postulante');
+Route::put('postulaciones/update', [PostulanteController::class, 'update'])->name('postulaciones.update')->middleware('can:dashboard_postulante');
+Route::resource('postulaciones', PostulanteController::class)->except(['edit', 'update']);
+Route::get('postulante/{dni}', [PostulanteController::class, 'fichaInscripcionPdf'])->middleware('auth')->name('postulante.ficha_inscripcion_pdf');
 
 Route::post('postulante/store', [DashboardPostulanteController::class, 'store'])->middleware('can:dashboard_postulante')->name('dashboard_postulante.store');
 Route::get('postulantes/{dni}/carta-aceptacion', [DashboardPostulanteController::class, 'carta_aceptacionPdf'])->middleware('can:dashboard_postulante')->name('postulantes.carta_aceptacion');
@@ -188,7 +198,7 @@ Route::resource('notas', NotaController::class)->except(['create'])->middleware(
 
 //PDFS ASIGNATURAS NOTAS
 Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [NotasAsignaturaController::class, 'show'])
-    ->middleware(['can:secretario_coordinador'])
+    ->middleware(['auth'])
     ->name('pdf.notas.asignatura');
 
 //PDFS RECORD ACADEMICO ADMINISTRADOR
@@ -204,7 +214,7 @@ Route::get('/calificaciones/edit/{alumno_dni}/{docente_id}/{asignatura_id}/{coho
 Route::resource('calificaciones', CalificacionController::class)->middleware('can:dashboard_docente');
 
 //EXCEL LISTA DE ALUMNOS
-Route::get('/exportar-excel/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [DashboardDocenteController::class, 'exportarExcel'])->middleware(['can:secretario_coordinador'])
+Route::get('/exportar-excel/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paraleloId?}', [DashboardDocenteController::class, 'exportarExcel'])->middleware(['auth'])
     ->name('exportar.excel');
 
 //NOTIFICACIONES
@@ -279,7 +289,6 @@ Route::middleware(['auth', 'can:revisar_tesis'])->group(function () {
     Route::put('/tutorias/{id}/realizar', [TutoriaController::class, 'updateEstado'])->name('tutorias.realizar');
     Route::delete('tutorias/{id}', [TutoriaController::class, 'destroy'])->name('tutorias.delete');
     Route::get('/certificar-alumno/tutor', [TesisController::class, 'certificacion'])->name('certificar.alumno');
-
 });
 Route::get('/tesis/{tesisId}/tutorias', [TutoriaController::class, 'listar'])->name('tutorias.listar');
 
@@ -304,3 +313,7 @@ Route::post('/postulantes/{id}/verificar', [DocumentoPostulanteController::class
 Route::get('pagos/matricula', [DocumentoPostulanteController::class, 'pagosMatricula'])->name('pagos.matricula');
 
 Route::put('/usuario/perfil', [UsuarioController::class, 'actualizarPerfil'])->name('usuario.actualizarPerfil')->middleware('auth');
+
+//EPSU PDF
+Route::get('reporte/generador', [DashboardSecretarioEpsuController::class, 'generador_reporte'])->name('reporte.generador')->middleware('can:dashboard_secretario_epsu');
+Route::post('reporte/generar-pdf/epsu', [DashboardSecretarioEpsuController::class, 'generar_reporte_pdf'])->name('reporte.generar.pdf.epsu')->middleware('can:dashboard_secretario_epsu');

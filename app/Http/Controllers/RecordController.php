@@ -4,22 +4,47 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumno;
 use App\Models\Docente;
+use App\Models\Secretario;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 
 class RecordController extends Controller
 {
+    protected $directorDocente;
+    protected $secretario;
+
     public function __construct()
     {
         $this->middleware('auth');
+
+        // Buscar al primer usuario con rol 'director'
+        $directorUser = User::role('director')->first();
+
+        // Buscar en tabla docentes por su email
+        $this->directorDocente = Docente::where('email', $directorUser?->email)->first();
     }
+
+    private function getSecretario($alumno)
+    {
+        $seccion = $alumno->maestria->secciones->first();
+        if (!$seccion) {
+            return null;
+        }
+        return Secretario::where('seccion_id', $seccion->id)->first();
+    }
+
     public function show($alumno_dni)
     {
         $alumno = Alumno::findOrFail($alumno_dni);
+
+        $this->secretario = $this->getSecretario($alumno);
+        $directorDocente = $this->directorDocente;
+        $secretario = $this->secretario;
 
         // Obtener asignaturas de la maestría
         $asignaturas = $alumno->maestria->asignaturas ?? collect();
@@ -39,33 +64,37 @@ class RecordController extends Controller
             // Crear objeto "falso" de Nota si no existe
             $notaFalsa = new \stdClass();
             $notaFalsa->asignatura = $asignatura;
-            $notaFalsa->docente = $asignatura->docente ?? null; // si hay relación
+            $notaFalsa->docente = $asignatura->docente ?? null;
             $notaFalsa->total = null;
 
             return $notaFalsa;
         });
 
-        // Total de horas
+        // Total de horas (usando horas_duracion o crédito * 48)
         $totalHoras = $notasCompletas->sum(function ($nota) {
             return $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48);
         });
 
-        // Promedio solo de notas no nulas
-        $notasValidas = $notasCompletas->filter(fn($nota) => !is_null($nota->total));
-        $promedio = $notasValidas->avg('total');
+        // Promedio considerando todas las asignaturas, usando 0 si no hay nota
+        $totalNotas = $notasCompletas->map(function ($nota) {
+            return $nota->total ?? 0;
+        });
+        $promedio = $totalNotas->avg();
 
-        // Asignaturas aprobadas (nota >= 7)
-        $cantidadAsignaturas = $notasValidas->filter(fn($nota) => $nota->total >= 7)->count();
+        // Asignaturas aprobadas (nota >= 7 y no nula)
+        $cantidadAsignaturas = $notasCompletas
+            ->filter(fn($nota) => !is_null($nota->total) && $nota->total >= 7)
+            ->count();
 
         // Datos de cohorte
         $matricula = $alumno->matriculas->first();
         $cohorte = $matricula->cohorte;
         $cohorteNombre = $cohorte->nombre ?? '--';
 
-        // Fecha actual
+        // Fecha actual en español
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Código QR
+        // Código QR con enlace al record
         $url = route('record.show', $alumno_dni);
         $qrCode = QrCode::format('png')
             ->size(100)
@@ -74,12 +103,12 @@ class RecordController extends Controller
             ->errorCorrection('H')
             ->generate($url);
 
-        // Coordinador
+        // Coordinador de la maestría
         $coordinadorDni = $alumno->maestria->coordinador;
         $coordinador = Docente::where('dni', $coordinadorDni)->first();
         $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
-        // Generar PDF
+        // Generar PDF con los datos
         $pdf = Pdf::loadView('record.show', compact(
             'alumno',
             'notasCompletas',
@@ -90,12 +119,13 @@ class RecordController extends Controller
             'qrCode',
             'nombreCompleto',
             'promedio',
-            'cantidadAsignaturas'
+            'cantidadAsignaturas',
+            'directorDocente',
+            'secretario'
         ));
 
         return $pdf->stream('record_academico_' . $alumno->dni . '.pdf');
     }
-
     public function certificado_matricula($alumno_dni)
     {
         $alumno = Alumno::findOrFail($alumno_dni);

@@ -96,39 +96,72 @@ class DescuentoController extends Controller
             'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
-        $alumno = Alumno::where('dni', $request->dni)->first();
+        try {
+            $alumno = Alumno::where('dni', $request->dni)->first();
+            if (!$alumno) {
+                return redirect()->back()->with('error', 'Alumno no encontrado.');
+            }
 
-        if (!$alumno) {
-            return redirect()->back()->with('error', 'Alumno no encontrado.');
+            $descuento = Descuento::find($request->descuento_id);
+            if (!$descuento || !$descuento->activo) {
+                return redirect()->back()->with('error', 'Descuento inválido.');
+            }
+
+            $maestria = $alumno->maestria;
+            if (!$maestria) {
+                return redirect()->back()->with('error', 'Maestría no encontrada para el alumno.');
+            }
+
+            // Calcular el nuevo monto total con descuento
+            $montoConDescuento = $maestria->arancel - ($maestria->arancel * ($descuento->porcentaje / 100));
+
+            // Buscar usuario por el email institucional
+            $usuario = \App\Models\User::where('email', $alumno->email_institucional)->first();
+
+            if (!$usuario) {
+                return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado, pero no se encontró el usuario con el email institucional.');
+            }
+
+            // Total pagado por el usuario (solo verificados y tipo arancel)
+            $totalPagado = \App\Models\Pago::where('user_id', $usuario->id)
+                ->where('verificado', 1)
+                ->where('tipo_pago', 'arancel')
+                ->sum('monto');
+
+            // Calcular diferencia: si negativa => reembolso, si positiva => deuda
+            $diferencia = $totalPagado - $montoConDescuento;
+            $deudaRestante = $montoConDescuento - $totalPagado;
+
+            // Mensaje informativo
+            if ($totalPagado == 0) {
+                $mensaje_pago = 'No se han registrado pagos verificados. Se ha aplicado el descuento correctamente.';
+            } elseif ($diferencia < 0) {
+                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
+                    ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
+                    ' | Reembolso pendiente: $' . number_format(abs($diferencia), 2);
+            } else {
+                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
+                    ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
+                    ' | Deuda restante: $' . number_format($deudaRestante, 2);
+            }
+
+            // Actualizar descuento y documento si aplica
+            $alumno->descuento_id = $descuento->id;
+
+            if ($request->hasFile('documento')) {
+                $documentoPath = $request->file('documento')->store('documentos_autenticidad', 'public');
+                $alumno->documento = $documentoPath;
+            }
+
+            // Guardar deuda real (puede ser negativa si pagó de más)
+            $alumno->monto_total = $deudaRestante;
+
+            $alumno->save();
+
+            return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado correctamente. ' . $mensaje_pago);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Ocurrió un error al aplicar el descuento: ' . $e->getMessage());
         }
-
-        $descuento = Descuento::find($request->descuento_id);
-
-        if (!$descuento || !$descuento->activo) {
-            return redirect()->back()->with('error', 'Descuento inválido.');
-        }
-
-        // Actualizar descuento asignado al alumno
-        $alumno->descuento_id = $descuento->id;
-
-        if ($request->hasFile('documento')) {
-            $documentoPath = $request->file('documento')->store('documentos_autenticidad', 'public');
-            $alumno->documento_autenticidad = $documentoPath;
-        }
-
-        $maestria = $alumno->maestria;
-
-        if (!$maestria) {
-            return redirect()->back()->with('error', 'Maestría no encontrada para el alumno.');
-        }
-
-        // Calcular monto con descuento
-        $monto_total = $maestria->arancel - ($maestria->arancel * ($descuento->porcentaje / 100));
-        $alumno->monto_total = $monto_total;
-
-        $alumno->save();
-
-        return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado y monto total actualizado.');
     }
 
     public function store(Request $request)

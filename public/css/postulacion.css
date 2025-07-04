@@ -1,0 +1,79 @@
+.header {
+    text-align: center;
+    margin-top: 10px;
+    color: #06090b;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+    background: none;
+}
+
+.logo {
+    width: 74px;
+    height: 80px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.seal {
+    width: 84px;
+    height: 93px;
+    position: absolute;
+    top: 20px;
+    right: 10px;
+}
+
+.university-name {
+    font-size: 14pt;
+    font-weight: bold;
+}
+
+.institute {
+    font-size: 10pt;
+}
+
+.divider {
+    width: 100%;
+    height: 2px;
+    background-color: #000;
+    margin: 10px 0;
+}
+
+.card {
+    border-radius: 12px;
+    border: none;
+}
+
+.card-body {
+    border-radius: 0 0 12px 12px;
+}
+
+.section-title {
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: 0;
+}
+
+h5 {
+    border: none;
+    padding-left: 0;
+    background: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    font-weight: bold;
+}
+
+label {
+    font-weight: 500;
+    color: #1976d2;
+}
+
+.btn-success {
+    background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+    border: none;
+    font-size: 1.1em;
+}
+
+.btn-success:hover {
+    background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
+}

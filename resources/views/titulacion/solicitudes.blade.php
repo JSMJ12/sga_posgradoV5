@@ -98,6 +98,7 @@
                         data: 'tema',
                         render: function(data, type, row) {
                             const maxChars = 40;
+                            if (!data) return '<span class="text-muted">Sin tema</span>';
                             if (data.length > maxChars) {
                                 const short = data.slice(0, maxChars) + '...';
                                 return `
@@ -116,6 +117,7 @@
                         data: 'descripcion',
                         render: function(data, type, row) {
                             const maxChars = 40;
+                            if (!data) return '<span class="text-muted">Sin descripción</span>';
                             if (data.length > maxChars) {
                                 const short = data.slice(0, maxChars) + '...';
                                 return `
@@ -160,7 +162,6 @@
                         }
                     }
                 ],
-                responsive: true,
                 colReorder: true,
                 keys: true,
                 autoFill: true,

@@ -167,6 +167,7 @@ class PostulanteController extends Controller
         }
         // Guardar el postulante
         $postulante->fill([
+            // Datos personales
             'dni' => $request->input('dni'),
             'apellidop' => $request->input('apellidop'),
             'apellidom' => $request->input('apellidom'),
@@ -174,18 +175,65 @@ class PostulanteController extends Controller
             'nombre2' => $request->input('nombre2'),
             'correo_electronico' => $request->input('correo_electronico'),
             'celular' => $request->input('celular'),
-            'titulo_profesional' => $request->input('titulo_profesional'),
-            'universidad_titulo' => $request->input('universidad_titulo'),
-            'sexo' => $request->input('sexo'),
+            'telefono_convencional' => $request->input('telefono_convencional'),
             'fecha_nacimiento' => $request->input('fecha_nacimiento'),
+            'edad' => $request->input('edad'),
+            'sexo' => $request->input('sexo'),
+            'tipo_sangre' => $request->input('tipo_sangre'),
             'nacionalidad' => $request->input('nacionalidad'),
+            'anios_residencia' => $request->input('anios_residencia'),
+            'libreta_militar' => $request->input('libreta_militar'),
             'discapacidad' => $request->input('discapacidad'),
+            'tipo_discapacidad' => $request->input('tipo_discapacidad'),
             'porcentaje_discapacidad' => $request->input('porcentaje_discapacidad'),
             'codigo_conadis' => $request->input('codigo_conadis'),
+            'imagen' => $imagenPath,
+
+            // Lugar de residencia
+            'pais_residencia' => $request->input('pais_residencia'),
             'provincia' => $request->input('provincia'),
+            'canton' => $request->input('canton'),
+            'parroquia' => $request->input('parroquia'),
+            'calle_principal' => $request->input('calle_principal'),
+            'numero_direccion' => $request->input('numero_direccion'),
+            'calle_secundaria' => $request->input('calle_secundaria'),
+            'referencia_direccion' => $request->input('referencia_direccion'),
+            'telefono_domicilio' => $request->input('telefono_domicilio'),
+            'celular_residencia' => $request->input('celular_residencia'),
+
+            // Contacto de emergencia
+            'contacto_apellidos' => $request->input('contacto_apellidos'),
+            'contacto_nombres' => $request->input('contacto_nombres'),
+            'contacto_parentesco' => $request->input('contacto_parentesco'),
+            'contacto_telefono' => $request->input('contacto_telefono'),
+            'contacto_celular' => $request->input('contacto_celular'),
+
+            // Académica
+            'especialidad_bachillerato' => $request->input('especialidad_bachillerato'),
+            'colegio_bachillerato' => $request->input('colegio_bachillerato'),
+            'ciudad_bachillerato' => $request->input('ciudad_bachillerato'),
+            'titulo_profesional' => $request->input('titulo_profesional'),
+            'especialidad_mencion' => $request->input('especialidad_mencion'),
+            'universidad_titulo' => $request->input('universidad_titulo'),
+            'ciudad_universidad' => $request->input('ciudad_universidad'),
+            'pais_universidad' => $request->input('pais_universidad'),
+            'registro_senescyt' => $request->input('registro_senescyt'),
+            'titulo_posgrado' => $request->input('titulo_posgrado'),
+            'denominacion_posgrado' => $request->input('denominacion_posgrado'),
+            'universidad_posgrado' => $request->input('universidad_posgrado'),
+            'ciudad_posgrado' => $request->input('ciudad_posgrado'),
+            'pais_posgrado' => $request->input('pais_posgrado'),
+
+            // Laboral
+            'lugar_trabajo' => $request->input('lugar_trabajo'),
+            'funcion_laboral' => $request->input('funcion_laboral'),
+            'ciudad_trabajo' => $request->input('ciudad_trabajo'),
+            'direccion_trabajo' => $request->input('direccion_trabajo'),
+            'telefono_trabajo' => $request->input('telefono_trabajo'),
+
+            // Datos socioeconómicos
             'etnia' => $request->input('etnia'),
             'nacionalidad_indigena' => $request->input('nacionalidad_indigena'),
-            'canton' => $request->input('canton'),
             'direccion' => $request->input('direccion'),
             'tipo_colegio' => $request->input('tipo_colegio'),
             'cantidad_miembros_hogar' => $request->input('cantidad_miembros_hogar'),
@@ -193,8 +241,19 @@ class PostulanteController extends Controller
             'nivel_formacion_padre' => $request->input('nivel_formacion_padre'),
             'nivel_formacion_madre' => $request->input('nivel_formacion_madre'),
             'origen_recursos_estudios' => $request->input('origen_recursos_estudios'),
+
+            // Documentos
+            'pdf_cedula' => $request->input('pdf_cedula'),
+            'pdf_papelvotacion' => $request->input('pdf_papelvotacion'),
+            'pdf_titulouniversidad' => $request->input('pdf_titulouniversidad'),
+            'pdf_conadis' => $request->input('pdf_conadis'),
+            'pdf_hojavida' => $request->input('pdf_hojavida'),
+            'carta_aceptacion' => $request->input('carta_aceptacion'),
+
+            // Estado y relación
             'maestria_id' => $request->input('maestria_id'),
-            'imagen' => $imagenPath,
+            'status' => 0,
+            'pago_matricula' => $request->input('pago_matricula'),
             'monto_matricula' => $montoMatricula,
             'monto_inscripcion' => $montoInscripcion,
         ]);
@@ -216,8 +275,79 @@ class PostulanteController extends Controller
 
         Notification::route('mail', $usuario->email)
             ->notify(new NuevoUsuarioNotification($usuario, $request->input('dni'), $usuario->name));
+
         Auth::login($usuario);
         return redirect()->route('inicio')->with('success', 'Postulación realizada exitosamente.');
+    }
+
+    public function edit()
+    {
+        $userEmail = Auth::user()->email;
+
+        $postulante = Postulante::where('correo_electronico', $userEmail)->firstOrFail();
+
+        $maestrias = Maestria::where('status', 'ACTIVO')->get();
+        $provincias = ['Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro', 'Esmeraldas', 'Galápagos', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos', 'Manabí', 'Morona Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha', 'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua', 'Zamora Chinchipe'];
+        $tipo_colegio = ['FISCAL', 'FISCOMISIONAL', 'PARTICULAR', 'MUNICIPAL', 'EXTRANJERO', 'NO REGISTRA'];
+        $ingreso_hogar = ['RANGO 1 - HASTA 1 SBU', 'RANGO 2 - MÁS DE 1 A MENOS DE 2 SBU', 'RANGO 3 - MÁS DE 2 A MENOS DE 3 SBU', 'RANGO 4 - MÁS DE 3 A MENOS DE 4 SBU', 'RANGO 5 - MÁS DE 4 A MENOS DE 5 SBU', 'RANGO 6 - MÁS DE 5 A MENOS DE 6 SBU', 'RANGO 7 - MÁS DE 6 A MENOS DE 7 SBU', 'RANGO 8 - MÁS DE 7 A MENOS DE 8 SBU', 'RANGO 9 - MÁS DE 8 A MENOS DE 9 SBU', 'RANGO 10-DE 9 EN ADELANTE', 'NO REGISTRA'];
+        $formacion_padre = ['NINGUNO', 'CENTRO DE ALFABETIZACIÓN', 'JARDIN INFANTES', 'EDUCACIÓN BÁSICA', 'EDUCACIÓN MEDIA', 'SUPERIOR NO UNIVERSITARIA COMPLETA', 'SUPERIOR NO UNIVERSITARIA INCOMPLETA', 'SUPERIOR UNIVERSITARIA COMPLETA', 'SUPERIOR UNIVERSITARIA INCOMPLETA', 'DIPLOMADO', 'ESPECIALIDAD', 'POSGRADO MAESTRÍA', 'POSGRADO ESPECIALIDAD ÁREA SALUD', 'POSGRADO PHD', 'NO SABE', 'NO REGISTRA'];
+        $origen_recursos = ['RECURSOS PROPIOS', 'PADRES TUTORES', 'PAREJA SENTIMENTAL', 'HERMANOS', 'OTROS MIEMBROS DEL HOGAR', 'OTROS FAMILIARES', 'BECA ESTUDIO', 'CRÉDITO EDUCATIVO', 'NO REGISTRA'];
+
+        return view('postulantes.edit', compact(
+            'postulante',
+            'maestrias',
+            'provincias',
+            'tipo_colegio',
+            'ingreso_hogar',
+            'formacion_padre',
+            'origen_recursos'
+        ));
+    }
+
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+        $postulante = Postulante::where('correo_electronico', $user->email)->firstOrFail();
+
+        // Detectar cambios reales
+        $dniCambiado = $request->dni !== $postulante->dni;
+        $correoCambiado = $request->correo_electronico !== $postulante->correo_electronico;
+
+        // Validación condicional
+        $request->validate([
+            'dni' => array_filter([
+                'required',
+                $dniCambiado ? Rule::unique('postulantes', 'dni')->ignore($postulante->id) : null,
+            ]),
+            'correo_electronico' => array_filter([
+                'required',
+                'email',
+                $correoCambiado ? Rule::unique('postulantes', 'correo_electronico')->ignore($postulante->id) : null,
+            ]),
+            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // Imagen
+        if ($request->hasFile('imagen')) {
+            $imagenPath = $request->file('imagen')->store('imagenes_usuarios', 'public');
+            $postulante->imagen = $imagenPath;
+            $user->image = $imagenPath;
+        }
+
+        $postulante->fill($request->except('imagen'));
+        $postulante->save();
+
+        // Sincronizar con tabla users si hay cambios
+        if ($correoCambiado) {
+            $user->email = $request->correo_electronico;
+        }
+
+        $user->name = $request->input('nombre1');
+        $user->apellido = $request->input('apellidop');
+        $user->sexo = $request->input('sexo') === 'HOMBRE' ? 'M' : 'F';
+        $user->save();
+
+        return redirect()->route('postulaciones.edit')->with('success', 'Postulación actualizada correctamente.');
     }
 
     public function show($dni)
@@ -332,13 +462,48 @@ class PostulanteController extends Controller
                 'monto_total' => $postulante->maestria->arancel,
                 'monto_matricula' => $postulante->monto_matricula,
                 'monto_inscripcion' => $postulante->monto_inscripcion,
+                'telefono_convencional' => $postulante->telefono_convencional,
+                'edad' => $postulante->edad,
+                'tipo_sangre' => $postulante->tipo_sangre,
+                'anios_residencia' => $postulante->anios_residencia,
+                'libreta_militar' => $postulante->libreta_militar,
+                'pais_residencia' => $postulante->pais_residencia,
+                'parroquia' => $postulante->parroquia,
+                'calle_principal' => $postulante->calle_principal,
+                'numero_direccion' => $postulante->numero_direccion,
+                'calle_secundaria' => $postulante->calle_secundaria,
+                'referencia_direccion' => $postulante->referencia_direccion,
+                'telefono_domicilio' => $postulante->telefono_domicilio,
+                'celular_residencia' => $postulante->celular_residencia,
+                'contacto_apellidos' => $postulante->contacto_apellidos,
+                'contacto_nombres' => $postulante->contacto_nombres,
+                'contacto_parentesco' => $postulante->contacto_parentesco,
+                'contacto_telefono' => $postulante->contacto_telefono,
+                'contacto_celular' => $postulante->contacto_celular,
+                'especialidad_bachillerato' => $postulante->especialidad_bachillerato,
+                'colegio_bachillerato' => $postulante->colegio_bachillerato,
+                'ciudad_bachillerato' => $postulante->ciudad_bachillerato,
+                'especialidad_mencion' => $postulante->especialidad_mencion,
+                'ciudad_universidad' => $postulante->ciudad_universidad,
+                'pais_universidad' => $postulante->pais_universidad,
+                'registro_senescyt' => $postulante->registro_senescyt,
+                'titulo_posgrado' => $postulante->titulo_posgrado,
+                'denominacion_posgrado' => $postulante->denominacion_posgrado,
+                'universidad_posgrado' => $postulante->universidad_posgrado,
+                'ciudad_posgrado' => $postulante->ciudad_posgrado,
+                'pais_posgrado' => $postulante->pais_posgrado,
+                'lugar_trabajo' => $postulante->lugar_trabajo,
+                'funcion_laboral' => $postulante->funcion_laboral,
+                'ciudad_trabajo' => $postulante->ciudad_trabajo,
+                'direccion_trabajo' => $postulante->direccion_trabajo,
+                'telefono_trabajo' => $postulante->telefono_trabajo,
             ]);
 
             $user = User::where('name', $postulante->nombre1)
                 ->where('apellido', $postulante->apellidop)
                 ->where('email', $postulante->correo_electronico)
                 ->first();
-            
+
             Notification::route('mail', $user->email)
                 ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
 
@@ -359,5 +524,34 @@ class PostulanteController extends Controller
         }
 
         return redirect()->back()->with('error', 'El postulante no puede ser convertido en estudiante.');
+    }
+    public function fichaInscripcionPdf($dni)
+    {
+        $postulante = Postulante::findOrFail($dni);
+
+        // Buscar coordinador de la maestría
+        $coordinadorDni = $postulante->maestria->coordinador ?? null;
+        $coordinador = $coordinadorDni ? \App\Models\Docente::where('dni', $coordinadorDni)->first() : null;
+        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
+
+        // Buscar director del instituto de posgrado
+        $directorUser = \App\Models\User::role('director')->first();
+        $directorDocente = $directorUser ? \App\Models\Docente::where('email', $directorUser->email)->first() : null;
+
+        // Buscar secretario académico (opcional, si aplica)
+        $secretario = null;
+        if ($postulante->maestria && $postulante->maestria->secciones->first()) {
+            $seccion = $postulante->maestria->secciones->first();
+            $secretario = \App\Models\Secretario::where('seccion_id', $seccion->id)->first();
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('postulantes.ficha_incripcion_pdf', compact(
+            'postulante',
+            'nombreCompleto',
+            'directorDocente',
+            'secretario'
+        ));
+
+        return $pdf->stream('ficha_inscripcion_' . $postulante->dni . '.pdf');
     }
 }

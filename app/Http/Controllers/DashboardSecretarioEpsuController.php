@@ -8,6 +8,10 @@ use Carbon\Carbon;
 use App\Models\Postulante;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Alumno;
+use App\Models\Cohorte;
+use App\Models\Maestria;
+use App\Models\Matricula;
+use Illuminate\Support\Facades\Log;
 
 class DashboardSecretarioEpsuController extends Controller
 {
@@ -143,181 +147,239 @@ class DashboardSecretarioEpsuController extends Controller
 
     public function generarPDF(Request $request, $cohorte)
     {
-        // Obtener pagos verificados
-        $pagos = Pago::with('user')->where('verificado', true)->get();
+        try {
+            // Obtener pagos verificados
+            $pagos = Pago::with('user')->where('verificado', true)->get();
 
-        // Crear una colección de pagos que sí pertenecen a la cohorte
-        $pagosFiltrados = collect();
+            $pagosFiltrados = collect();
 
-        foreach ($pagos as $pago) {
-            $alumno = Alumno::with(['maestria', 'matriculas.cohorte'])
-                ->where('email_institucional', $pago->user->email)
-                ->first();
+            foreach ($pagos as $pago) {
+                $alumno = Alumno::with(['maestria', 'matriculas.cohorte'])
+                    ->where('email_institucional', $pago->user->email)
+                    ->first();
 
-            // Verificar si el alumno está en la cohorte indicada
-            if ($alumno && $alumno->matriculas->contains(function ($matricula) use ($cohorte) {
-                return optional($matricula->cohorte)->nombre === $cohorte;
-            })) {
-                // Agregamos los datos temporales
-                $pago->alumno_data = $alumno;
-                $pagosFiltrados->push($pago);
+                if ($alumno && $alumno->matriculas->contains(function ($matricula) use ($cohorte) {
+                    return optional($matricula->cohorte)->nombre === $cohorte;
+                })) {
+                    $pago->alumno_data = $alumno;
+                    $pagosFiltrados->push($pago);
+                }
             }
-        }
 
-        if ($pagosFiltrados->isEmpty()) {
-            return back()->with('error', 'No hay pagos registrados para esta cohorte.');
-        }
+            if ($pagosFiltrados->isEmpty()) {
+                return back()->with('error', 'No hay pagos registrados para esta cohorte.');
+            }
 
-        // Obtener la primera maestría
-        $primerAlumno = $pagosFiltrados->first()->alumno_data;
-        $maestria = optional($primerAlumno->maestria)->nombre ?? 'Desconocida';
-        $codigoMaestria = optional($primerAlumno->maestria)->codigo ?? '0000';
+            $primerAlumno = $pagosFiltrados->first()->alumno_data;
+            $maestria = optional($primerAlumno->maestria)->nombre ?? 'Desconocida';
+            $codigoMaestria = optional($primerAlumno->maestria)->codigo ?? '0000';
 
-        $totalMontoPagado = 0;
+            $totalMontoPagado = 0;
 
-        // Agrupar pagos por alumno
-        $pagosAgrupados = $pagosFiltrados->groupBy(function ($p) {
-            return $p->alumno_data->dni ?? 'sin_dni';
-        })->map(function ($pagosPorAlumno) use (&$totalMontoPagado) {
-            $alumno = $pagosPorAlumno->first()->alumno_data;
-            $montoTotal = $alumno->monto_total ?? 0;
-            $montoPagado = $pagosPorAlumno->sum('monto');
-            $totalMontoPagado += $montoPagado;
+            $pagosAgrupados = $pagosFiltrados->groupBy(function ($p) {
+                return $p->alumno_data->dni ?? 'sin_dni';
+            })->map(function ($pagosPorAlumno) use (&$totalMontoPagado) {
+                $alumno = $pagosPorAlumno->first()->alumno_data;
+                $montoTotal = $alumno->monto_total ?? 0;
+                $montoPagado = $pagosPorAlumno->sum('monto');
+                $totalMontoPagado += $montoPagado;
 
-            return [
-                'alumno' => $alumno,
-                'cantidad_pagos' => $pagosPorAlumno->count(),
-                'monto_pagado' => $montoPagado,
-                'monto_total' => $montoTotal,
-                'deuda_pendiente' => max(0, $montoTotal - $montoPagado),
-            ];
-        });
+                return [
+                    'alumno' => $alumno,
+                    'cantidad_pagos' => $pagosPorAlumno->count(),
+                    'monto_pagado' => $montoPagado,
+                    'monto_total' => $montoTotal,
+                    'deuda_pendiente' => max(0, $montoTotal - $montoPagado),
+                ];
+            });
 
-        // Obtener todos los alumnos de la cohorte
-        $alumnos = Alumno::whereHas('matriculas.cohorte', function ($query) use ($cohorte) {
-            $query->where('nombre', $cohorte);
-        })->get();
+            $alumnos = Alumno::whereHas('matriculas.cohorte', function ($query) use ($cohorte) {
+                $query->where('nombre', $cohorte);
+            })->get();
 
-        if ($alumnos->isEmpty()) {
-            return back()->with('error', 'No hay alumnos registrados en esta cohorte.');
-        }
+            if ($alumnos->isEmpty()) {
+                return back()->with('error', 'No hay alumnos registrados en esta cohorte.');
+            }
 
-        $totalDeuda = 0;
-        $totalPagado = $pagosFiltrados->sum('monto');
-        $detallesPagos = [];
+            $totalDeuda = 0;
+            $totalPagado = $pagosFiltrados->sum('monto');
+            $detallesPagos = [];
 
-        foreach ($alumnos as $alumno) {
-            $montoTotal = $alumno->monto_total ?? 0;
-            $montoPagado = $pagosAgrupados[$alumno->dni]['monto_pagado'] ?? 0;
-            $deudaPendiente = max(0, $montoTotal - $montoPagado);
+            foreach ($alumnos as $alumno) {
+                $montoTotal = $alumno->monto_total ?? 0;
+                $montoPagado = $pagosAgrupados[$alumno->dni]['monto_pagado'] ?? 0;
+                $deudaPendiente = max(0, $montoTotal - $montoPagado);
+                $totalDeuda += $montoTotal;
 
-            $totalDeuda += $montoTotal;
+                $detallesPagos[] = [
+                    'nombre' => "{$alumno->nombre1} {$alumno->apellidop}",
+                    'monto_pagado' => $montoPagado,
+                    'deuda_pendiente' => $deudaPendiente,
+                ];
+            }
 
-            $detallesPagos[] = [
-                'nombre' => "{$alumno->nombre1} {$alumno->apellidop}",
-                'monto_pagado' => $montoPagado,
-                'deuda_pendiente' => $deudaPendiente,
-            ];
-        }
+            $labels = array_column($detallesPagos, 'nombre');
+            $pagados = array_column($detallesPagos, 'monto_pagado');
+            $deudas = array_column($detallesPagos, 'deuda_pendiente');
 
-        $labels = array_column($detallesPagos, 'nombre');
-        $pagados = array_column($detallesPagos, 'monto_pagado');
-        $deudas = array_column($detallesPagos, 'deuda_pendiente');
+            $chartFilename1 = "chart1_{$cohorte}_{$codigoMaestria}_{$maestria}.png";
+            $chartPath1 = storage_path("app/public/{$chartFilename1}");
 
-        // Definir nombres de imágenes basados en cohorte, maestría y código
-        $chartFilename1 = "chart1_{$cohorte}_{$codigoMaestria}_{$maestria}.png";
-        $chartPath1 = storage_path("app/public/{$chartFilename1}");
+            $chartFilename2 = "chart2_{$cohorte}_{$codigoMaestria}_{$maestria}.png";
+            $chartPath2 = storage_path("app/public/{$chartFilename2}");
 
-        $chartFilename2 = "chart2_{$cohorte}_{$codigoMaestria}_{$maestria}.png";
-        $chartPath2 = storage_path("app/public/{$chartFilename2}");
-
-        // Generar imagen 1
-        $chartData1 = [
-            'type' => 'bar',
-            'data' => [
-                'labels' => $labels,
-                'datasets' => [
-                    ['label' => 'Pagado', 'backgroundColor' => 'green', 'data' => $pagados],
-                    ['label' => 'Deuda', 'backgroundColor' => 'red', 'data' => $deudas],
+            // Chart 1
+            $chartData1 = [
+                'type' => 'bar',
+                'data' => [
+                    'labels' => $labels,
+                    'datasets' => [
+                        ['label' => 'Pagado', 'backgroundColor' => 'green', 'data' => $pagados],
+                        ['label' => 'Deuda', 'backgroundColor' => 'red', 'data' => $deudas],
+                    ],
                 ],
-            ],
-            'options' => [
-                'responsive' => true,
-                'scales' => ['y' => ['beginAtZero' => true]],
-                'plugins' => [
-                    'datalabels' => [
-                        'anchor' => 'end',
-                        'align' => 'top',
-                        'color' => 'black',
-                        'font' => ['weight' => 'bold'],
-                        'formatter' => 'Math.round',
+                'options' => [
+                    'responsive' => true,
+                    'scales' => ['y' => ['beginAtZero' => true]],
+
+                ]
+            ];
+
+            $charturl1 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData1));
+            $chartContent1 = @file_get_contents($charturl1);
+            if (!$chartContent1 || file_put_contents($chartPath1, $chartContent1) === false) {
+                Log::error('No se pudo generar la gráfica 1', ['url' => $charturl1]);
+            }
+
+            // Chart 2
+            $chartData2 = [
+                'type' => 'bar',
+                'data' => [
+                    'labels' => ['Total Deuda', 'Total Pagado'],
+                    'datasets' => [
+                        ['label' => 'Deuda por Cobrar', 'backgroundColor' => 'red', 'data' => [$totalDeuda, 0]],
+                        ['label' => 'Total Pagado', 'backgroundColor' => 'green', 'data' => [0, $totalMontoPagado]],
+                    ],
+                ],
+                'options' => [
+                    'responsive' => true,
+                    'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['stepSize' => 1000]]],
+                    'plugins' => [
+                        'datalabels' => [
+                            'anchor' => 'end',
+                            'align' => 'top',
+                            'color' => 'black',
+                            'font' => ['weight' => 'bold'],
+                            'formatter' => 'Math.round',
+                        ]
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        $charturl1 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData1));
-        file_put_contents($chartPath1, file_get_contents($charturl1));
+            $charturl2 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData2));
+            $chartContent2 = @file_get_contents($charturl2);
+            if (!$chartContent2 || file_put_contents($chartPath2, $chartContent2) === false) {
+                Log::error('No se pudo generar la gráfica 2', ['url' => $charturl2]);
+            }
 
-        // Generar imagen 2
-        $chartData2 = [
-            'type' => 'bar',
-            'data' => [
-                'labels' => ['Total Deuda', 'Total Pagado'],
-                'datasets' => [
-                    [
-                        'label' => 'Deuda por Cobrar',
-                        'backgroundColor' => 'red',
-                        'data' => [$totalDeuda, 0]
-                    ],
-                    [
-                        'label' => 'Total Pagado',
-                        'backgroundColor' => 'green',
-                        'data' => [0, $totalMontoPagado]
-                    ],
-                ],
-            ],
-            'options' => [
-                'responsive' => true,
-                'scales' => [
-                    'y' => [
-                        'beginAtZero' => true,
-                        'ticks' => [
-                            'stepSize' => 1000
-                        ],
-                    ],
-                ],
-                'plugins' => [
-                    'datalabels' => [
-                        'anchor' => 'end',
-                        'align' => 'top',
-                        'color' => 'black',
-                        'font' => ['weight' => 'bold'],
-                        'formatter' => 'Math.round',
-                    ]
-                ]
-            ]
-        ];
+            $pdf = PDF::loadView('pagos.pagos_cohorte', [
+                'pagos' => $pagosAgrupados,
+                'cohorte' => $cohorte,
+                'maestria' => $maestria,
+                'codigoMaestria' => $codigoMaestria,
+                'totalDeuda' => $totalDeuda,
+                'totalPagado' => $totalPagado,
+                'detallesPagos' => $detallesPagos,
+                'chartPath1' => asset("storage/{$chartFilename1}"),
+                'chartPath2' => asset("storage/{$chartFilename2}"),
+            ]);
 
-        $charturl2 = "https://quickchart.io/chart?c=" . rawurlencode(json_encode($chartData2));
-        file_put_contents($chartPath2, file_get_contents($charturl2));
+            $nombreArchivo = "pagos_{$cohorte}_{$codigoMaestria}_{$maestria}.pdf";
 
-        // Generar el PDF con los datos
-        $pdf = PDF::loadView('pagos.pagos_cohorte', [
-            'pagos' => $pagosAgrupados,
-            'cohorte' => $cohorte,
-            'maestria' => $maestria,
-            'codigoMaestria' => $codigoMaestria,
-            'totalDeuda' => $totalDeuda,
-            'totalPagado' => $totalPagado,
-            'detallesPagos' => $detallesPagos,
-            'chartPath1' => asset("storage/{$chartFilename1}"),
-            'chartPath2' => asset("storage/{$chartFilename2}"),
+            return $pdf->stream($nombreArchivo);
+        } catch (\Exception $e) {
+            Log::error('Error al generar el PDF de pagos de cohorte', [
+                'cohorte' => $cohorte,
+                'mensaje' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Ocurrió un error al generar el reporte. Consulta el log para más detalles.');
+        }
+    }
+
+    public function generador_reporte()
+    {
+        $maestrias = Maestria::with('cohortes')->get();
+
+        return view('pagos.reporte_epsu.generador', compact('maestrias'));
+    }
+
+    public function generar_reporte_pdf(Request $request)
+    {
+        $request->validate([
+            'cohorte_id' => 'required|exists:cohortes,id',
         ]);
 
-        // Definir el nombre del archivo PDF
-        $nombreArchivo = "pagos_{$cohorte}_{$codigoMaestria}_{$maestria}.pdf";
+        $cohorte_id = $request->input('cohorte_id');
 
-        return $pdf->stream($nombreArchivo);
+        // Buscar cohorte y maestría
+        $cohorte = Cohorte::with('maestria')->findOrFail($cohorte_id);
+        $maestria = $cohorte->maestria;
+        $maestria_nombre = strtoupper($maestria->nombre);
+
+        // Obtener alumnos de la cohorte
+        $alumnos = Alumno::with('descuento')
+            ->whereIn('dni', function ($query) use ($cohorte_id) {
+                $query->select('alumno_dni')
+                    ->from((new Matricula())->getTable())
+                    ->where('cohorte_id', $cohorte_id);
+            })
+            ->get()
+            ->map(function ($alumno) {
+                $usuario = \App\Models\User::where('email', $alumno->email_institucional)->first();
+
+                // Inicializar montos
+                $pagado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
+                $adeudado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
+
+                if ($usuario) {
+                    $pagado['arancel'] = \App\Models\Pago::where('user_id', $usuario->id)
+                        ->where('tipo_pago', 'arancel')
+                        ->where('verificado', 1)
+                        ->sum('monto');
+
+                    $pagado['matricula'] = \App\Models\Pago::where('user_id', $usuario->id)
+                        ->where('tipo_pago', 'matricula')
+                        ->where('verificado', 1)
+                        ->sum('monto');
+
+                    $pagado['inscripcion'] = \App\Models\Pago::where('user_id', $usuario->id)
+                        ->where('tipo_pago', 'inscripcion')
+                        ->where('verificado', 1)
+                        ->sum('monto');
+                }
+
+                // Monto de arancel viene directamente de monto_total (con descuento aplicado)
+                $adeudado['arancel'] = $alumno->monto_total;
+                $adeudado['matricula'] = $alumno->monto_matricula;
+                $adeudado['inscripcion'] = $alumno->monto_inscripcion;
+
+                return [
+                    'alumno' => $alumno,
+                    'usuario' => $usuario,
+                    'descuento' => $alumno->descuento,
+                    'pagado' => $pagado,
+                    'adeudado' => $adeudado,
+                ];
+            });
+
+        $pdf = Pdf::loadView('pagos.reporte_epsu.reporte', [
+            'alumnos' => $alumnos,
+            'cohorte' => $cohorte,
+            'maestria_nombre' => $maestria_nombre,
+        ])->setPaper('A4', 'landscape');
+
+        return $pdf->stream("Reporte_EPSU_Cohorte_{$cohorte_id}.pdf");
     }
 }
