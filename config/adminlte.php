@@ -424,6 +424,12 @@ return [
             'icon' => 'fa fa-percent',
             'can' => 'dashboard_secretario_epsu'
         ],
+        [
+            'text' => 'Reorte',
+            'route' => 'reporte.generador',
+            'icon' => 'fas fa-fw fa-file-alt',
+            'can' => 'dashboard_secretario_epsu'
+        ],
 
         ['header' => 'Secretaría Académica', 'can' => 'dashboard_secretario'],
         [
