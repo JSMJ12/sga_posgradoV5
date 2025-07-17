@@ -10,10 +10,12 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Spatie\Permission\Traits\HasRoles;
 use App\Notifications\CustomVerifyEmail;
+use NotificationChannels\WebPush\HasPushSubscriptions;
+
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasPushSubscriptions;
 
     protected $table = 'users';
     protected $primaryKey = 'id';

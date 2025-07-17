@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use App\Models\Postulante;
 
+use NotificationChannels\WebPush\WebPushMessage; // Importa WebPushMessage
+
 class SubirArchivoNotification extends Notification implements ShouldQueue, ShouldBroadcast
 {
     use Queueable;
@@ -21,14 +23,14 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     {
         $this->postulante = $postulante;
 
-        // Buscar al usuario por su email y extraer el id
         $user = User::where('email', $postulante->correo_electronico)->first();
         $this->userId = $user ? $user->id : null;
     }
 
     public function via($notifiable)
     {
-        return ['mail', 'database', 'broadcast'];
+        // Añade 'webpush' para notificaciones push
+        return ['mail', 'database', 'broadcast', 'webpush'];
     }
 
     public function toMail($notifiable)
@@ -43,19 +45,32 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
     public function toArray($notifiable)
     {
         return [
-            'type' => 'PagoRechazado',
-            'message' => 'Tu comprobante de pago fue rechazado.',
+            'type' => 'SubirArchivo',
+            'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
         ];
+    }
+
+    // Aquí agregamos el método para la notificación webpush
+    public function toWebPush($notifiable, $notification)
+    {
+        return (new WebPushMessage)
+            ->title('Recordatorio: Subir Archivo')
+            ->icon('/icono-notificacion.png') // Opcional: ruta al icono en public
+            ->body('Hola ' . $this->postulante->nombre1 . ', recuerda subir tus archivos para completar el proceso.')
+            ->action('Ver detalles', 'view_app')
+            ->data(['url' => url('/inicio')]); // Puedes enviar datos extra, como url para abrir al click
     }
 
     public function broadcastOn()
     {
         return new PrivateChannel('user.' . $this->userId);
     }
+
     public function broadcastAs()
     {
         return 'pago.rechazado';
     }
+
     public function broadcastWith()
     {
         return [

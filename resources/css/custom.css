@@ -1,0 +1,12 @@
+.bg-custom-green {
+    background-color: #04840c !important;
+}
+.nav-sidebar .nav-item > .nav-link.active {
+    background-color: #04840c !important;
+    color: #fff !important;
+}
+
+.nav-sidebar .nav-item > .nav-link:hover {
+    background-color: #04840c !important;
+    color: #fff !important;
+}

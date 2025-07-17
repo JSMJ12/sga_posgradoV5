@@ -13,12 +13,38 @@ use App\Models\TasaTitulacion;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Str;
 
 class AlumnoController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
+    }
+    public function subirFichaSocioeconomica(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'ficha_socioeconomica' => 'required|mimes:pdf,doc,docx|max:2048', // máximo 2MB
+            ]);
+
+            $alumno = Alumno::findOrFail($id);
+
+            $file = $request->file('ficha_socioeconomica');
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'ficha_' . Str::slug($alumno->nombre1 . '_' . $alumno->apellidop) . '_' . time() . '.' . $extension;
+
+            $ruta = $file->storeAs('private/ficha_socioeconomica', $filename);
+
+            $alumno->ficha_socioeconomica = $ruta;
+            $alumno->save();
+
+            return back()->with('success', 'Ficha socioeconómica subida correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al subir la ficha socioeconómica: ' . $e->getMessage());
+
+            return back()->with('error', 'Ocurrió un error al subir la ficha socioeconómica. Por favor, inténtalo nuevamente.');
+        }
     }
 
     public function index(Request $request)
@@ -84,6 +110,13 @@ class AlumnoController extends Controller
                 ->addColumn('acciones', function ($alumno) {
                     $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
 
+                    if ($alumno->ficha_socioeconomica) {
+                        $acciones .= '<a href="' . route('alumnos.ficha.ver', $alumno->dni) . '" target="_blank" class="btn btn-outline-secondary btn-sm" title="Ver ficha socioeconómica">
+                                        <i class="fas fa-file-word"></i>
+                                    </a>';
+                    }
+
+                    
                     if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->isEmpty()) {
                         $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular"><i class="fas fa-plus-circle"></i></a>';
                     }

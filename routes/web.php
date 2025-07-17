@@ -65,7 +65,40 @@ Route::get('/limpiar-cache', function () {
     Artisan::call('optimize:clear');
     return 'Cache limpiada correctamente.';
 });
+Route::post('/push-subscribe', function (Request $request) {
+    auth()->user()->updatePushSubscription(
+        $request->endpoint,
+        $request->keys['p256dh'],
+        $request->keys['auth']
+    );
+    return response()->json(['success' => true]);
+})->middleware('auth');
 
+Route::get('/descargar-certificado', function () {
+    $ruta = storage_path('app/private/ficha_socioeconomica/ficha.docx');
+
+    if (!file_exists($ruta)) {
+        abort(404, 'Archivo no encontrado.');
+    }
+
+    return response()->download($ruta, 'certificado.docx');
+})->name('certificado.descargar')->middleware('auth');
+
+Route::get('/alumnos/{id}/ficha-socioeconomica', function ($id) {
+    $alumno = \App\Models\Alumno::findOrFail($id);
+
+    if (!$alumno->ficha_socioeconomica || !Storage::exists($alumno->ficha_socioeconomica)) {
+        abort(404, 'Archivo no encontrado.');
+    }
+
+    $mime = Storage::mimeType($alumno->ficha_socioeconomica);
+    $content = Storage::get($alumno->ficha_socioeconomica);
+
+    return Response::make($content, 200, [
+        'Content-Type' => $mime,
+        'Content-Disposition' => 'inline; filename="' . basename($alumno->ficha_socioeconomica) . '"',
+    ]);
+})->name('alumnos.ficha.ver');
 
 //Redireccionador
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -120,7 +153,7 @@ Route::post('/dashboard/docente/update-silabo', [DashboardDocenteController::cla
 //ALUMNOS
 Route::resource('alumnos', AlumnoController::class)->middleware(['can:secretario_coordinador']);
 Route::post('/alumno/retirarse_maestria/{dni}', [AlumnoController::class, 'retirarse'])->name('alumno.retirarse');
-
+Route::post('/alumnos/{id}/ficha-socioeconomica', [AlumnoController::class, 'subirFichaSocioeconomica'])->name('alumnos.subirFicha');
 
 //ASIGNATURA DOCENTES
 Route::resource('asignaturas_docentes', AsignaturaDocenteController::class)->middleware(['can:dashboard_secretario']);

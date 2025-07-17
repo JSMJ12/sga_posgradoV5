@@ -31,7 +31,7 @@ class PostulantesTableSeeder extends Seeder
         $maticula = $maestria->matricula;
 
         // Crear 25 postulantes
-        foreach (range(1, 25) as $index) {
+        foreach (range(400, 425) as $index) {
             // Generar un número de registro secuencial
             $nuevoRegistro = Postulante::where('maestria_id', $maestria->id)->count() + 1;
 

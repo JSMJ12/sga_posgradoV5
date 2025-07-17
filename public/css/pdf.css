@@ -1,95 +1,43 @@
 @page {
-    margin: 2.54cm;
-}
-#fecha-actual {
-    font-size: 12pt;
-    text-align: right;
-    margin-top: 10px;
-}
+            size: A4;
+            margin:0;
+        }
 
-body {
-    font-family: "Times New Roman", serif;
-    font-size: 10pt;
-    margin: 0;
-    padding: 0;
-}
-.container {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-.header {
-    text-align: center;
-    margin-bottom: 15px;
-    position: relative;
-    margin-top: -60px;
-}
-.logo {
-    width: 64px;
-    position: absolute;
-    top: -25px;
-    left: 20px;
-}
+        html, body {
+            
+            font-family: "Times New Roman", serif;
+            font-size: 12pt;
+            background-size: 100% 100%;
+            background-position: top left;
+            background-repeat: no-repeat;
+            
+        }
 
-.seal {
-    width: 104px;
-    position: absolute;
-    top: -25;
-    right: -30px;
-}
-.university-name {
-    font-size: 14pt;
-    font-weight: bold;
-}
-.institute {
-    font-size: 10pt;
-}
-.coordinator {
-    font-size: 10pt;
-}
-.divider {
-    width: 100%;
-    height: 2px;
-    background-color: #000;
-    margin: 10px 0;
-}
-.certificate-title {
-    font-size: 12pt;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 10px;
-}
-.certificate-details {
-    font-size: 12pt;
-    text-align: justify;
-    margin: 10px 0;
-}
-.student-info {
-    font-size: 9pt;
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 10px;
-}
-.student-info th, .student-info td {
-    border: 1px solid #666;
-    padding: 3px; /* Reducir el espacio entre celdas */
-    text-align: center; /* Centrar el contenido en las celdas */
-}
-.student-info th {
-    background-color: #ccc;
-}
-.footer {
-    font-size: 10pt;
-    text-align: right;
-    margin-top: 10px;
-}
-/* Ajustes para la tabla */
-.student-info td {
-    text-align: center; /* Centrar el contenido en las celdas */
-}
-#qr-code {
-    position: absolute;
-    bottom: 30px;
-    right: 5px;
-}
+
+        .title {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            margin-top: 2cm;
+        }
+
+        .body-text {
+            text-align: justify;
+            line-height: 1.6;
+            margin: 0 2cm;
+        }
+
+        #fecha-actual {
+            margin-top: 30px;
+        }
+
+        .firmante {
+            margin-top: 90px;
+            text-align: center;
+        }
+
+        .firmante b {
+            display: block;
+            margin-bottom: 2px;
+        }

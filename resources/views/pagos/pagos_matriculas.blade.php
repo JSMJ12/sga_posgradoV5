@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #446f5f;">
                 <h3 style="color: white">Historial de Pagos de Matrícula de Postulantes</h3>
             </div>
             <div class="card-body">

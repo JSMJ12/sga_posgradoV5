@@ -1,133 +1,225 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard Alumno')
 
 @section('content_header')
-    <h1>Dashboard</h1>
+    <h1 class="text-success"><i class="fas fa-user-graduate"></i> Panel del Estudiante</h1>
 @stop
 
 @section('content')
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header bg-warning text-white text-center">
-                        <h3>Perfil del Estudiante</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="profile-picture text-center mb-3">
-                            <img src="{{ asset('storage/' . $alumno->image) }}" alt="Foto de perfil"
-                                class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
-                        </div>
-                        <div class="profile-info">
-                            <h4 class="text-center">{{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }}
-                                {{ $alumno->apellidom }}</h4>
-                            <hr>
-                            <p><strong>ID:</strong> {{ $alumno->dni }}</p>
-                            <p><strong>Número de Estudiante:</strong> {{ $alumno->registro }}</p>
-                            <p><strong>Email Institucional:</strong> {{ $alumno->email_institucional }}</p>
-                            <p><strong>Email Personal:</strong> {{ $alumno->email_personal }}</p>
-                            <p><strong>Título Profesional:</strong> {{ $alumno->titulo_profesional }}</p>
-                            <button id="retirarse-btn" class="btn btn-danger mt-3" data-bs-toggle="modal" data-bs-target="#retiroModal">Retirarse</button>
-                        </div>
-                    </div>
+<div class="container-fluid">
+    <div class="row g-4">
+        <!-- Perfil del Estudiante -->
+        <div class="col-md-4">
+            <div class="card shadow border-0">
+                <div class="card-header bg-gradient-success text-white text-center">
+                    <h3 class="mb-0"><i class="fas fa-id-badge"></i> Perfil</h3>
                 </div>
-            </div>
-
-            <!-- Contenido Principal -->
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h2>Asignaturas Matriculadas</h2>
+                <div class="card-body">
+                    <div class="profile-picture text-center mb-3">
+                        <img src="{{ asset('storage/' . $alumno->image) }}" alt="Foto de perfil"
+                            class="img-thumbnail shadow" style="width: 140px; height: 140px; object-fit: cover; border-radius: 50%;">
                     </div>
-                    <div class="card-body">
-                        <ul class="list-group">
-                            @forelse ($asignaturas as $asignatura)
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>{{ $asignatura->nombre }}</span>
-                                    @if ($asignatura->silabo)
-                                        <a href="{{ asset('storage/' . $asignatura->silabo) }}" target="_blank"
-                                            class="btn btn-success btn-sm">Ver Sílabo</a>
-                                    @endif
-                                </li>
-                            @empty
-                                <li class="list-group-item text-center text-muted">Aún no se asignan Docentes a las
-                                    asignaturas.</li>
-                            @endforelse
+                    <div class="profile-info">
+                        <h4 class="text-center fw-bold">{{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }} {{ $alumno->apellidom }}</h4>
+                        <hr>
+                        <ul class="list-unstyled mb-3">
+                            <li><i class="fas fa-id-card"></i> <strong>ID:</strong> {{ $alumno->dni }}</li>
+                            <li><i class="fas fa-hashtag"></i> <strong>Número de Estudiante:</strong> {{ $alumno->registro }}</li>
+                            <li><i class="fas fa-envelope"></i> <strong>Email Institucional:</strong> <br> <span class="text-muted">{{ $alumno->email_institucional }}</span></li>
+                            <li><i class="fas fa-envelope-open"></i> <strong>Email Personal:</strong> <br> <span class="text-muted">{{ $alumno->email_personal }}</span></li>
+                            <li><i class="fas fa-user-tie"></i> <strong>Título Profesional:</strong> <br> <span class="text-muted">{{ $alumno->titulo_profesional }}</span></li>
                         </ul>
+                        <a href="{{ route('certificado.descargar') }}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-file-download"></i> Descargar ficha socioeconómica
+                        </a>
+                        <button class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#subirFichaModal">
+                            <i class="fas fa-upload"></i> Subir ficha socioeconómica
+                        </button>
+                        <button id="retirarse-btn" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#retiroModal">
+                            <i class="fas fa-sign-out-alt"></i> Retirarse
+                        </button>
                     </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <!-- Modal para solicitud de retiro -->
-    <div class="modal fade" id="retiroModal" tabindex="-1" aria-labelledby="retiroModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="retiroModalLabel">Solicitud de Retiro</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <!-- Asignaturas Matriculadas -->
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-gradient-primary text-white d-flex align-items-center">
+                    <h2 class="mb-0"><i class="fas fa-book-open"></i> Asignaturas Matriculadas</h2>
                 </div>
-                <div class="modal-body">
-                    <form id="retiro-form" action="{{ route('alumno.retirarse', $alumno->dni) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        <input type="hidden" name="alumno_dni" value="{{ $alumno->dni }}">
-
-                        <div class="mb-3">
-                            <label for="retiro-file" class="form-label">Documento de Justificación</label>
-                            <input type="file" id="retiro-file" name="retiro_documento" class="form-control" required>
-                            <small class="text-muted">Por favor, cargue un documento que explique los motivos de su retiro.</small>
-                        </div>
-                        <div class="text-danger">
-                            <small>* El documento de justificación es obligatorio para procesar la solicitud.</small>
-                            <br>
-                            <small>* Una vez aceptada la solicitud de retiro, no se reembolsará el importe pagado.</small>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="retiro-form" class="btn btn-danger">Subir y confirmar retiro</button>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @forelse ($asignaturas as $asignatura)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="fas fa-book text-primary"></i> {{ $asignatura->nombre }}
+                                </span>
+                                @if ($asignatura->silabo)
+                                    <a href="{{ asset('storage/' . $asignatura->silabo) }}" target="_blank"
+                                        class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-file-pdf"></i> Ver Sílabo
+                                    </a>
+                                @endif
+                            </li>
+                        @empty
+                            <li class="list-group-item text-center text-muted">
+                                <i class="fas fa-info-circle"></i> Aún no se asignan Docentes a las asignaturas.
+                            </li>
+                        @endforelse
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal para solicitud de retiro -->
+<div class="modal fade" id="retiroModal" tabindex="-1" aria-labelledby="retiroModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="retiroModalLabel"><i class="fas fa-sign-out-alt"></i> Solicitud de Retiro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="retiro-form" action="{{ route('alumno.retirarse', $alumno->dni) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="alumno_dni" value="{{ $alumno->dni }}">
+
+                    <div class="mb-3">
+                        <label for="retiro-file" class="form-label">Documento de Justificación</label>
+                        <input type="file" id="retiro-file" name="retiro_documento" class="form-control" required>
+                        <small class="text-muted">Por favor, cargue un documento que explique los motivos de su retiro.</small>
+                    </div>
+                    <div class="text-danger">
+                        <small>* El documento de justificación es obligatorio para procesar la solicitud.</small>
+                        <br>
+                        <small>* Una vez aceptada la solicitud de retiro, no se reembolsará el importe pagado.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="retiro-form" class="btn btn-danger">Subir y confirmar retiro</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para subir ficha socioeconómica -->
+<div class="modal fade" id="subirFichaModal" tabindex="-1" aria-labelledby="subirFichaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="subirFichaModalLabel"><i class="fas fa-upload"></i> Subir ficha socioeconómica</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ficha-form" action="{{ route('alumnos.subirFicha', $alumno->dni) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <label for="ficha_socioeconomica" class="form-label">Seleccione el archivo (PDF o DOCX):</label>
+                    <input type="file" name="ficha_socioeconomica" id="ficha_socioeconomica" accept=".pdf,.doc,.docx" class="form-control mb-2" required>
+                    <small class="text-muted">Solo se permiten archivos PDF o DOCX.</small>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="ficha-form" class="btn btn-success">Subir ficha</button>
+            </div>
+        </div>
+    </div>
+</div>
 @stop
 
 @section('js')
+<!-- FontAwesome para iconos -->
+<script src="https://kit.fontawesome.com/4e4b8b9b3a.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script>
-        document.getElementById('retiro-form').addEventListener('submit', function(e) {
-            const fileInput = document.getElementById('retiro-file');
-
-            if (!fileInput.files.length) {
-                e.preventDefault();
-                alert('Debes subir un documento para continuar.');
-            }
-        });
-    </script>
+<script>
+    document.getElementById('retiro-form').addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('retiro-file');
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Debes subir un documento para continuar.');
+        }
+    });
+</script>
 @stop
 
 @section('css')
-    <style>
+<style>
+    body {
+        background: #f8fafc;
+    }
+    .card {
+        border-radius: 18px;
+        overflow: hidden;
+    }
+    .card-header.bg-gradient-success {
+        background: linear-gradient(90deg, #28a745 0%, #218838 100%);
+    }
+    .card-header.bg-gradient-primary {
+        background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+    }
+    .profile-picture img {
+        box-shadow: 0 4px 16px rgba(40,167,69,0.15);
+        border: 4px solid #e9ecef;
+    }
+    .profile-info h4 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+    .list-group-item {
+        background: #fff;
+        border: none;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 15px;
+    }
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    .btn-primary, .btn-danger, .btn-outline-success {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border-radius: 8px;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+        border: none;
+    }
+    .btn-danger {
+        background: linear-gradient(90deg, #dc3545 0%, #b21f2d 100%);
+        border: none;
+    }
+    .btn-outline-success {
+        border: 2px solid #28a745;
+        color: #28a745;
+        background: #fff;
+    }
+    .btn-outline-success:hover {
+        background: #28a745;
+        color: #fff;
+    }
+    .modal-content {
+        border-radius: 16px;
+    }
+    .modal-header.bg-danger {
+        background: linear-gradient(90deg, #dc3545 0%, #b21f2d 100%);
+    }
+    .modal-title i {
+        margin-right: 8px;
+    }
+    @media (max-width: 767px) {
         .profile-picture img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 10px;
+            width: 100px !important;
+            height: 100px !important;
         }
-
         .profile-info h4 {
-            font-size: 20px;
-            margin-bottom: 10px;
+            font-size: 18px;
         }
-
-        .card-header h2,
-        .card-header h3 {
-            margin: 0;
-        }
-    </style>
+    }
+</style>
 @stop

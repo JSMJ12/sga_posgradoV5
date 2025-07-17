@@ -9,7 +9,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #446f5f;">
                 <h3 class="card-title">Listado de Docentes</h3>
                 <div class="card-tools">
                     <a href="{{ route('docentes.create') }}" class="btn btn-light btn-sm">
@@ -20,7 +20,7 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="docentes">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #315d50; color: white;">
                             <tr>
                                 <th>Cédula / Pasaporte</th>
                                 <th>Foto</th>

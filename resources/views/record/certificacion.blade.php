@@ -6,62 +6,37 @@
     <title>Certificado</title>
     <style>
         @page {
-            margin: 2.54cm;
+            size: A4;
+            margin: 0;
         }
 
         body {
             font-family: "Times New Roman", serif;
             font-size: 10pt;
+            width: 210mm;
+            height: 297mm;
             margin: 0;
             padding: 0;
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
+            background-size: 100% 100%;
+            background-position: top left;
+            background-repeat: no-repeat;
         }
 
         .container {
-            width: 100%;
-            position: relative;
+            width: 85%;
+            margin: 190px auto 80px auto; /* 🔽 Bajado 15px (antes era 160px) */
+            padding-left: 0;
+            text-align: justify;
+            line-height: 1.8;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-            position: relative;
-            margin-top: -60px;
-        }
-
-        .logo {
-            width: 60px;
-            position: absolute;
-            top: -40px;
-            left: 0;
-        }
-
-        .seal {
-            width: 100px;
-            position: absolute;
-            top: -45;
-            right: 0;
-        }
-
-        .university-name {
-            font-size: 12pt;
-            font-weight: bold;
-        }
-
-        .institute {
-            font-size: 10pt;
-        }
 
         .program-title {
             font-size: 9pt;
             margin-top: 5px;
         }
 
-        .divider {
-            width: 100%;
-            height: 2px;
-            background-color: goldenrod;
-            margin: 10px 0;
-        }
 
         .certificate-title {
             font-size: 10.5pt;
@@ -119,38 +94,7 @@
 
 <body>
     <div class="container">
-        <img src="{{ public_path() . '/images/unesum.png' }}" alt="University Logo" class="logo">
-        <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
-        <div class="header">
-            <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
-            <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <div class="coordinator" style="margin-top: 5px; font-size: 10pt;">
-                COORDINACIÓN DE LA
-                @php
-                    $nombreMaestria = strtoupper($alumno->maestria->nombre);
-                    $palabras = explode(' ', $nombreMaestria);
-                    $lineas = [];
-                    $lineaActual = '';
-
-                    foreach ($palabras as $palabra) {
-                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
-                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
-                        } else {
-                            $lineas[] = $lineaActual;
-                            $lineaActual = $palabra;
-                        }
-                    }
-                    if ($lineaActual) {
-                        $lineas[] = $lineaActual;
-                    }
-                @endphp
-
-                @foreach ($lineas as $linea)
-                    <div style="text-transform: uppercase;">{{ $linea }}</div>
-                @endforeach
-            </div>
-        </div>
-        <div class="divider"></div>
+        
         <p class="certificate-title">CERTIFICA</p>
         <p class="certificate-details">Que de acuerdo a los registros que reposan en la Secretaría Académica de
             la Coordinación de la {{ $alumno->maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se
@@ -167,25 +111,22 @@
             {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}, con número de Matrícula Nº
             {{ $alumno->registro }}, quien aprobó todos los módulos contemplados en este programa, de acuerdo al
             siguiente detalle:</p>
-        <table class="student-info" style="width: 80%; margin: 0 auto; font-size: 10pt;">
-            <col width="60%">
-            <col width="40%">
-            <col width="40%">
+        <table class="student-info" style="width: 80%; margin: 0 auto; font-size: 8pt;">
             <thead class="thead-dark">
                 <tr>
-                    <th>ASIGNATURA</th>
-                    <th>TOTAL HORAS</th>
-                    <th>PROMEDIO</th>
+                    <th style="font-size: 8pt;">ASIGNATURA</th>
+                    <th style="font-size: 8pt;">TOTAL HORAS</th>
+                    <th style="font-size: 8pt;">PROMEDIO</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($notasCompletas  as $nota)
                     <tr>
-                        <td>{{ $nota->asignatura->nombre }}</td>
-                        <td>
+                        <td style="font-size: 8pt;">{{ $nota->asignatura->nombre }}</td>
+                        <td style="font-size: 8pt;">
                             {{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}
                         </td>
-                        <td>{{ $nota->total ?? '--' }}</td>
+                        <td style="font-size: 8pt;">{{ $nota->total ?? '--' }}</td>
                     </tr>
                 @endforeach
             </tbody>

@@ -7,7 +7,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #036f1b;">
+            <div class="card-header text-white" style="background-color: #446f5f;">
                 <h3 class="card-title">Listado de Usuarios</h3>
                 <div class="card-tools">
                     <a href="{{ route('usuarios.create') }}" class="btn btn-light btn-sm"><i class="fas fa-plus"></i> Agregar
@@ -18,7 +18,7 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="usuarios">
-                        <thead style="background-color: #003366; color: white;">
+                        <thead style="background-color: #315d50; color: white;">
                             <tr>
                                 <th>#</th>
                                 <th>Foto</th>

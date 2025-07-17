@@ -8,91 +8,92 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-primary">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #007bff, #0056b3); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalUsuarios }}</h3>
-                        <p>Usuarios Generales</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalUsuarios }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Usuarios Generales</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-users"></i>
                     </div>
                     <a href="{{ route('usuarios.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
-
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #28a745, #218838); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalDocentes }}</h3>
-                        <p>Docentes</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalDocentes }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Docentes</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-chalkboard-teacher"></i>
                     </div>
                     <a href="{{ route('docentes.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
-
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-warning">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #ffc107, #ff9800); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalSecretarios }}</h3>
-                        <p>Secretarios</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalSecretarios }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Secretarios</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-user-tie"></i>
                     </div>
                     <a href="{{ route('secretarios.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
-
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #2596be, #1e6f95); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalAlumnos }}</h3>
-                        <p>Alumnos</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalAlumnos }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Alumnos</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-user-graduate"></i>
                     </div>
                     <a href="{{ route('alumnos.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
-
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #6c757d, #343a40); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalMaestrias }}</h3>
-                        <p>Maestrías</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalMaestrias }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Maestrías</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-graduation-cap"></i>
                     </div>
                     <a href="{{ route('maestrias.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
-
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-secondary">
+                <div class="small-box shadow-sm"
+                    style="background: linear-gradient(135deg, #17a2b8, #138496); border-radius: 12px; color: white; overflow: hidden; position: relative;">
                     <div class="inner">
-                        <h3>{{ $totalPostulantes }}</h3>
-                        <p>Postulantes</p>
+                        <h3 style="font-size: 2.2rem; font-weight: 600;">{{ $totalPostulantes }}</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0;">Postulantes</p>
                     </div>
                     <div class="icon">
                         <i class="fa fa-user-tie"></i>
                     </div>
                     <a href="{{ route('postulaciones.index') }}" class="small-box-footer">
-                        <i class="fa fa-arrow-circle-right"></i>
+                        Ver más <i class="fa fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
@@ -304,6 +305,15 @@
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
             /* Sombras suaves */
         }
+        <style>
+    .small-box .icon i {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .small-box:hover .icon i {
+        transform: scale(1.3);
+    }
+</style>
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 

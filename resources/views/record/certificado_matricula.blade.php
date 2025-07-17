@@ -5,139 +5,23 @@
     <meta charset="UTF-8">
     <title>Certificado de Matrícula</title>
     <style>
-        @page {
-            margin: 2.54cm;
-        }
-
-        body {
-            font-family: "Times New Roman", serif;
-            font-size: 12pt;
-            margin: 0;
-            padding: 0;
+        html, body {
+            background-image: url('{{ public_path("images/fondopdf.png") }}');
         }
 
         .container {
             width: 100%;
-            position: relative;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-            margin-top: -30px;
-        }
-
-        .logo {
-            width: 64px;
-            position: absolute;
-            top: -25px;
-            left: 0;
-        }
-
-        .seal {
-            width: 104px;
-            position: absolute;
-            top: -35;
-            right: 0;
-        }
-
-        .university-name {
-            font-size: 14pt;
-            font-weight: bold;
-        }
-
-        .institute {
-            font-size: 10pt;
-        }
-
-        .program-title {
-            font-size: 10pt;
-            margin-top: 5px;
-        }
-
-        .divider {
-            height: 3px;
-            background-color: gold;
-            margin: 10px 0 20px;
-        }
-
-        .title {
-            text-align: center;
-            font-size: 12pt;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .body-text {
-            text-align: justify;
-            line-height: 1.6;
-        }
-
-        .footer {
-            text-align: left;
-            margin-top: 60px;
-        }
-
-        #fecha-actual {
-            margin-top: 30px;
-        }
-
-        .firmante {
-            margin-top: 40px;
-            text-align: center;
-        }
-
-        .firmante b {
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        .qr {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 90px;
+            box-sizing: border-box;
+            padding-top: 190px;
+            margin: 0;
         }
     </style>
+    <link rel="stylesheet" href="{{ public_path('css/pdf.css') }}">
 </head>
 
 <body>
     <div class="container">
-        <img src="{{ public_path() . '/images/unesum.png' }}" class="logo">
-        <img src="{{ public_path() . '/images/posgrado-25.png' }}" class="seal">
-
-        <div class="header">
-            <div class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
-            <div class="institute">INSTITUTO DE POSGRADO</div>
-            <div class="program-title">COORDINACIÓN DE LA 
-                @php
-                    $nombreMaestria = strtoupper($alumno->maestria->nombre);
-                    $palabras = explode(' ', $nombreMaestria);
-                    $lineas = [];
-                    $lineaActual = '';
-
-                    foreach ($palabras as $palabra) {
-                        if (strlen($lineaActual . ' ' . $palabra) <= 40) {
-                            $lineaActual .= ($lineaActual ? ' ' : '') . $palabra;
-                        } else {
-                            $lineas[] = $lineaActual;
-                            $lineaActual = $palabra;
-                        }
-                    }
-                    if ($lineaActual) {
-                        $lineas[] = $lineaActual;
-                    }
-                @endphp
-
-                @foreach ($lineas as $linea)
-                    <div style="text-transform: uppercase;">{{ $linea }}</div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="title">INSTITUTO DE POSGRADO <br> CERTIFICADO DE MATRÍCULA</div>
+        <div class="title">CERTIFICADO DE MATRÍCULA</div>
 
         <p class="body-text">
             El Instituto de Posgrado, a través de la Coordinación del Programa de la
@@ -161,16 +45,14 @@
             Dado en Jipijapa, {{ $fechaActual }}.
         </p>
 
-        <div class="firmante" style="margin-top: 130px; text-align: center;">
-            <div style="display: inline-block; border-top: 1px solid black; width: fit-content; padding: 0 10px; margin-bottom: 5px;">
+        <div class="firmante">
+            <div style="display: inline-block; border-top: 1px solid black; padding: 0 10px; margin-bottom: 5px;">
                 <b>{{ $nombreCompleto }}</b>
             </div>
             <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
-                COORDINADOR DEL PROGRAMA DE  {{ strtoupper($alumno->maestria->nombre)}}
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre)}}
             </div>
-        </div>              
-
-        <img class="qr" src="data:image/png;base64,{{ base64_encode($qrCode) }}">
+        </div>
     </div>
 </body>
 

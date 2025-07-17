@@ -8,13 +8,13 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #446f5f;">
                 <h3 class="card-title">Listado de Postulantes</h3>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="postulantes">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #315d50; color: white;">
                             <tr>
                                 <th>Cedula</th>
                                 <th>Nombre</th>

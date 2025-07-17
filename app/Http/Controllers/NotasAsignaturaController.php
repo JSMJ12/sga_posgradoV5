@@ -44,14 +44,6 @@ class NotasAsignaturaController extends Controller
         // Generate a fake URL for QR purposes (optional)
         $url = url('/'); // Puedes apuntar a la página principal u otro recurso
 
-        // Generate QR code
-        $qrCode = QrCode::format('png')
-            ->size(100)
-            ->eye('circle')
-            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-            ->errorCorrection('H')
-            ->generate($url);
-
         // Create PDF in memory without saving
         $pdf = Pdf::loadView('record.notas_asignatura', compact(
             'alumnosMatriculados',
@@ -62,7 +54,6 @@ class NotasAsignaturaController extends Controller
             'periodo_academico',
             'cohorte',
             'paralelo',
-            'qrCode'
         ))
         ->setPaper('a4')
         ->setWarnings(false);

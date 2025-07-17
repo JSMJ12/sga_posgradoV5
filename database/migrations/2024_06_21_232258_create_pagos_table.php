@@ -10,7 +10,6 @@ class CreatePagosTable extends Migration
     {
         Schema::create('pagos', function (Blueprint $table) {
             $table->id();
-            $table->string('dni');
             $table->decimal('monto', 10, 2);
             $table->date('fecha_pago');
             $table->string('archivo_comprobante')->nullable();
@@ -18,7 +17,6 @@ class CreatePagosTable extends Migration
             $table->boolean('verificado')->default(false);
             $table->timestamps();
 
-            $table->foreign('dni')->references('dni')->on('alumnos')->onDelete('cascade');
         });
     }
 

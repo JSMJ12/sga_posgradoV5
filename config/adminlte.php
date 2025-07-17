@@ -134,7 +134,7 @@ return [
 
     'usermenu_enabled' => true,
     'usermenu_header' => true,
-    'usermenu_header_class' => 'bg-success',
+    'usermenu_header_class' => 'bg-custom-green',
     'usermenu_image' => true,
     'usermenu_desc' => false,
     'usermenu_profile_url' => false,
@@ -190,7 +190,7 @@ return [
     */
 
     'classes_body' => '',
-    'classes_brand' => 'bg-green',
+    'classes_brand' => 'bg-custom-green',
     'classes_brand_text' => '',
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
@@ -522,6 +522,9 @@ return [
     | https://github.com/jeroennoten/Laravel-AdminLTE/wiki/Plugins-Configuration
     |
     */
+    'custom_css' => [
+            'css/custom.css',
+        ],
 
     'plugins' => [
         'Datatables' => [

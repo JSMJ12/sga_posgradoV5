@@ -96,6 +96,7 @@ class Alumno extends Model
         'nivel_formacion_padre',
         'nivel_formacion_madre',
         'origen_recursos_estudios',
+        'ficha_socioeconomica',
 
         // Documentos
         'pdf_cedula',

@@ -6,7 +6,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="card shadow-lg">
-            <div class="card-header text-white" style="background-color: #3007b8;">
+            <div class="card-header text-white" style="background-color: #446f5f;">
                 <h3 class="card-title">Listado de Periodos Académicos</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#createPeriodoModal">
@@ -17,7 +17,7 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="periodos_academicos">
-                        <thead style="background-color: #28a745; color: white;">
+                        <thead style="background-color: #315d50; color: white;">
                             <tr>
                                 <th>ID</th>
                                 <th>Nombre</th>

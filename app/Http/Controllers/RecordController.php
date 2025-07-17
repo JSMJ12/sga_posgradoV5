@@ -96,13 +96,6 @@ class RecordController extends Controller
 
         // Código QR con enlace al record
         $url = route('record.show', $alumno_dni);
-        $qrCode = QrCode::format('png')
-            ->size(100)
-            ->eye('circle')
-            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-            ->errorCorrection('H')
-            ->generate($url);
-
         // Coordinador de la maestría
         $coordinadorDni = $alumno->maestria->coordinador;
         $coordinador = Docente::where('dni', $coordinadorDni)->first();
@@ -116,7 +109,6 @@ class RecordController extends Controller
             'cohorteNombre',
             'totalHoras',
             'fechaActual',
-            'qrCode',
             'nombreCompleto',
             'promedio',
             'cantidadAsignaturas',
@@ -142,23 +134,17 @@ class RecordController extends Controller
         $nombreLimpio = Str::slug($alumno->apellidop . '_' . $alumno->nombre1);
         $url = url()->full();
 
-        $qrCode = QrCode::format('png')
-            ->size(100)
-            ->eye('circle')
-            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-            ->errorCorrection('H')
-            ->generate($url);
-
+       
         $coordinador = Docente::where('dni', $alumno->maestria->coordinador)->first();
         $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
 
-        $pdf = Pdf::loadView('record.certificado_matricula', compact(
+       $pdf = Pdf::loadView('record.certificado_matricula', compact(
             'alumno',
             'cohorte',
             'fechaActual',
-            'qrCode',
             'nombreCompleto'
-        ));
+        ))->setPaper('A4', 'portrait');
+
 
         return $pdf->stream("certificado_matricula_{$nombreLimpio}.pdf");
     }
@@ -206,12 +192,6 @@ class RecordController extends Controller
 
         // Código QR
         $url = route('certificado', $alumno->dni);
-        $qrCode = QrCode::format('png')
-            ->size(100)
-            ->eye('circle')
-            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-            ->errorCorrection('H')
-            ->generate($url);
 
         // Coordinador
         $coordinadorDni = $alumno->maestria->coordinador;
@@ -227,7 +207,6 @@ class RecordController extends Controller
             'totalHoras',
             'numeroRomano',
             'fechaActual',
-            'qrCode',
             'nombreCompleto'
         ));
 
@@ -240,8 +219,6 @@ class RecordController extends Controller
         // Obtener el alumno y sus notas
         $alumno = Alumno::findOrFail($alumno_dni);
         $notas = $alumno->notas()->with('asignatura', 'docente')->get();
-
-        $seccionId = $alumno->maestria->secciones->first()->id;
 
         $totalHoras = $notas->sum(function ($nota) {
             return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
@@ -259,13 +236,7 @@ class RecordController extends Controller
 
         // Generar el código QR con URL de visualización (si deseas usarlo aún)
         $url = route('certificado_culminacion', $alumno->dni);
-        $qrCode = QrCode::format('png')
-            ->size(100)
-            ->eye('circle')
-            ->gradient(24, 115, 108, 33, 68, 59, 'diagonal')
-            ->errorCorrection('H')
-            ->generate($url);
-
+        
         $coordinadorDni = $alumno->maestria->coordinador;
         $coordinador = Docente::where('dni', $coordinadorDni)->first();
         $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
@@ -279,7 +250,6 @@ class RecordController extends Controller
             'totalHoras',
             'numeroRomano',
             'fechaActual',
-            'qrCode',
             'nombreCompleto'
         ));
 

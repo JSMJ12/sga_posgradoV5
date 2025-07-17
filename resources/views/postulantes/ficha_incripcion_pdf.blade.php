@@ -87,6 +87,21 @@
             border: none;
             border-top: 1px solid #000;
         }
+
+        /* Evita que las tablas se corten entre páginas */
+        table.excel-style,
+        table.firmas {
+            page-break-inside: avoid;
+        }
+
+        /* Opcional: para la tabla de datos del estudiante */
+        table.datos-estudiante {
+            page-break-inside: avoid;
+        }
+
+        .section-group {
+            page-break-inside: avoid;
+        }
     </style>
 </head>
 
@@ -107,230 +122,246 @@
     </div>
 
 
-    {{-- Datos del Postulante --}}
-    <div class="section-title">Datos del Estudiante</div>
-    <table class="excel-style">
-        <tr>
-            <td rowspan="4" style="text-align: center; width: 110px;">
-                <img src="{{ $postulante->imagen ? public_path('storage/' . $postulante->imagen) : public_path('images/default-avatar.jpg') }}"
-                    class="avatar" alt="Foto">
-            </td>
-            <td><strong>Apellidos y Nombres:</strong></td>
-            <td colspan="3">{{ $postulante->apellidop }} {{ $postulante->apellidom }} {{ $postulante->nombre1 }}
-                {{ $postulante->nombre2 }}</td>
-        </tr>
-        <tr>
-            <td><strong>Cédula/Pasaporte:</strong></td>
-            <td>{{ $postulante->dni }}</td>
-            <td><strong>Correo:</strong></td>
-            <td>{{ $postulante->correo_electronico }}</td>
-        </tr>
-        <tr>
-            <td><strong>Celular:</strong></td>
-            <td>{{ $postulante->celular }}</td>
-            <td><strong>Edad:</strong></td>
-            <td>{{ $postulante->edad }}</td>
-        </tr>
-        <tr>
-            <td><strong>Sexo:</strong></td>
-            <td>{{ $postulante->sexo }}</td>
-            <td><strong>Tipo de Sangre:</strong></td>
-            <td>{{ $postulante->tipo_sangre }}</td>
-        </tr>
-    </table>
+    <!-- Datos del Postulante -->
+    <div class="section-group">
+        <div class="section-title">Datos del Estudiante</div>
+        <table class="excel-style datos-estudiante">
+            <tr>
+                <td><strong>Apellidos y Nombres:</strong></td>
+                <td colspan="3">{{ $postulante->apellidop }} {{ $postulante->apellidom }} {{ $postulante->nombre1 }}
+                    {{ $postulante->nombre2 }}</td>
+                <td rowspan="4" style="text-align: center; width: 110px;">
+                    <img src="{{ $postulante->imagen ? public_path('storage/' . $postulante->imagen) : public_path('images/default-avatar.jpg') }}"
+                        class="avatar" alt="Foto">
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Cédula/Pasaporte:</strong></td>
+                <td>{{ $postulante->dni }}</td>
+                <td><strong>Correo:</strong></td>
+                <td>{{ $postulante->correo_electronico }}</td>
+            </tr>
+            <tr>
+                <td><strong>Celular:</strong></td>
+                <td>{{ $postulante->celular }}</td>
+                <td><strong>Edad:</strong></td>
+                <td>{{ $postulante->edad }}</td>
+            </tr>
+            <tr>
+                <td><strong>Sexo:</strong></td>
+                <td>{{ $postulante->sexo }}</td>
+                <td><strong>Tipo de Sangre:</strong></td>
+                <td>{{ $postulante->tipo_sangre }}</td>
+            </tr>
+        </table>
+    </div>
 
-    {{-- Maestría --}}
-    <div class="section-title">Maestría</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Programa:</strong></td>
-            <td colspan="3">{{ $postulante->maestria->nombre ?? '-' }}</td>
-        </tr>
-    </table>
+    <!-- Maestría -->
+    <div class="section-group">
+        <div class="section-title">Maestría</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Programa:</strong></td>
+                <td colspan="3">{{ $postulante->maestria->nombre ?? '-' }}</td>
+            </tr>
+        </table>
+    </div>
 
-    {{-- Datos Personales --}}
-    <div class="section-title">Datos Personales</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Fecha de Nacimiento:</strong></td>
-            <td>{{ $postulante->fecha_nacimiento }}</td>
-            <td><strong>Nacionalidad:</strong></td>
-            <td>{{ $postulante->nacionalidad }}</td>
-        </tr>
-        <tr>
-            <td><strong>Libreta Militar:</strong></td>
-            <td>{{ $postulante->libreta_militar }}</td>
-            <td><strong>¿Discapacidad?</strong></td>
-            <td>{{ $postulante->discapacidad }}</td>
-        </tr>
-        <tr>
-            <td><strong>Porcentaje:</strong></td>
-            <td>{{ $postulante->porcentaje_discapacidad }}</td>
-            <td><strong>Código CONADIS:</strong></td>
-            <td>{{ $postulante->codigo_conadis }}</td>
-        </tr>
-        <tr>
-            <td><strong>Tipo Discapacidad:</strong></td>
-            <td colspan="3">{{ $postulante->tipo_discapacidad }}</td>
-        </tr>
-    </table>
+    <!-- Datos Personales -->
+    <div class="section-group">
+        <div class="section-title">Datos Personales</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Fecha de Nacimiento:</strong></td>
+                <td>{{ $postulante->fecha_nacimiento }}</td>
+                <td><strong>Nacionalidad:</strong></td>
+                <td>{{ $postulante->nacionalidad }}</td>
+            </tr>
+            <tr>
+                <td><strong>Libreta Militar:</strong></td>
+                <td>{{ $postulante->libreta_militar }}</td>
+                <td><strong>¿Discapacidad?</strong></td>
+                <td>{{ $postulante->discapacidad }}</td>
+            </tr>
+            <tr>
+                <td><strong>Porcentaje:</strong></td>
+                <td>{{ $postulante->porcentaje_discapacidad }}</td>
+                <td><strong>Código CONADIS:</strong></td>
+                <td>{{ $postulante->codigo_conadis }}</td>
+            </tr>
+            <tr>
+                <td><strong>Tipo Discapacidad:</strong></td>
+                <td colspan="3">{{ $postulante->tipo_discapacidad }}</td>
+            </tr>
+        </table>
+    </div>
 
-    {{-- Residencia --}}
-    <div class="section-title">Residencia</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>País:</strong></td>
-            <td>{{ $postulante->pais_residencia }}</td>
-            <td><strong>Años:</strong></td>
-            <td>{{ $postulante->anios_residencia }}</td>
-        </tr>
-        <tr>
-            <td><strong>Provincia:</strong></td>
-            <td>{{ $postulante->provincia }}</td>
-            <td><strong>Cantón:</strong></td>
-            <td>{{ $postulante->canton }}</td>
-        </tr>
-        <tr>
-            <td><strong>Parroquia:</strong></td>
-            <td>{{ $postulante->parroquia }}</td>
-            <td><strong>Calle Principal:</strong></td>
-            <td>{{ $postulante->calle_principal }}</td>
-        </tr>
-        <tr>
-            <td><strong>Número:</strong></td>
-            <td>{{ $postulante->numero_direccion }}</td>
-            <td><strong>Calle Secundaria:</strong></td>
-            <td>{{ $postulante->calle_secundaria }}</td>
-        </tr>
-        <tr>
-            <td><strong>Referencia:</strong></td>
-            <td>{{ $postulante->referencia_direccion }}</td>
-            <td><strong>Teléfono Domicilio:</strong></td>
-            <td>{{ $postulante->telefono_domicilio }}</td>
-        </tr>
-        <tr>
-            <td><strong>Celular Residencia:</strong></td>
-            <td colspan="3">{{ $postulante->celular_residencia }}</td>
-        </tr>
-    </table>
+    <!-- Residencia -->
+    <div class="section-group">
+        <div class="section-title">Residencia</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>País:</strong></td>
+                <td>{{ $postulante->pais_residencia }}</td>
+                <td><strong>Años:</strong></td>
+                <td>{{ $postulante->anios_residencia }}</td>
+            </tr>
+            <tr>
+                <td><strong>Provincia:</strong></td>
+                <td>{{ $postulante->provincia }}</td>
+                <td><strong>Cantón:</strong></td>
+                <td>{{ $postulante->canton }}</td>
+            </tr>
+            <tr>
+                <td><strong>Parroquia:</strong></td>
+                <td>{{ $postulante->parroquia }}</td>
+                <td><strong>Calle Principal:</strong></td>
+                <td>{{ $postulante->calle_principal }}</td>
+            </tr>
+            <tr>
+                <td><strong>Número:</strong></td>
+                <td>{{ $postulante->numero_direccion }}</td>
+                <td><strong>Calle Secundaria:</strong></td>
+                <td>{{ $postulante->calle_secundaria }}</td>
+            </tr>
+            <tr>
+                <td><strong>Referencia:</strong></td>
+                <td>{{ $postulante->referencia_direccion }}</td>
+                <td><strong>Teléfono Domicilio:</strong></td>
+                <td>{{ $postulante->telefono_domicilio }}</td>
+            </tr>
+            <tr>
+                <td><strong>Celular Residencia:</strong></td>
+                <td colspan="3">{{ $postulante->celular_residencia }}</td>
+            </tr>
+        </table>
+    </div>
 
-    {{-- Académica --}}
-    <div class="section-title">Información Académica</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Especialidad Bachillerato:</strong></td>
-            <td>{{ $postulante->especialidad_bachillerato }}</td>
-            <td><strong>Colegio:</strong></td>
-            <td>{{ $postulante->colegio_bachillerato }}</td>
-        </tr>
-        <tr>
-            <td><strong>Ciudad:</strong></td>
-            <td>{{ $postulante->ciudad_bachillerato }}</td>
-            <td><strong>Título Profesional:</strong></td>
-            <td>{{ $postulante->titulo_profesional }}</td>
-        </tr>
-        <tr>
-            <td><strong>Especialidad:</strong></td>
-            <td>{{ $postulante->especialidad_mencion }}</td>
-            <td><strong>Universidad:</strong></td>
-            <td>{{ $postulante->universidad_titulo }}</td>
-        </tr>
-        <tr>
-            <td><strong>Ciudad Universidad:</strong></td>
-            <td>{{ $postulante->ciudad_universidad }}</td>
-            <td><strong>País:</strong></td>
-            <td>{{ $postulante->pais_universidad }}</td>
-        </tr>
-        <tr>
-            <td><strong>Registro SENESCYT:</strong></td>
-            <td colspan="3">{{ $postulante->registro_senescyt }}</td>
-        </tr>
-        <tr>
-            <td><strong>Título Posgrado:</strong></td>
-            <td>{{ $postulante->titulo_posgrado }}</td>
-            <td><strong>Universidad Posgrado:</strong></td>
-            <td>{{ $postulante->universidad_posgrado }}</td>
-        </tr>
-        <tr>
-            <td><strong>Ciudad Posgrado:</strong></td>
-            <td>{{ $postulante->ciudad_posgrado }}</td>
-            <td><strong>País Posgrado:</strong></td>
-            <td>{{ $postulante->pais_posgrado }}</td>
-        </tr>
-    </table>
-    {{-- Laboral --}}
-    <div class="section-title">Información Laboral</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Lugar Trabajo:</strong></td>
-            <td>{{ $postulante->lugar_trabajo }}</td>
-            <td><strong>Función:</strong></td>
-            <td>{{ $postulante->funcion_laboral }}</td>
-        </tr>
-        <tr>
-            <td><strong>Ciudad:</strong></td>
-            <td>{{ $postulante->ciudad_trabajo }}</td>
-            <td><strong>Dirección:</strong></td>
-            <td>{{ $postulante->direccion_trabajo }}</td>
-        </tr>
-        <tr>
-            <td><strong>Teléfono Trabajo:</strong></td>
-            <td colspan="3">{{ $postulante->telefono_trabajo }}</td>
-        </tr>
-    </table>
+    <!-- Académica -->
+    <div class="section-group">
+        <div class="section-title">Información Académica</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Especialidad Bachillerato:</strong></td>
+                <td>{{ $postulante->especialidad_bachillerato }}</td>
+                <td><strong>Colegio:</strong></td>
+                <td>{{ $postulante->colegio_bachillerato }}</td>
+            </tr>
+            <tr>
+                <td><strong>Ciudad:</strong></td>
+                <td>{{ $postulante->ciudad_bachillerato }}</td>
+                <td><strong>Título Profesional:</strong></td>
+                <td>{{ $postulante->titulo_profesional }}</td>
+            </tr>
+            <tr>
+                <td><strong>Especialidad:</strong></td>
+                <td>{{ $postulante->especialidad_mencion }}</td>
+                <td><strong>Universidad:</strong></td>
+                <td>{{ $postulante->universidad_titulo }}</td>
+            </tr>
+            <tr>
+                <td><strong>Ciudad Universidad:</strong></td>
+                <td>{{ $postulante->ciudad_universidad }}</td>
+                <td><strong>País:</strong></td>
+                <td>{{ $postulante->pais_universidad }}</td>
+            </tr>
+            <tr>
+                <td><strong>Registro SENESCYT:</strong></td>
+                <td colspan="3">{{ $postulante->registro_senescyt }}</td>
+            </tr>
+            <tr>
+                <td><strong>Título Posgrado:</strong></td>
+                <td>{{ $postulante->titulo_posgrado }}</td>
+                <td><strong>Universidad Posgrado:</strong></td>
+                <td>{{ $postulante->universidad_posgrado }}</td>
+            </tr>
+            <tr>
+                <td><strong>Ciudad Posgrado:</strong></td>
+                <td>{{ $postulante->ciudad_posgrado }}</td>
+                <td><strong>País Posgrado:</strong></td>
+                <td>{{ $postulante->pais_posgrado }}</td>
+            </tr>
+        </table>
+    </div>
+    <!-- Laboral -->
+    <div class="section-group">
+        <div class="section-title">Información Laboral</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Lugar Trabajo:</strong></td>
+                <td>{{ $postulante->lugar_trabajo }}</td>
+                <td><strong>Función:</strong></td>
+                <td>{{ $postulante->funcion_laboral }}</td>
+            </tr>
+            <tr>
+                <td><strong>Ciudad:</strong></td>
+                <td>{{ $postulante->ciudad_trabajo }}</td>
+                <td><strong>Dirección:</strong></td>
+                <td>{{ $postulante->direccion_trabajo }}</td>
+            </tr>
+            <tr>
+                <td><strong>Teléfono Trabajo:</strong></td>
+                <td colspan="3">{{ $postulante->telefono_trabajo }}</td>
+            </tr>
+        </table>
+    </div>
     <br>
     <br>
     <br>
 
-    {{-- Socioeconómica --}}
-    <div class="section-title">Datos Socioeconómicos</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Etnia:</strong></td>
-            <td>{{ $postulante->etnia }}</td>
-            <td><strong>Nacionalidad Indígena:</strong></td>
-            <td>{{ $postulante->nacionalidad_indigena }}</td>
-        </tr>
-        <tr>
-            <td><strong>Tipo Colegio:</strong></td>
-            <td>{{ $postulante->tipo_colegio }}</td>
-            <td><strong>Miembros Hogar:</strong></td>
-            <td>{{ $postulante->cantidad_miembros_hogar }}</td>
-        </tr>
-        <tr>
-            <td><strong>Ingreso Total:</strong></td>
-            <td>{{ $postulante->ingreso_total_hogar }}</td>
-            <td><strong>Formación Padre:</strong></td>
-            <td>{{ $postulante->nivel_formacion_padre }}</td>
-        </tr>
-        <tr>
-            <td><strong>Formación Madre:</strong></td>
-            <td>{{ $postulante->nivel_formacion_madre }}</td>
-            <td><strong>Origen Recursos:</strong></td>
-            <td>{{ $postulante->origen_recursos_estudios }}</td>
-        </tr>
-    </table>
+    <!-- Socioeconómica -->
+    <div class="section-group">
+        <div class="section-title">Datos Socioeconómicos</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Etnia:</strong></td>
+                <td>{{ $postulante->etnia }}</td>
+                <td><strong>Nacionalidad Indígena:</strong></td>
+                <td>{{ $postulante->nacionalidad_indigena }}</td>
+            </tr>
+            <tr>
+                <td><strong>Tipo Colegio:</strong></td>
+                <td>{{ $postulante->tipo_colegio }}</td>
+                <td><strong>Miembros Hogar:</strong></td>
+                <td>{{ $postulante->cantidad_miembros_hogar }}</td>
+            </tr>
+            <tr>
+                <td><strong>Ingreso Total:</strong></td>
+                <td>{{ $postulante->ingreso_total_hogar }}</td>
+                <td><strong>Formación Padre:</strong></td>
+                <td>{{ $postulante->nivel_formacion_padre }}</td>
+            </tr>
+            <tr>
+                <td><strong>Formación Madre:</strong></td>
+                <td>{{ $postulante->nivel_formacion_madre }}</td>
+                <td><strong>Origen Recursos:</strong></td>
+                <td>{{ $postulante->origen_recursos_estudios }}</td>
+            </tr>
+        </table>
+    </div>
 
-    {{-- Contacto Emergencia --}}
-    <div class="section-title">Contacto de Emergencia</div>
-    <table class="excel-style">
-        <tr>
-            <td><strong>Apellidos:</strong></td>
-            <td>{{ $postulante->contacto_apellidos }}</td>
-            <td><strong>Nombres:</strong></td>
-            <td>{{ $postulante->contacto_nombres }}</td>
-        </tr>
-        <tr>
-            <td><strong>Parentesco:</strong></td>
-            <td>{{ $postulante->contacto_parentesco }}</td>
-            <td><strong>Teléfono:</strong></td>
-            <td>{{ $postulante->contacto_telefono }}</td>
-        </tr>
-        <tr>
-            <td><strong>Celular:</strong></td>
-            <td colspan="3">{{ $postulante->contacto_celular }}</td>
-        </tr>
-    </table>
+    <!-- Contacto Emergencia -->
+    <div class="section-group">
+        <div class="section-title">Contacto de Emergencia</div>
+        <table class="excel-style">
+            <tr>
+                <td><strong>Apellidos:</strong></td>
+                <td>{{ $postulante->contacto_apellidos }}</td>
+                <td><strong>Nombres:</strong></td>
+                <td>{{ $postulante->contacto_nombres }}</td>
+            </tr>
+            <tr>
+                <td><strong>Parentesco:</strong></td>
+                <td>{{ $postulante->contacto_parentesco }}</td>
+                <td><strong>Teléfono:</strong></td>
+                <td>{{ $postulante->contacto_telefono }}</td>
+            </tr>
+            <tr>
+                <td><strong>Celular:</strong></td>
+                <td colspan="3">{{ $postulante->contacto_celular }}</td>
+            </tr>
+        </table>
+    </div>
 
     {{-- Firmas --}}
     <table class="firmas">

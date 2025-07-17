@@ -12,8 +12,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('pagos', function (Blueprint $table) {
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        });
+        $table->unsignedBigInteger('user_id');
+        $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+});
     }
 
     /**

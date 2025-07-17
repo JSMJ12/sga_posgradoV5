@@ -5,147 +5,117 @@
     <meta charset="UTF-8">
     <title>Certificado de Culminación</title>
     <style>
-        body {
-            font-family: 'Times New Roman', Times, serif;
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', serif;
             font-size: 16px;
-            text-align: justify;
-            margin: 60px;
-            margin-top: 240px;
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
+            background-size: 100% 100%;
+            background-position: top left;
+            background-repeat: no-repeat;
         }
 
-        .header-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 10px;
-            width: 100%;
-            z-index: 999;
-        }
-
-        .barra-verde {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .container {
             width: 85%;
-            height: 10px;
-            background-color: green;
-        }
-
-        .barra-roja {
-            position: absolute;
-            top: 0;
-            left: calc(85% + 5px);
-            right: 0;
-            height: 10px;
-            background-color: red;
+            margin: 190px auto 80px auto; /* 🔽 Bajado 15px (antes era 160px) */
+            padding-left: 0;
+            text-align: justify;
+            line-height: 1.8;
         }
 
         .header {
             text-align: center;
-        }
-
-        .logo {
-            position: absolute;
-            top: 0;
-            left: -13;
-            width: 360px;
-        }
-
-        .titulo {
             font-size: 16px;
             font-weight: bold;
-            text-align: center;
-            margin-top: 40px;
-
+            margin-bottom: 40px;
         }
 
         .nombre {
             text-align: center;
             font-size: 15px;
             font-weight: bold;
-            margin-top: 15px;
-        }
-
-        .contenido {
-            margin-top: 20px;
-            line-height: 1.8;
+            margin: 25px 0;
         }
 
         .footer {
             position: absolute;
-            bottom: 80px;
-            left: 0;
-            right: 0;
+            bottom: 170px; /* 🔼 Subido 20px (antes era 80px) */
+            width: 100%;
             text-align: center;
         }
 
-        .firma {
-            margin-top: 50px;
+        .firma-block {
+            margin-top: 60px;
+            text-align: center;
         }
 
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 700px;
-            opacity: 0.08;
-            transform: translate(-50%, -50%);
-            z-index: 0;
+        .firma-linea {
+            border-top: 1px solid black;
+            display: inline-block;
+            padding: 5px 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .cargo {
+            margin-top: 5px;
+            font-weight: normal;
+            font-size: 9pt;
+            text-transform: uppercase;
         }
     </style>
-
 </head>
 
 <body>
 
-    <div class="header-bar">
-        <div class="barra-verde"></div>
-        <div class="barra-roja"></div>
-    </div>
+    <div class="container">
+        <div class="header">
+            INSTITUTO DE POSGRADO <br>
+            CERTIFICADO DE CULMINACIÓN DEL PROGRAMA DE MAESTRÍA
+        </div>
 
-    <img src="{{ public_path() . '/images/posgrado_logo.png' }}" alt="Marca de agua" class="watermark">
+        <p>
+            El Instituto de Posgrado, a través de la Coordinación del Programa de Maestría en
+            {{ $alumno->maestria->nombre }}, hace constar que:
+        </p>
 
-    <img class="logo" src="{{ public_path() . '/images/posgrado-20.png' }}" alt="Logo UNESUM">
-
-    <div class="header">
-        <h2>INSTITUTO DE POSGRADO</h2>
-        <p><strong>CERTIFICADO DE CULMINACIÓN DEL PROGRAMA DE MAESTRÍA</strong></p>
-    </div>
-
-    <div class="contenido">
-        <p>El Instituto de Posgrado, a través de la Coordinación del Programa de Maestría en
-            {{ $alumno->maestria->nombre }}, hace constar que:</p>
-
-        <div class="nombre">{{ $alumno->apellidop }}
-            {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}</div>
+        <div class="nombre">
+            {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}
+        </div>
 
         <p>
             con cédula de identidad {{ $alumno->dni }}, ha cumplido con todos los requisitos académicos y
-            administrativos del programa de Maestría en {{ $alumno->maestria->nombre }} correspondiente a la cohorte
+            administrativos del programa de Maestría en {{ $alumno->maestria->nombre }}, correspondiente a la cohorte
             {{ $cohorte->nombre }}, cursado en el Período Académico {{ $cohorte->periodo_academico->nombre }},
-            desarrollado
-            entre el
+            desarrollado entre el
             {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->isoFormat('D [de] MMMM [de] YYYY') }}
             y el
             {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->isoFormat('D [de] MMMM [de] YYYY') }}.
         </p>
 
-        <p>Dado en Jipijapa,
-            {{ $fechaActual }}.</p>
+        <p>
+            Dado en Jipijapa, {{ $fechaActual }}.
+        </p>
     </div>
 
     <div class="footer">
-        <div style="margin-top: 100px; text-align: center;">
-            <div
-                style="border-top: 1px solid black; display: inline-block; padding: 5px 20px; font-weight: bold; text-transform: uppercase;">
+        <div class="firma-block">
+            <div class="firma-linea">
                 {{ strtoupper($nombreCompleto) }}
             </div>
-            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+            <div class="cargo">
                 COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
             </div>
         </div>
     </div>
 
 </body>
-
 </html>
