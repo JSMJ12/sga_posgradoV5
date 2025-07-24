@@ -45,6 +45,7 @@ use App\Http\Controllers\TitulacionesController;
 use App\Http\Controllers\TutoriaController;
 use App\Http\Controllers\DashboardDirectorController;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\PushSubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,14 +66,12 @@ Route::get('/limpiar-cache', function () {
     Artisan::call('optimize:clear');
     return 'Cache limpiada correctamente.';
 });
-Route::post('/push-subscribe', function (Request $request) {
-    auth()->user()->updatePushSubscription(
-        $request->endpoint,
-        $request->keys['p256dh'],
-        $request->keys['auth']
-    );
-    return response()->json(['success' => true]);
-})->middleware('auth');
+Route::get('/debug-subs', function () {
+    $user = \App\Models\User::find(74);
+    return $user->pushSubscriptions; // o ->toArray()
+});
+Route::post('/subscriptions', [PushSubscriptionController::class, 'store'])->middleware('auth');
+
 
 Route::get('/descargar-certificado', function () {
     $ruta = storage_path('app/private/ficha_socioeconomica/ficha.docx');

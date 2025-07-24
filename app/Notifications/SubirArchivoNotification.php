@@ -1,18 +1,14 @@
 <?php
+
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Broadcasting\PrivateChannel;
 use App\Models\User;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use App\Models\Postulante;
 
-use NotificationChannels\WebPush\WebPushMessage; // Importa WebPushMessage
-
-class SubirArchivoNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class SubirArchivoNotification extends Notification
 {
     use Queueable;
 
@@ -29,17 +25,19 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
 
     public function via($notifiable)
     {
-        // Añade 'webpush' para notificaciones push
-        return ['mail', 'database', 'broadcast', 'webpush'];
+        return ['mail', 'database'];
     }
 
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Recordatorio: Subir Archivo')
-            ->line('Hola ' . $this->postulante->nombre1 . ',')
-            ->line('Recuerda subir tus archivos para completar tu proceso de postulación.')
-            ->action('Ir al Dashboard', url('/inicio'));
+            ->subject('📎 Recordatorio de Postulación')
+            ->greeting('¡Hola ' . $this->postulante->nombre1 . '!')
+            ->line('Queremos recordarte que aún tienes archivos pendientes por subir para completar tu proceso de postulación.')
+            ->line('Es importante que los subas lo antes posible para continuar con tu inscripción.')
+            ->action('Ir al Panel de Postulante', route('dashboard_postulante'))
+            ->line('Si tienes alguna duda o inconveniente, no dudes en comunicarte con nosotros.')
+            ->salutation('Saludos cordiales, ' . config('app.name'));
     }
 
     public function toArray($notifiable)
@@ -47,34 +45,6 @@ class SubirArchivoNotification extends Notification implements ShouldQueue, Shou
         return [
             'type' => 'SubirArchivo',
             'message' => 'Recuerda subir tus archivos para completar tu proceso de postulación.',
-        ];
-    }
-
-    // Aquí agregamos el método para la notificación webpush
-    public function toWebPush($notifiable, $notification)
-    {
-        return (new WebPushMessage)
-            ->title('Recordatorio: Subir Archivo')
-            ->icon('/icono-notificacion.png') // Opcional: ruta al icono en public
-            ->body('Hola ' . $this->postulante->nombre1 . ', recuerda subir tus archivos para completar el proceso.')
-            ->action('Ver detalles', 'view_app')
-            ->data(['url' => url('/inicio')]); // Puedes enviar datos extra, como url para abrir al click
-    }
-
-    public function broadcastOn()
-    {
-        return new PrivateChannel('user.' . $this->userId);
-    }
-
-    public function broadcastAs()
-    {
-        return 'pago.rechazado';
-    }
-
-    public function broadcastWith()
-    {
-        return [
-            'message' => 'Tu comprobante de pago fue rechazado.',
         ];
     }
 }

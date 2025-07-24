@@ -16,7 +16,7 @@
             background: transparent;
             margin: 0;
             padding: 0;
-             background-image: url("{{ public_path('images/fondopdf.png') }}");
+             background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
             background-size: 100% 100%;
             background-position: top left;
             background-repeat: no-repeat;

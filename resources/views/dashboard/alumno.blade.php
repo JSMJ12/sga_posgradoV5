@@ -11,38 +11,39 @@
     <div class="row g-4">
         <!-- Perfil del Estudiante -->
         <div class="col-md-4">
-            <div class="card shadow border-0">
-                <div class="card-header bg-gradient-success text-white text-center">
-                    <h3 class="mb-0"><i class="fas fa-id-badge"></i> Perfil</h3>
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header text-white text-center rounded-top-4" style="background: #218838">
+                    <h3 class="mb-0"><i class="fas fa-id-badge me-2"></i>Perfil del Estudiante</h3>
                 </div>
-                <div class="card-body">
-                    <div class="profile-picture text-center mb-3">
+                <div class="card-body bg-light">
+                    <div class="profile-picture text-center mb-4">
                         <img src="{{ asset('storage/' . $alumno->image) }}" alt="Foto de perfil"
-                            class="img-thumbnail shadow" style="width: 140px; height: 140px; object-fit: cover; border-radius: 50%;">
+                            class="img-thumbnail shadow-sm" style="width: 130px; height: 130px; object-fit: cover; border-radius: 50%;">
                     </div>
                     <div class="profile-info">
-                        <h4 class="text-center fw-bold">{{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }} {{ $alumno->apellidom }}</h4>
-                        <hr>
-                        <ul class="list-unstyled mb-3">
-                            <li><i class="fas fa-id-card"></i> <strong>ID:</strong> {{ $alumno->dni }}</li>
-                            <li><i class="fas fa-hashtag"></i> <strong>Número de Estudiante:</strong> {{ $alumno->registro }}</li>
-                            <li><i class="fas fa-envelope"></i> <strong>Email Institucional:</strong> <br> <span class="text-muted">{{ $alumno->email_institucional }}</span></li>
-                            <li><i class="fas fa-envelope-open"></i> <strong>Email Personal:</strong> <br> <span class="text-muted">{{ $alumno->email_personal }}</span></li>
-                            <li><i class="fas fa-user-tie"></i> <strong>Título Profesional:</strong> <br> <span class="text-muted">{{ $alumno->titulo_profesional }}</span></li>
+                        <h4 class="text-center fw-semibold text-dark mb-3">{{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }} {{ $alumno->apellidom }}</h4>
+                        <ul class="list-unstyled text-sm text-muted mb-4">
+                            <li class="mb-2"><i class="fas fa-id-card me-2 text-secondary"></i> <strong class="text-dark">Cedula / Pasaporte:</strong> {{ $alumno->dni }}</li>
+                            <li class="mb-2"><i class="fas fa-hashtag me-2 text-secondary"></i> <strong class="text-dark">N° Estudiante:</strong> {{ $alumno->registro }}</li>
+                            <li class="mb-2"><i class="fas fa-envelope me-2 text-secondary"></i> <strong class="text-dark">Email Institucional:</strong><br><span class="ms-4">{{ $alumno->email_institucional }}</span></li>
+                            <li class="mb-2"><i class="fas fa-envelope-open me-2 text-secondary"></i> <strong class="text-dark">Email Personal:</strong><br><span class="ms-4">{{ $alumno->email_personal }}</span></li>
+                            <li><i class="fas fa-user-tie me-2 text-secondary"></i> <strong class="text-dark">Título Profesional:</strong><br><span class="ms-4">{{ $alumno->titulo_profesional }}</span></li>
                         </ul>
-                        <a href="{{ route('certificado.descargar') }}" class="btn btn-primary w-100 mb-2">
-                            <i class="fas fa-file-download"></i> Descargar ficha socioeconómica
+
+                        <a href="{{ route('certificado.descargar') }}" class="btn btn-outline-primary w-100 mb-2 rounded-pill">
+                            <i class="fas fa-file-download me-1"></i> Descargar ficha socioeconómica
                         </a>
-                        <button class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#subirFichaModal">
-                            <i class="fas fa-upload"></i> Subir ficha socioeconómica
+                        <button class="btn btn-outline-success w-100 mb-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#subirFichaModal">
+                            <i class="fas fa-upload me-1"></i> Subir ficha socioeconómica
                         </button>
-                        <button id="retirarse-btn" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#retiroModal">
-                            <i class="fas fa-sign-out-alt"></i> Retirarse
+                        <button id="retirarse-btn" class="btn btn-outline-danger w-100 rounded-pill" data-bs-toggle="modal" data-bs-target="#retiroModal">
+                            <i class="fas fa-sign-out-alt me-1"></i> Retirarse
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+
 
         <!-- Asignaturas Matriculadas -->
         <div class="col-md-8">

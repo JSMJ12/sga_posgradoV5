@@ -45,11 +45,11 @@
                         </div>
                         <div class="form-group">
                             <label for="email_per"><i class="fas fa-envelope"></i> Email Personal:</label>
-                            <input type="email" name="email_per" id="email_per" class="form-control" required>
+                            <input type="email" name="email_personal" id="email_per" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="email_ins"><i class="fas fa-envelope"></i> Email Institucional:</label>
-                            <input type="email" name="email_ins" id="email_ins" class="form-control" required>
+                            <input type="email" name="email_institucional" id="email_ins" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="sexo"><i class="fas fa-venus-mars"></i> Sexo:</label>

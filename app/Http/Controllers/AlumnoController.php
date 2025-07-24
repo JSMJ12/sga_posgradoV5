@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class AlumnoController extends Controller
 {
@@ -182,78 +185,92 @@ class AlumnoController extends Controller
     }
 
     public function store(Request $request)
-    {
+{
+    try {
         $request->validate([
             'maestria_id' => 'required|exists:maestrias,id',
             'image' => 'nullable|image|max:2048',
+            'dni' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('alumnos', 'dni'),
+                Rule::unique('postulantes', 'dni'),
+            ],
+            'email_institucional' => [
+                'required',
+                'email',
+                Rule::notIn(User::pluck('email')->toArray()),
+            ],
+        ], [
+            // Mensajes personalizados
+            'maestria_id.required' => 'La maestría es obligatoria.',
+            'maestria_id.exists' => 'La maestría seleccionada no existe.',
+            'image.image' => 'El archivo debe ser una imagen.',
+            'image.max' => 'La imagen no puede superar los 2MB.',
+            'dni.required' => 'El DNI es obligatorio.',
+            'dni.unique' => 'Este DNI ya está registrado.',
+            'email_institucional.required' => 'El correo institucional es obligatorio.',
+            'email_institucional.email' => 'El correo institucional debe tener un formato válido.',
+            'email_institucional.not_in' => 'Este correo institucional ya está en uso.',
         ]);
 
-        // Obtener el ID de la maestría
-        $maestriaId = $request->input('maestria_id');
-
-        // Obtener la maestría y su arancel
-        $maestria = Maestria::findOrFail($maestriaId);
+        // --- Lógica principal como ya la tienes ---
+        $maestria = Maestria::findOrFail($request->input('maestria_id'));
         $arancel = $maestria->arancel;
+        $nuevoRegistro = Alumno::where('maestria_id', $maestria->id)->count() + 1;
 
-        // Obtener el próximo número de registro
-        $nuevoRegistro = Alumno::where('maestria_id', $maestriaId)->count() + 1;
+        $alumno = new Alumno();
+        $alumno->fill($request->only([
+            'nombre1', 'nombre2', 'apellidop', 'apellidom',
+            'sexo', 'dni', 'email_institucional', 'email_personal',
+            'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
+            'barrio', 'direccion', 'nacionalidad', 'etnia',
+            'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
+        ]));
 
-        // Crear un nuevo objeto Alumno
-        $alumno = new Alumno;
-        $alumno->nombre1 = $request->input('nombre1');
-        $alumno->nombre2 = $request->input('nombre2');
-        $alumno->apellidop = $request->input('apellidop');
-        $alumno->apellidom = $request->input('apellidom');
-        $alumno->contra = bcrypt($request->input('dni')); // Encriptar la contraseña
-        $alumno->sexo = $request->input('sexo');
-        $alumno->dni = $request->input('dni');
-        $alumno->email_institucional = $request->input('email_ins');
-        $alumno->email_personal = $request->input('email_per');
-        $alumno->estado_civil = $request->input('estado_civil');
-        $alumno->fecha_nacimiento = $request->input('fecha_nacimiento');
-        $alumno->provincia = $request->input('provincia');
-        $alumno->canton = $request->input('canton');
-        $alumno->barrio = $request->input('barrio');
-        $alumno->direccion = $request->input('direccion');
-        $alumno->nacionalidad = $request->input('nacionalidad');
-        $alumno->etnia = $request->input('etnia');
-        $alumno->carnet_discapacidad = $request->input('carnet_discapacidad');
-        $alumno->tipo_discapacidad = $request->input('tipo_discapacidad');
-        $alumno->maestria_id = $request->input('maestria_id');
-        $alumno->porcentaje_discapacidad = $request->input('porcentaje_discapacidad');
+        $alumno->contra = bcrypt($request->input('dni'));
+        $alumno->maestria_id = $maestria->id;
         $alumno->registro = $nuevoRegistro;
         $alumno->monto_total = $arancel;
 
-        // Procesar la imagen
-        $primeraLetra = substr($alumno->nombre1, 0, 1);
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('imagenes_usuarios', 'public');
-            $alumno->image = $path;
+            $alumno->image = $request->file('image')->store('imagenes_usuarios', 'public');
         } else {
-            $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode($primeraLetra);
+            $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($alumno->nombre1, 0, 1));
         }
 
-        if (!$alumno->registro) {
-            $alumno->registro = Alumno::getNextRegistro();
-        }
-        // Almacenar el alumno
         $alumno->save();
 
-        // Crear un nuevo objeto User
-        $usuario = new User;
-        $usuario->name = $request->input('nombre1');
-        $usuario->apellido = $request->input('apellidop');
-        $usuario->sexo = $request->input('sexo');
-        $usuario->password = bcrypt($request->input('dni'));
-        $usuario->status = $request->input('estatus', 'ACTIVO');
-        $usuario->email = $request->input('email_ins');
-        $usuario->image = $alumno->image;
-        $alumnoRole = Role::findById(4);
-        $usuario->assignRole($alumnoRole);
+        $usuario = new User();
+        $usuario->fill([
+            'name' => $alumno->nombre1,
+            'apellido' => $alumno->apellidop,
+            'sexo' => $alumno->sexo,
+            'email' => $alumno->email_institucional,
+            'status' => $request->input('estatus', 'ACTIVO'),
+            'image' => $alumno->image,
+        ]);
+        $usuario->password = bcrypt($alumno->dni);
         $usuario->save();
 
+        $usuario->assignRole(Role::findById(4));
+
         return redirect()->route('alumnos.index')->with('success', 'Usuario creado exitosamente.');
+
+    } catch (ValidationException $e) {
+        // Devuelve errores de validación de vuelta al formulario con mensajes
+        return redirect()->back()
+            ->withErrors($e->validator)
+            ->withInput();
+    } catch (\Exception $e) {
+        // Error general
+        Log::error('Error al crear alumno: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Error inesperado al crear el usuario. Intenta nuevamente.')
+            ->withInput();
     }
+}
 
     public function edit($dni)
     {
@@ -265,50 +282,49 @@ class AlumnoController extends Controller
 
     public function update(Request $request, $dni)
     {
-        // Obtener el ID de la maestría
-        $maestriaId = $request->input('maestria_id');
 
-        // Obtener la maestría y su arancel
-        $maestria = Maestria::findOrFail($maestriaId);
-        $arancel = $maestria->arancel;
-        $alumno = Alumno::where('dni', $dni)->firstOrFail();
-        $alumno->nombre1 = $request->input('nombre1');
-        $alumno->nombre2 = $request->input('nombre2');
-        $alumno->apellidop = $request->input('apellidop');
-        $alumno->apellidom = $request->input('apellidom');
-        $alumno->dni = $request->input('dni');
-        $alumno->estado_civil = $request->input('estado_civil');
-        $alumno->fecha_nacimiento = $request->input('fecha_nacimiento');
-        $alumno->provincia = $request->input('provincia');
-        $alumno->canton = $request->input('canton');
-        $alumno->barrio = $request->input('barrio');
-        $alumno->direccion = $request->input('direccion');
-        $alumno->nacionalidad = $request->input('nacionalidad');
-        $alumno->etnia = $request->input('etnia');
-        $alumno->email_personal = $request->input('email_personal');
-        $alumno->carnet_discapacidad = $request->input('carnet_discapacidad');
-        $alumno->tipo_discapacidad = $request->input('tipo_discapacidad');
-        $alumno->porcentaje_discapacidad = $request->input('porcentaje_discapacidad');
-        $alumno->sexo = $request->input('sexo');
-        $alumno->maestria_id = $request->input('maestria_id');
-        $alumno->monto_total = $arancel;
-        if ($request->hasFile('image')) {
-            // Eliminar la imagen anterior si existe
-            if ($alumno->image) {
-                Storage::disk('public')->delete($alumno->image);
+        try {
+            $maestria = Maestria::findOrFail($request->input('maestria_id'));
+            $arancel = $maestria->arancel;
+
+            $alumno = Alumno::where('dni', $dni)->firstOrFail();
+
+            $alumno->fill($request->only([
+                'nombre1', 'nombre2', 'apellidop', 'apellidom', 'dni',
+                'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
+                'barrio', 'direccion', 'nacionalidad', 'etnia',
+                'email_personal', 'carnet_discapacidad', 'tipo_discapacidad',
+                'porcentaje_discapacidad', 'sexo', 'maestria_id'
+            ]));
+
+            $alumno->monto_total = $arancel;
+
+            // Procesar imagen si se sube
+            if ($request->hasFile('image')) {
+                if ($alumno->image) {
+                    Storage::disk('public')->delete($alumno->image);
+                }
+
+                $path = $request->file('image')->store('imagenes_usuarios', 'public');
+                $alumno->image = $path;
+
+                // También actualiza imagen del usuario asociado
+                $usuario = User::where('email', $alumno->email_institucional)->first();
+                if ($usuario) {
+                    $usuario->image = $path;
+                    $usuario->save();
+                }
             }
 
-            $path = $request->file('image')->store('imagenes_usuarios', 'public');
-            $alumno->image = $path;
-            $usuario = User::where('email', $alumno->email_institucional)->firstOrFail();
+            $alumno->save();
 
-            $usuario->image = $alumno->image;
-            $usuario->save();
+            return redirect()->route('alumnos.index')->with('success', 'Alumno actualizado correctamente');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Ocurrió un error al actualizar el alumno: ' . $e->getMessage());
         }
-        $alumno->save();
-
-        return redirect()->route('alumnos.index')->with('success', 'Alumno actualizado correctamente');
     }
+
     public function retirarse(Request $request, $dni)
     {
         try {

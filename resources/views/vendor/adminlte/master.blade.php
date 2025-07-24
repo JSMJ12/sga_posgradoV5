@@ -311,9 +311,58 @@ table.dataTable tbody tr:hover {
             @endif
         });
     </script>
+
+@auth
     
-   <script type="module" src="/js/notificaciones-sw.js"></script>
-   <script src="{{ asset('js/sw.js') }}"></script>
+
+    
+  <script>
+    async function subscribeUser() {
+        const registration = await navigator.serviceWorker.register('/service-worker.js');
+
+        const vapidPublicKey = 'BF-ex7ten2eUnA4DWkfCknWgYOjGQm8JXltuhlJwYnOKr9sOP8z8aEY0bKztBMLyTsVh7ggLyVodPxhcRpEbVms';
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+        });
+
+        await fetch('/subscriptions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(subscription)
+        });
+
+        console.log('Usuario suscrito a WebPush.');
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                subscribeUser();
+            }
+        });
+    }
+</script>
+@endauth
+
+
+  
     {{-- Custom Scripts --}}
     @yield('adminlte_js')
 

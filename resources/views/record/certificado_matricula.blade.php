@@ -6,17 +6,46 @@
     <title>Certificado de Matrícula</title>
     <style>
         html, body {
-            background-image: url('{{ public_path("images/fondopdf.png") }}');
-        }
-
-        .container {
-            width: 100%;
-            box-sizing: border-box;
-            padding-top: 190px;
+            height: 100%;
             margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        body {
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: 98% 98%; 
+            background-repeat: no-repeat;
+            background-position: center center;
+            min-height: 100vh;
+            width: 100vw;
+        }
+        .container {
+            width: 80%;
+            box-sizing: border-box;
+            padding-top: 150px; /* Subir el texto */
+            margin: 0 auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 22pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .body-text {
+            font-size: 12pt;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .body-text.bold {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .firmante {
+            margin-top: 220px;
+            text-align: center;
         }
     </style>
-    <link rel="stylesheet" href="{{ public_path('css/pdf.css') }}">
 </head>
 
 <body>
@@ -27,13 +56,14 @@
             El Instituto de Posgrado, a través de la Coordinación del Programa de la
             {{ ucfirst(strtolower($alumno->maestria->nombre)) }}, hace constar que:
         </p>
+        <br>
 
-        <p class="body-text" style="text-align: center; font-weight: bold; margin-top: 20px;">
+        <p class="body-text bold">
             {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}
         </p>
-
+        <br>
         <p class="body-text">
-            con número de identificación {{ $alumno->dni }}, ha formalizado su matrícula en la
+            Con número de identificación {{ $alumno->dni }}, ha formalizado su matrícula en la
             {{ ucfirst(strtolower($alumno->maestria->nombre)) }}, correspondiente a la {{ $cohorte->nombre }},
             en el Período Académico {{ $cohorte->periodo_academico->nombre }}, con fecha de inicio el
             {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}

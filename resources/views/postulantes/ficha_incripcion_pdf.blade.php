@@ -5,37 +5,21 @@
     <meta charset="UTF-8">
     <title>Ficha de Admisión</title>
     <style>
-        @page {
+         @page {
             size: A4;
-            margin: 50px;
-        }
-
-        body {
-            font-family: "Times New Roman", serif;
-            font-size: 9pt;
             margin: 0;
-            padding: 0;
         }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .header-center {
-            flex-grow: 1;
-            text-align: center;
-            font-size: 13pt;
-            font-weight: bold;
-        }
-
-        .sub-header {
-            text-align: center;
+        html, body {
+            font-family: "Times New Roman", serif;
             font-size: 10pt;
-            font-weight: bold;
-            margin-top: -10px;
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 120px 25px 10px 60px;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: 98% 98%;
+            background-position: center center;
+            background-repeat: no-repeat;
         }
 
         .section-title {
@@ -69,7 +53,7 @@
         }
 
         table.firmas {
-            width: 100%;
+            width: 85%;
             border-collapse: collapse;
             font-size: 8pt;
             margin-top: 20px;
@@ -101,26 +85,15 @@
 
         .section-group {
             page-break-inside: avoid;
+            width: 85%;
+        }
+        .page-break {
+            page-break-before: always;
         }
     </style>
 </head>
 
 <body>
-    <div style="text-align: center; margin-bottom: -10px;">
-        <div style="display: inline-block; vertical-align: middle;">
-            <img src="{{ public_path() . '/images/logo_unesum_certificado.png' }}" alt="Logo" style="width:70px;">
-        </div>
-
-        <div style="display: inline-block; vertical-align: middle; margin: 0 15px;">
-            <div style="font-size:13pt; font-weight:bold;">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</div>
-            <div style="font-size:10pt; font-weight:bold;">INSTITUTO DE POSGRADO</div>
-        </div>
-
-        <div style="display: inline-block; vertical-align: middle;">
-            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="Sello" style="width:90px;">
-        </div>
-    </div>
-
 
     <!-- Datos del Postulante -->
     <div class="section-group">
@@ -283,8 +256,9 @@
             </tr>
         </table>
     </div>
+    
     <!-- Laboral -->
-    <div class="section-group">
+    <div class="section-group page-break">
         <div class="section-title">Información Laboral</div>
         <table class="excel-style">
             <tr>
@@ -305,9 +279,6 @@
             </tr>
         </table>
     </div>
-    <br>
-    <br>
-    <br>
 
     <!-- Socioeconómica -->
     <div class="section-group">

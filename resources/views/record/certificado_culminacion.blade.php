@@ -11,22 +11,18 @@
         }
 
         html, body {
-            width: 210mm;
-            height: 297mm;
             margin: 0;
-            padding: 0;
             font-family: 'Times New Roman', serif;
             font-size: 16px;
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: 100% 100%;
-            background-position: top left;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: 98% 98%;
+            background-position: center center;
             background-repeat: no-repeat;
         }
 
         .container {
-            width: 85%;
-            margin: 190px auto 80px auto; /* 🔽 Bajado 15px (antes era 160px) */
-            padding-left: 0;
+            width: 80%;
+            margin: 120px auto 80px auto;
             text-align: justify;
             line-height: 1.8;
         }
@@ -47,7 +43,7 @@
 
         .footer {
             position: absolute;
-            bottom: 170px; /* 🔼 Subido 20px (antes era 80px) */
+            bottom: 350px; 
             width: 100%;
             text-align: center;
         }

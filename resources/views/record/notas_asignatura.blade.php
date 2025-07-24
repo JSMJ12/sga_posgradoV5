@@ -6,16 +6,18 @@
     <title>Notas</title>
     <style>
         html, body {
-            width: 210mm;
-            height: 297mm;
+            height: 100%;
             margin: 0;
             padding: 0;
-            font-family: 'Times New Roman', serif;
-            font-size: 9pt;
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: 100% 100%;
-            background-position: top left;
+            width: 100%;
+        }
+        body {
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: 95% 95%; 
             background-repeat: no-repeat;
+            background-position: center center;
+            min-height: 100vh;
+            width: 100vw;
         }
 
         .container {

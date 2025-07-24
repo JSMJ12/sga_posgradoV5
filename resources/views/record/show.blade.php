@@ -17,15 +17,14 @@
             padding: 0;
             font-family: "Times New Roman", serif;
             font-size: 9pt;
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
+            background: url("{{ public_path('images/fondo-pdf.jpeg') }}") no-repeat center center;
+            background-size: 98% 98%;
         }
 
         .container {
-            width: 90%;
-            margin: 160px auto 0 auto; /* Baja 160px desde arriba */
+            width: 80%; 
+            margin: 160px auto 60px auto;
+            text-align: justify;
         }
 
         .certificate-title {
@@ -67,7 +66,7 @@
 
         table.firmas {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 40px;
             border-collapse: collapse;
             font-size: 8pt;
         }
