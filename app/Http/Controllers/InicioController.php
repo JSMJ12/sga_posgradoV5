@@ -14,6 +14,8 @@ class InicioController extends Controller
             return redirect()->route('dashboard_admin');
         } elseif (auth()->user()->hasRole('Director')) {
             return redirect()->route('dashboard_director');
+        }elseif (auth()->user()->hasRole('Coordinador')) {
+            return redirect()->route('dashboard_coordinador');
         } elseif (auth()->user()->hasRole('Secretario/a EPSU')) {
             return redirect()->route('dashboard_secretario_epsu');
         } elseif (auth()->user()->hasRole('Secretario')) {
