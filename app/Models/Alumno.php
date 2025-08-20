@@ -119,6 +119,10 @@ class Alumno extends Model
         'maestria_id',
         'descuento_id'
     ];
+    public function user()
+    {
+        return $this->hasOne(User::class, 'email', 'email_institucional');
+    }
 
     public function notas()
     {
@@ -131,10 +135,6 @@ class Alumno extends Model
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
-    }
-    public function pagos()
-    {
-        return $this->hasMany(Pago::class, 'dni', 'dni');
     }
     public function tesis()
     {
@@ -150,15 +150,40 @@ class Alumno extends Model
         return $this->hasMany(Titulacion::class, 'alumno_dni', 'dni');
     }
     protected static function boot()
-    {
-        parent::boot();
+{
+    parent::boot();
 
-        static::creating(function ($alumno) {
-            if (empty($alumno->registro)) {
-                $alumno->registro = self::getNextRegistro();
-            }
-        });
+    static::creating(function ($alumno) {
+        if (empty($alumno->registro)) {
+            $alumno->registro = self::getNextRegistro();
+        }
+    });
+
+    static::updating(function ($alumno) {
+        $alumno->verificarMontos();
+    });
+
+    // 🔹 Esto se ejecuta cada vez que se obtiene un Alumno desde la DB
+    static::retrieved(function ($alumno) {
+        $alumno->verificarMontos();
+    });
+}
+
+public function verificarMontos()
+{
+    // Si el alumno tiene usuario relacionado
+    $tienePagos = $this->user && $this->user->pagos()->count() > 0;
+
+    if (!$tienePagos && empty($this->descuento_id) && $this->maestria) {
+        $this->monto_inscripcion = $this->maestria->incripcion ?? 0;
+        $this->monto_matricula = $this->maestria->matricula ?? 0;
+
+        if ($this->isDirty(['monto_inscripcion', 'monto_matricula'])) {
+            $this->saveQuietly();
+        }
     }
+}
+
 
     private static function getNextRegistro()
     {

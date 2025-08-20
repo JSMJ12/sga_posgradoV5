@@ -185,92 +185,95 @@ class AlumnoController extends Controller
     }
 
     public function store(Request $request)
-{
-    try {
-        $request->validate([
-            'maestria_id' => 'required|exists:maestrias,id',
-            'image' => 'nullable|image|max:2048',
-            'dni' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('alumnos', 'dni'),
-                Rule::unique('postulantes', 'dni'),
-            ],
-            'email_institucional' => [
-                'required',
-                'email',
-                Rule::notIn(User::pluck('email')->toArray()),
-            ],
-        ], [
-            // Mensajes personalizados
-            'maestria_id.required' => 'La maestría es obligatoria.',
-            'maestria_id.exists' => 'La maestría seleccionada no existe.',
-            'image.image' => 'El archivo debe ser una imagen.',
-            'image.max' => 'La imagen no puede superar los 2MB.',
-            'dni.required' => 'El DNI es obligatorio.',
-            'dni.unique' => 'Este DNI ya está registrado.',
-            'email_institucional.required' => 'El correo institucional es obligatorio.',
-            'email_institucional.email' => 'El correo institucional debe tener un formato válido.',
-            'email_institucional.not_in' => 'Este correo institucional ya está en uso.',
-        ]);
+    {
+        try {
+            $request->validate([
+                'maestria_id' => 'required|exists:maestrias,id',
+                'image' => 'nullable|image|max:2048',
+                'dni' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('alumnos', 'dni'),
+                    Rule::unique('postulantes', 'dni'),
+                ],
+                'email_institucional' => [
+                    'required',
+                    'email',
+                    Rule::notIn(User::pluck('email')->toArray()),
+                ],
+            ], [
+                // Mensajes personalizados
+                'maestria_id.required' => 'La maestría es obligatoria.',
+                'maestria_id.exists' => 'La maestría seleccionada no existe.',
+                'image.image' => 'El archivo debe ser una imagen.',
+                'image.max' => 'La imagen no puede superar los 2MB.',
+                'dni.required' => 'El DNI es obligatorio.',
+                'dni.unique' => 'Este DNI ya está registrado.',
+                'email_institucional.required' => 'El correo institucional es obligatorio.',
+                'email_institucional.email' => 'El correo institucional debe tener un formato válido.',
+                'email_institucional.not_in' => 'Este correo institucional ya está en uso.',
+            ]);
 
-        // --- Lógica principal como ya la tienes ---
-        $maestria = Maestria::findOrFail($request->input('maestria_id'));
-        $arancel = $maestria->arancel;
-        $nuevoRegistro = Alumno::where('maestria_id', $maestria->id)->count() + 1;
+            $maestria = Maestria::findOrFail($request->input('maestria_id'));
+            $arancel = $maestria->arancel ?? 0;
+            $inscripcion = $maestria->incripcion ?? 0;
+            $matricula = $maestria->matricula ?? 0;
+            $nuevoRegistro = Alumno::where('maestria_id', $maestria->id)->count() + 1;
 
-        $alumno = new Alumno();
-        $alumno->fill($request->only([
-            'nombre1', 'nombre2', 'apellidop', 'apellidom',
-            'sexo', 'dni', 'email_institucional', 'email_personal',
-            'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
-            'barrio', 'direccion', 'nacionalidad', 'etnia',
-            'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
-        ]));
+            $alumno = new Alumno();
+            $alumno->fill($request->only([
+                'nombre1', 'nombre2', 'apellidop', 'apellidom',
+                'sexo', 'dni', 'email_institucional', 'email_personal',
+                'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
+                'barrio', 'direccion', 'nacionalidad', 'etnia',
+                'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
+            ]));
 
-        $alumno->contra = bcrypt($request->input('dni'));
-        $alumno->maestria_id = $maestria->id;
-        $alumno->registro = $nuevoRegistro;
-        $alumno->monto_total = $arancel;
+            $alumno->contra = bcrypt($request->input('dni'));
+            $alumno->maestria_id = $maestria->id;
+            $alumno->registro = $nuevoRegistro;
+            $alumno->monto_total = $arancel;
+            $alumno->monto_inscripcion = $inscripcion;
+            $alumno->monto_matricula = $matricula;
 
-        if ($request->hasFile('image')) {
-            $alumno->image = $request->file('image')->store('imagenes_usuarios', 'public');
-        } else {
-            $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($alumno->nombre1, 0, 1));
+            if ($request->hasFile('image')) {
+                $alumno->image = $request->file('image')->store('imagenes_usuarios', 'public');
+            } else {
+                $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($alumno->nombre1, 0, 1));
+            }
+
+            $alumno->save();
+
+            $usuario = new User();
+            $usuario->fill([
+                'name' => $alumno->nombre1,
+                'apellido' => $alumno->apellidop,
+                'sexo' => $alumno->sexo,
+                'email' => $alumno->email_institucional,
+                'status' => $request->input('estatus', 'ACTIVO'),
+                'image' => $alumno->image,
+            ]);
+            $usuario->password = bcrypt($alumno->dni);
+            $usuario->save();
+
+            $usuario->assignRole(Role::findById(4));
+
+            return redirect()->route('alumnos.index')->with('success', 'Usuario creado exitosamente.');
+
+        } catch (ValidationException $e) {
+            // Devuelve errores de validación de vuelta al formulario con mensajes
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            // Error general
+            Log::error('Error al crear alumno: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error inesperado al crear el usuario. Intenta nuevamente.')
+                ->withInput();
         }
-
-        $alumno->save();
-
-        $usuario = new User();
-        $usuario->fill([
-            'name' => $alumno->nombre1,
-            'apellido' => $alumno->apellidop,
-            'sexo' => $alumno->sexo,
-            'email' => $alumno->email_institucional,
-            'status' => $request->input('estatus', 'ACTIVO'),
-            'image' => $alumno->image,
-        ]);
-        $usuario->password = bcrypt($alumno->dni);
-        $usuario->save();
-
-        $usuario->assignRole(Role::findById(4));
-
-        return redirect()->route('alumnos.index')->with('success', 'Usuario creado exitosamente.');
-
-    } catch (ValidationException $e) {
-        // Devuelve errores de validación de vuelta al formulario con mensajes
-        return redirect()->back()
-            ->withErrors($e->validator)
-            ->withInput();
-    } catch (\Exception $e) {
-        // Error general
-        Log::error('Error al crear alumno: ' . $e->getMessage());
-        return redirect()->back()
-            ->with('error', 'Error inesperado al crear el usuario. Intenta nuevamente.')
-            ->withInput();
     }
-}
 
     public function edit($dni)
     {
