@@ -93,41 +93,51 @@
                 var seccionId = $(this).data('id');
                 // Llamada AJAX para cargar datos de la sección
                 $.ajax({
-                    url: "/secciones/" +
-                        seccionId, // Asume que tienes una ruta para obtener los detalles de la sección
+                    url: "/secciones/" + seccionId,
                     method: "GET",
                     success: function(data) {
-                        // Crear el modal
+                        // Crear el modal responsivo en Bootstrap 4
                         var modalHtml = `
-                        <div class="modal fade" id="mostrarSeccionModal_${data.id}" tabindex="-1" role="dialog" aria-labelledby="mostrarSeccionModalLabel_${data.id}" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header" style="background-color: #003366; color: white;">
-                                        <h5 class="modal-title" id="mostrarSeccionModalLabel_${data.id}">Información de la Sección</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true" style="color: white;">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <p><strong>Nombre de la sección:</strong> ${data.nombre}</p>
-                                        <p><strong>Maestrías asociadas:</strong></p>
-                                        <ul>
-                                            ${data.maestrias.map(maestria => `<li>${maestria.nombre}</li>`).join('')}
-                                        </ul>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+                            <div class="modal fade" id="mostrarSeccionModal_${data.id}" tabindex="-1" role="dialog" aria-labelledby="mostrarSeccionModalLabel_${data.id}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-lg" role="document"> 
+                                    <div class="modal-content">
+                                        <div class="modal-header" style="background-color: #003366; color: white;">
+                                            <h5 class="modal-title" id="mostrarSeccionModalLabel_${data.id}">Información de la Sección</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                                                <span aria-hidden="true" style="color: white;">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="container-fluid">
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <p><strong>Nombre de la sección:</strong> ${data.nombre}</p>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <p><strong>Maestrías asociadas:</strong></p>
+                                                        <ul>
+                                                            ${data.maestrias.map(maestria => `<li>${maestria.nombre}</li>`).join('')}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                        // Append the modal HTML to the body and show it
+                        `;
+                        // Eliminar modal previo si existe (para evitar duplicados)
+                        $('#mostrarSeccionModal_' + data.id).remove();
+                        // Agregar y mostrar
                         $('body').append(modalHtml);
                         $('#mostrarSeccionModal_' + data.id).modal('show');
                     }
                 });
             });
+
             setInterval(function() {
                 table.ajax.reload(null, false);
             }, 10000);

@@ -17,13 +17,13 @@
             padding: 0;
             font-family: "Times New Roman", serif;
             font-size: 9pt;
-            background: url("{{ public_path('images/fondo-pdf.jpeg') }}") no-repeat center center;
+            background: url("{{ public_path('images/fondopdf.png') }}") no-repeat center center;
             background-size: 98% 98%;
         }
 
         .container {
             width: 80%; 
-            margin: 160px auto 60px auto;
+            margin: 250px auto 60px auto;
             text-align: justify;
         }
 

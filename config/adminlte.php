@@ -465,6 +465,13 @@ return [
             'can' => 'dashboard_alumno'
         ],
 
+        [
+            'text' => 'Tesis',
+            'route'  => 'tesis.create',
+            'icon' => 'fas fa-fw fa-graduation-cap',
+            'can' => 'titulado_proceso'
+        ],
+
         ['header' => 'Postulación', 'can' => 'dashboard_postulante'],
         [
             'text' => 'Documentación',

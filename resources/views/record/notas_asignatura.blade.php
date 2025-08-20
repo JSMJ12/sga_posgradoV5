@@ -12,7 +12,7 @@
             width: 100%;
         }
         body {
-            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
             background-size: 95% 95%; 
             background-repeat: no-repeat;
             background-position: center center;
@@ -22,7 +22,7 @@
 
         .container {
             width: 90%;
-            margin: 190px auto 60px auto; /* espacio superior e inferior ajustado */
+            margin: 220px auto 60px auto; /* espacio superior e inferior ajustado */
             text-align: justify;
             line-height: 1.5;
         }
@@ -90,17 +90,20 @@
     <div class="container">
 
         <div class="info-header">
-            <strong>Asignatura:</strong> {{ $asignatura->nombre }} |
-            @if ($aula)
-                <strong>Aula:</strong> {{ $aula->nombre }} |
-            @endif
-            @if ($paralelo)
-                <strong>Paralelo:</strong> {{ $paralelo }} |
-            @endif
-            <strong>Periodo:</strong> {{ $periodo_academico->nombre }} |
-            <strong>Cohorte:</strong> {{ $cohorte->nombre }} |
-            <strong>Docente:</strong> {{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 11pt; line-height: 1.6;">
+                <li><strong>Asignatura:</strong> {{ $asignatura->nombre }}</li>
+                @if ($aula)
+                    <li><strong>Aula:</strong> {{ $aula->nombre }}</li>
+                @endif
+                @if ($paralelo)
+                    <li><strong>Paralelo:</strong> {{ $paralelo }}</li>
+                @endif
+                <li><strong>Periodo:</strong> {{ $periodo_academico->nombre }}</li>
+                <li><strong>Cohorte:</strong> {{ $cohorte->nombre }}</li>
+                <li><strong>Docente:</strong> {{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}</li>
+            </ul>
         </div>
+
 
         <table class="student-info">
             <thead>
@@ -111,7 +114,6 @@
                     <th style="width: 10%;">Prácticas</th>
                     <th style="width: 10%;">Autónomo</th>
                     <th style="width: 10%;">Examen Final</th>
-                    <th style="width: 10%;">Recuperación</th>
                     <th style="width: 10%;">Total</th>
                 </tr>
             </thead>
@@ -136,7 +138,6 @@
                         <td>{{ $nota->nota_practicas ?? '--' }}</td>
                         <td>{{ $nota->nota_autonomo ?? '--' }}</td>
                         <td>{{ $nota->examen_final ?? '--' }}</td>
-                        <td>{{ $nota->recuperacion ?? '--' }}</td>
                         <td>{{ $nota->total ?? '--' }}</td>
                     </tr>
                 @endforeach

@@ -23,7 +23,7 @@
         }
 
         .section-title {
-            background: #22313f;
+            background: #1a5d4e;
             color: #fff;
             font-weight: bold;
             font-size: 10pt;

@@ -17,7 +17,7 @@
             height: 297mm;
             margin: 0;
             padding: 0;
-            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
             background-size: 98% 98%;
             background-position: top left;
             background-repeat: no-repeat;
@@ -25,7 +25,7 @@
 
         .container {
             width: 80%;
-            margin: 120px auto 100px auto; /* margen superior e inferior */
+            margin: 200px auto 100px auto;
             text-align: justify;
             line-height: 1.8;
         }

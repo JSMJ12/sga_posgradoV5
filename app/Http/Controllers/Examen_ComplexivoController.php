@@ -107,73 +107,79 @@ class Examen_ComplexivoController extends Controller
     }
 
     public function calificar_examen(Request $request)
-    {
-        // Verificar si la solicitud es AJAX para DataTables
-        if ($request->ajax()) {
+{
+    if ($request->ajax()) {
+        try {
             $user = auth()->user();
 
-            // Filtrar los alumnos según el rol del usuario
             if ($user->hasRole('Administrador')) {
-                $query = Alumno::with(['maestria', 'tesis'])->whereHas('tesis', function ($query) {
-                    $query->where('tipo', 'examen complexivo'); // Filtrar por tipo de tesis
-                });
+                $query = Alumno::with(['maestria', 'tesis', 'examenComplexivo'])
+                    ->whereHas('tesis', function ($query) {
+                        $query->where('tipo', 'examen complexivo');
+                    });
             } else {
                 $secretario = Secretario::where('nombre1', $user->name)
                     ->where('apellidop', $user->apellido)
                     ->where('email', $user->email)
                     ->firstOrFail();
+
                 $maestriasIds = $secretario->seccion->maestrias->pluck('id');
-                $query = Alumno::with(['maestria', 'tesis'])
+
+                $query = Alumno::with(['maestria', 'tesis', 'examenComplexivo'])
                     ->whereIn('maestria_id', $maestriasIds)
                     ->whereHas('tesis', function ($query) {
                         $query->where('tipo', 'examen complexivo');
                     });
             }
 
-            // Configurar DataTables con las columnas necesarias
             return datatables()->eloquent($query)
                 ->addColumn('maestria_nombre', function ($alumno) {
                     return $alumno->maestria ? $alumno->maestria->nombre : 'Sin Maestría';
                 })
                 ->addColumn('foto', function ($alumno) {
-                    return '<img src="' . asset('storage/' . $alumno->image) . '" alt="Foto de ' . $alumno->nombre1 . '" class="img-thumbnail rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">';
+                    return '<img src="' . asset('storage/' . $alumno->image) . '" 
+                        alt="Foto de ' . $alumno->nombre1 . '" 
+                        class="img-thumbnail rounded-circle" 
+                        style="width: 60px; height: 60px; object-fit: cover;">';
                 })
                 ->addColumn('nombre_completo', function ($alumno) {
                     return "{$alumno->nombre1}<br>{$alumno->nombre2}<br>{$alumno->apellidop}<br>{$alumno->apellidom}";
                 })
                 ->addColumn('tipo_tesis', function ($alumno) {
-                    return $alumno->tesis->first() ? $alumno->tesis->first()->tipo : 'Sin Tesis';
+                    return optional($alumno->tesis->first())->tipo ?? 'Sin Tesis';
                 })
                 ->addColumn('acciones', function ($alumno) {
                     $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
-
-                    // Validar si nota no es null o 0
-                    $titulacion = $alumno->examenComplexivo->first();
-                    if (!$titulacion || $titulacion->nota === null)  {
-                        // Mostrar botón para calificar
+                    $titulacion = optional($alumno->examenComplexivo)->first();
+                    if (!$titulacion || $titulacion->nota === null) {
                         $acciones .= '<button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" 
                                 data-dni="' . $alumno->dni . '" 
                                 data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '">
                                 <i class="bi bi-pencil-square"></i> Calificar
                             </button>';
                     } else {
-                        // Mostrar "Ya calificado"
                         $acciones .= '<span class="badge bg-secondary d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle"></i> Ya calificado
-                  </span>';
+                            <i class="bi bi-check-circle"></i> Ya calificado
+                        </span>';
                     }
-
-
                     $acciones .= '</div>';
                     return $acciones;
                 })
-                ->rawColumns(['foto', 'acciones', 'nombre_completo']) // Permitir HTML en estas columnas
+                ->rawColumns(['foto', 'acciones', 'nombre_completo'])
                 ->toJson();
-        }
 
-        // Retornar la vista si no es una solicitud AJAX
-        return view('alumnos.examen_complexivo');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ], 500);
+        }
     }
+
+    return view('alumnos.examen_complexivo');
+}
+
 
     public function actualizarNotaYFechaGraduacion(Request $request)
     {

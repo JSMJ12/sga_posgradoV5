@@ -55,6 +55,11 @@ class TesisController extends Controller
                         ? $tesis->alumno->nombre1 . ' ' . $tesis->alumno->nombre2 . ' ' . $tesis->alumno->apellidop . ' ' . $tesis->alumno->apellidom
                         : 'Sin alumno asignado';
                 })
+                ->addColumn('tutor', function ($tesis) {
+                    return $tesis->tutor
+                        ? $tesis->tutor->nombre1 . ' ' . $tesis->tutor->nombre2 . ' ' . $tesis->tutor->apellidop . ' ' . $tesis->tutor->apellidom
+                        : 'Sin tutor asignado';
+                })
                 ->addColumn('acciones', function ($tesis) {
                     return view('partials.botones_tesis', compact('tesis'))->render();
                 })

@@ -12,7 +12,7 @@
             width: 100%;
         }
         body {
-            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
             background-size: 98% 98%; 
             background-repeat: no-repeat;
             background-position: center center;
@@ -22,7 +22,7 @@
         .container {
             width: 80%;
             box-sizing: border-box;
-            padding-top: 150px; /* Subir el texto */
+            padding-top: 250px; /* Subir el texto */
             margin: 0 auto;
         }
         .title {

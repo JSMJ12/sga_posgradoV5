@@ -14,7 +14,7 @@
             margin: 0;
             font-family: 'Times New Roman', serif;
             font-size: 16px;
-            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-image: url("{{ public_path('images/fondopdf.png') }}");
             background-size: 98% 98%;
             background-position: center center;
             background-repeat: no-repeat;
@@ -22,7 +22,7 @@
 
         .container {
             width: 80%;
-            margin: 120px auto 80px auto;
+            margin: 250px auto 80px auto;
             text-align: justify;
             line-height: 1.8;
         }
