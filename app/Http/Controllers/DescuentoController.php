@@ -22,7 +22,10 @@ class DescuentoController extends Controller
     public function alumnos(Request $request)
     {
         if ($request->ajax()) {
-            $query = Alumno::with('maestria', 'descuento');
+            $query = Alumno::with('maestria', 'descuento')
+                ->orderBy('apellidop')  
+                ->orderBy('apellidom')   
+                ->orderBy('nombre1');    
 
             return datatables()->eloquent($query)
                 ->addColumn('maestria_nombre', function ($alumno) {
@@ -35,14 +38,33 @@ class DescuentoController extends Controller
                 ->addColumn('nombre_completo', function ($alumno) {
                     return "{$alumno->nombre1} {$alumno->nombre2} {$alumno->apellidop} {$alumno->apellidom}";
                 })
-                ->addColumn('acciones', function ($alumno) {
-                    if ($alumno->descuento_id !== null) {
-                        return '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Descuento aplicado</span>';
-                    }
-                    return '<button class="btn btn-primary btn-sm select-descuento" data-dni="' . $alumno->dni . '" data-toggle="modal">
-                                <i class="fas fa-tags"></i> Descuento
-                            </button>';
+                ->addColumn('descuento_nombre', function ($alumno) {
+                    return $alumno->descuento ? $alumno->descuento->nombre : 'Sin descuento';
                 })
+                ->addColumn('acciones', function ($alumno) {
+                    $acciones = '';
+
+                    if ($alumno->descuento_id !== null) {
+                        $acciones .= '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Descuento aplicado</span>';
+                    } else {
+                        $acciones .= '<button class="btn btn-primary btn-sm select-descuento" data-dni="' . $alumno->dni . '" data-toggle="modal">
+                                        <i class="fas fa-tags"></i> Descuento
+                                    </button>';
+                    }
+
+                    // Botón de certificado solo si el alumno tiene matrículas
+                    if ($alumno->matriculas && $alumno->matriculas->count() > 0) {
+                        $acciones .= ' <a href="' . route('certificado_culminacion', $alumno->dni) . '" 
+                                        target="_blank" 
+                                        class="btn btn-outline-success btn-sm" 
+                                        title="Certificado de Culminación">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>';
+                    }
+
+                    return $acciones;
+                })
+
                 ->rawColumns(['foto', 'acciones', 'nombre_completo'])
                 ->toJson();
         }

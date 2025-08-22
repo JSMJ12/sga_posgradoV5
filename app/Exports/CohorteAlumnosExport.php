@@ -50,7 +50,11 @@ class CohorteAlumnosExport implements FromCollection, WithMapping, WithStyles, W
                     ->from((new Matricula)->getTable())
                     ->where('cohorte_id', $this->cohorte_id);
             })
-            ->get();
+            ->get()
+            ->sortBy(function ($alumno) {
+                return $alumno->apellidop . ' ' . $alumno->apellidom . ' ' . $alumno->nombre1;
+            })
+            ->values();
     }
 
     public function map($alumno): array

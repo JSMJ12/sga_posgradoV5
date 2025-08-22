@@ -78,6 +78,10 @@ class AsignaturaDocenteController extends Controller
 
     public function destroy($docente_dni, $asignatura_id)
     {
+        if (auth()->user()->hasRole('Coordinador')) {
+            return redirect()->back()->with('error', 'No tienes permisos para eliminar asignaturas.');
+        }
+
         $asignaturaDocente = AsignaturaDocente::where('docente_dni', $docente_dni)
             ->where('asignatura_id', $asignatura_id)
             ->first();
@@ -88,4 +92,5 @@ class AsignaturaDocenteController extends Controller
 
         return redirect()->back()->with('success', 'Asignatura eliminada correctamente');
     }
+
 }

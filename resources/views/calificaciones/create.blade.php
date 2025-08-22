@@ -30,7 +30,7 @@
                                         $nota = $notas->get($alumno->dni);
                                     @endphp
                                     <tr>
-                                        <td>{{ $alumno->nombre1 }} {{ $alumno->apellidop }}</td>
+                                        <td>{{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}</td>
                                         <input type="hidden" name="alumno_dni[]" value="{{ $alumno->dni }}">
                                         <td>
                                             <input class="form-control nota-input" type="number" step="0.01"

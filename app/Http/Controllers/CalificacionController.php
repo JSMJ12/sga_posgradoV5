@@ -23,15 +23,21 @@ class CalificacionController extends Controller
     {
         $cohorte = Cohorte::findOrFail($cohorte_id);
         $aforoMaximo = $cohorte->aforo;
-        // Obtener matrículas
+
+        // Obtener matrículas con relación alumno
         $matriculas = Matricula::where([
             'docente_dni' => $docente_dni,
             'asignatura_id' => $asignatura_id,
             'cohorte_id' => $cohorte_id
-        ])->with('alumno')->get();
+        ])->with('alumno')
+        ->get();
 
-        $alumnos = $matriculas->pluck('alumno');
+        // Extraer y ordenar alumnos por apellido y nombre
+        $alumnos = $matriculas->pluck('alumno')
+            ->sortBy(fn($a) => $a->apellidop . ' ' . $a->apellidom . ' ' . $a->nombre1 . ' ' . $a->nombre2)
+            ->values(); // resetear índices
 
+        // Traer notas de esos alumnos
         $notas = Nota::whereIn('alumno_dni', $alumnos->pluck('dni'))
             ->where([
                 'docente_dni' => $docente_dni,

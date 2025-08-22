@@ -50,52 +50,55 @@
              url: `/docentes/${docenteDni}/asignaturas`,
              method: 'GET',
              success: function(response) {
-                 if (response.length === 0) {
-                     modalContent.html(`
-                         <div class="alert alert-info" role="alert">
-                             No hay asignaturas asignadas a este docente.
-                         </div>
-                     `);
-                 } else {
-                     let tableRows = response.map(asignatura => `
-                         <tr>
-                             <td>${asignatura.nombre}</td>
-                             <td>${asignatura.codigo_asignatura}</td>
-                             <td>${asignatura.credito}</td>
-                              <td>
-                                 <form action="/docentes/${docenteDni}/asignaturas/${asignatura.id}" method="POST" class="d-inline delete-form">
-                                     @csrf
-                                     @method('DELETE')
-                                     <button type="submit" class="btn btn-danger btn-sm btn-delete" data-toggle="tooltip" title="Eliminar" data-id="${asignatura.id}" data-docente="${docenteDni}">
-                                         <i class="fas fa-trash-alt"></i>
-                                     </button>
-                                 </form>
-                             </td>
-                         </tr>
-                     `).join('');
- 
-                     modalContent.html(`
-                         <div class="table-responsive">
-                             <table class="table table-striped">
-                                 <thead>
-                                     <tr>
-                                         <th>Asignatura</th>
-                                         <th>Código</th>
-                                         <th>Créditos</th>
-                                         <th>Acciones</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>
-                                     ${tableRows}
-                                 </tbody>
-                             </table>
-                         </div>
-                     `);
-                 }
- 
-                 // Actualizar el título del modal
-                 modalTitle.text('Asignaturas del Docente');
-             },
+                if (response.length === 0) {
+                    modalContent.html(`
+                        <div class="alert alert-info" role="alert">
+                            No hay asignaturas asignadas a este docente.
+                        </div>
+                    `);
+                } else {
+                    let tableRows = response.map(asignatura => `
+                        <tr>
+                            <td>${asignatura.nombre}</td>
+                            <td>${asignatura.codigo_asignatura}</td>
+                            <td>${asignatura.credito}</td>
+                            <td>
+                                @if(!auth()->user()->hasRole('Coordinador'))
+                                    <form action="/docentes/${docenteDni}/asignaturas/${asignatura.id}" method="POST" class="d-inline delete-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm btn-delete" data-toggle="tooltip" title="Eliminar" data-id="${asignatura.id}" data-docente="${docenteDni}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="badge badge-secondary">Solo lectura</span>
+                                @endif
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    modalContent.html(`
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Asignatura</th>
+                                        <th>Código</th>
+                                        <th>Créditos</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    `);
+                }
+
+                modalTitle.text('Asignaturas del Docente');
+            },
              error: function() {
                  modalContent.html(`
                      <div class="alert alert-danger" role="alert">

@@ -5,25 +5,33 @@
     <meta charset="UTF-8">
     <title>Certificado de Matrícula</title>
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            width: 100%;
+       @page {
+            margin: 0px 0px 0px 0px;
         }
+
         body {
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: 98% 98%; 
+            padding: 115px 40px 120px 60px;
+        }
+
+        /* Fondo a página completa en todas las hojas */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: cover;   /* cubre toda la hoja */
             background-repeat: no-repeat;
             background-position: center center;
-            min-height: 100vh;
-            width: 100vw;
+            z-index: -1;
         }
-        .container {
-            width: 80%;
-            box-sizing: border-box;
-            padding-top: 250px; /* Subir el texto */
-            margin: 0 auto;
+
+        .container { 
+            width: 90%; 
+            text-align: justify; 
+            line-height: 1.5; 
         }
         .title {
             text-align: center;

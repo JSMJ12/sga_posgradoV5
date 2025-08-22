@@ -1,31 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <title>Notas</title>
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-        }
-        body {
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: 95% 95%; 
-            background-repeat: no-repeat;
-            background-position: center center;
-            min-height: 100vh;
-            width: 100vw;
+        /* Márgenes iguales en todas las páginas */
+        @page {
+            margin: 0px 0px 0px 0px;
         }
 
-        .container {
-            width: 90%;
-            margin: 220px auto 60px auto; /* espacio superior e inferior ajustado */
-            text-align: justify;
-            line-height: 1.5;
+        body {
+            padding: 115px 40px 120px 60px;
         }
+
+        /* Fondo a página completa en todas las hojas */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: cover;   /* cubre toda la hoja */
+            background-repeat: no-repeat;
+            background-position: center center;
+            z-index: -1;
+        }
+
+        .container { 
+            width: 90%; 
+            text-align: justify; 
+            line-height: 1.5; 
+        }
+
 
         .info-header {
             text-align: left;
@@ -64,10 +72,9 @@
         }
 
         .firma-container {
-            margin-top: 40px;
+            margin-top: 60px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: flex-end;
         }
 
         .firma-box {
@@ -82,8 +89,10 @@
 
         .firma-nombre {
             font-weight: bold;
+            font-size: 11pt;
         }
     </style>
+
 </head>
 
 <body>
@@ -104,7 +113,6 @@
             </ul>
         </div>
 
-
         <table class="student-info">
             <thead>
                 <tr>
@@ -118,7 +126,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($alumnosMatriculados as $alumno)
+                @foreach ($alumnosMatriculados->sortBy(fn($a) => $a->apellidop . ' ' . $a->nombre1) as $alumno)
                     <tr>
                         <td>
                             {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}
@@ -147,11 +155,8 @@
         <div class="firma-container">
             <div class="firma-box">
                 <div class="firma-line"></div>
-                <div class="firma-nombre" style="font-size: 12pt">{{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}</div>
+                <div class="firma-nombre">{{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}</div>
                 <div>{{ $docente->dni }}</div>
-            </div>
-            <div class="firma-box">
-                <!-- Espacio para otra firma -->
             </div>
         </div>
 

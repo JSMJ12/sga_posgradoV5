@@ -5,31 +5,38 @@
     <meta charset="UTF-8">
     <title>RECORD ACADÉMICO</title>
     <style>
-        @page {
-            size: A4;
-            margin: 0;
+       @page {
+            margin: 0px 0px 0px 0px;
         }
 
-        html, body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0;
-            padding: 0;
-            font-family: "Times New Roman", serif;
-            font-size: 9pt;
-            background: url("{{ public_path('images/fondopdf.png') }}") no-repeat center center;
-            background-size: 98% 98%;
+        body {
+            padding: 115px 40px 120px 60px;
         }
 
-        .container {
-            width: 80%; 
-            margin: 250px auto 60px auto;
-            text-align: justify;
+        /* Fondo a página completa en todas las hojas */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: cover;   /* cubre toda la hoja */
+            background-repeat: no-repeat;
+            background-position: center center;
+            z-index: -1;
+        }
+
+        .container { 
+            width: 90%; 
+            text-align: justify; 
+            line-height: 1.5; 
         }
 
         .certificate-title {
             text-align: center;
-            font-size: 11pt;
+            font-size: 16pt;
             font-weight: bold;
             margin-bottom: 10px;
         }

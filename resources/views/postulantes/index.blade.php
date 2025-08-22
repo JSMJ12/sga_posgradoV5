@@ -23,7 +23,9 @@
                                 <th>Título Profesional</th>
                                 <th>Maestría</th>
                                 <th>Mensaje</th>
-                                <th>PDFs</th>
+                               @if (!auth()->user()->hasRole('Coordinador'))
+                                    <th>PDFs</th>
+                                @endif
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -55,21 +57,26 @@
                                             <span class="text-muted">Usuario no encontrado</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center">
-                                            <button type="button" class="btn btn-sm text-white"
-                                                style="background-color: #064584; border-color: #032546;"
-                                                data-toggle="modal"
-                                                data-target="#verificarDocumentosModal_{{ $postulante->dni }}"
-                                                title="Verificar Documentos">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                        </div>
-                                        @include('modales.verificar_documento_modal')
-                                    </td>
+
+                                   @if (!auth()->user()->hasRole('Coordinador'))
+                                        <td>
+                                            <div class="d-flex justify-content-center">
+                                                <button type="button" class="btn btn-sm text-white"
+                                                    style="background-color: #064584; border-color: #032546;"
+                                                    data-toggle="modal"
+                                                    data-target="#verificarDocumentosModal_{{ $postulante->dni }}"
+                                                    title="Verificar Documentos">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                            </div>
+                                            @include('modales.verificar_documento_modal')
+                                        </td>
+                                    @endif
+
                                     <td>
                                         <div class="d-flex justify-content-center gap-2">
                                             <ul class="list-group">
+                                                {{-- Ver detalles y Ficha PDF SIEMPRE --}}
                                                 <li class="list-group-item text-center">
                                                     <a href="{{ route('postulaciones.show', $postulante->dni) }}"
                                                         class="btn btn-outline-info btn-sm mb-1" title="Ver Detalles">
@@ -83,77 +90,79 @@
                                                     </a>
                                                 </li>
 
-                                                <li class="list-group-item text-center">
-                                                    <form action="{{ route('postulaciones.destroy', $postulante->dni) }}"
-                                                        method="POST" style="display: inline-block;">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                                            onclick="return confirm('¿Estás seguro de que deseas eliminar este postulante?')"
-                                                            title="Eliminar">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @php
-                                                    $documentos_requeridos = [
-                                                        'Cédula',
-                                                        'Papel de Votación',
-                                                        'Título de Universidad',
-                                                        'Hoja de Vida',
-                                                        'Carta de Aceptación',
-                                                    ];
-
-                                                    $documentos_verificados = $postulante->documentos_verificados->where(
-                                                        'verificado',
-                                                        1,
-                                                    );
-                                                    $verificados = $documentos_verificados
-                                                        ->pluck('tipo_documento')
-                                                        ->toArray();
-
-                                                    $apto =
-                                                        count(array_intersect($documentos_requeridos, $verificados)) ===
-                                                        count($documentos_requeridos);
-
-                                                    // Buscar pago de matrícula verificado
-                                                    $pago_matricula_verificado = \App\Models\Pago::whereHas(
-                                                        'user',
-                                                        function ($query) use ($postulante) {
-                                                            $query->where('email', $postulante->correo_electronico);
-                                                        },
-                                                    )
-                                                        ->where('verificado', true)
-                                                        ->exists();
-                                                @endphp
-
-                                                @if (!$postulante->status && $apto)
+                                                {{-- SOLO para roles que NO son coordinador --}}
+                                               @if (!auth()->user()->hasRole('Coordinador'))
                                                     <li class="list-group-item text-center">
-                                                        <form action="{{ route('postulantes.aceptar', $postulante->dni) }}"
+                                                        <form action="{{ route('postulaciones.destroy', $postulante->dni) }}"
                                                             method="POST" style="display: inline-block;">
                                                             @csrf
-                                                            @method('POST')
-                                                            <button type="submit" class="btn btn-outline-success btn-sm"
-                                                                onclick="return confirm('¿Estás seguro de que deseas marcar a este postulante como Apto?')"
-                                                                title="Marcar como Apto">
-                                                                <i class="fas fa-check"></i>
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                                onclick="return confirm('¿Estás seguro de que deseas eliminar este postulante?')"
+                                                                title="Eliminar">
+                                                                <i class="fas fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     </li>
-                                                @elseif ($pago_matricula_verificado)
-                                                    <li class="list-group-item text-center">
-                                                        <form
-                                                            action="{{ route('postulantes.convertir', $postulante->dni) }}"
-                                                            method="POST" style="display: inline-block;">
-                                                            @csrf
-                                                            @method('POST')
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm"
-                                                                onclick="return confirm('¿Estás seguro de que deseas convertir a este postulante en estudiante?')"
-                                                                title="Convertir en Estudiante">
-                                                                <i class="fas fa-user-graduate"></i>
-                                                            </button>
-                                                        </form>
-                                                    </li>
+                                                    @php
+                                                        $documentos_requeridos = [
+                                                            'Cédula',
+                                                            'Papel de Votación',
+                                                            'Título de Universidad',
+                                                            'Hoja de Vida',
+                                                            'Carta de Aceptación',
+                                                        ];
+
+                                                        $documentos_verificados = $postulante->documentos_verificados->where(
+                                                            'verificado',
+                                                            1,
+                                                        );
+                                                        $verificados = $documentos_verificados
+                                                            ->pluck('tipo_documento')
+                                                            ->toArray();
+
+                                                        $apto =
+                                                            count(array_intersect($documentos_requeridos, $verificados)) ===
+                                                            count($documentos_requeridos);
+
+                                                        $pago_matricula_verificado = \App\Models\Pago::whereHas(
+                                                            'user',
+                                                            function ($query) use ($postulante) {
+                                                                $query->where('email', $postulante->correo_electronico);
+                                                            },
+                                                        )
+                                                            ->where('verificado', true)
+                                                            ->exists();
+                                                    @endphp
+
+                                                    @if (!$postulante->status && $apto)
+                                                        <li class="list-group-item text-center">
+                                                            <form action="{{ route('postulantes.aceptar', $postulante->dni) }}"
+                                                                method="POST" style="display: inline-block;">
+                                                                @csrf
+                                                                @method('POST')
+                                                                <button type="submit" class="btn btn-outline-success btn-sm"
+                                                                    onclick="return confirm('¿Estás seguro de que deseas marcar a este postulante como Apto?')"
+                                                                    title="Marcar como Apto">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @elseif ($pago_matricula_verificado)
+                                                        <li class="list-group-item text-center">
+                                                            <form
+                                                                action="{{ route('postulantes.convertir', $postulante->dni) }}"
+                                                                method="POST" style="display: inline-block;">
+                                                                @csrf
+                                                                @method('POST')
+                                                                <button type="submit" class="btn btn-outline-primary btn-sm"
+                                                                    onclick="return confirm('¿Estás seguro de que deseas convertir a este postulante en estudiante?')"
+                                                                    title="Convertir en Estudiante">
+                                                                    <i class="fas fa-user-graduate"></i>
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @endif
                                                 @endif
                                             </ul>
                                         </div>
@@ -170,50 +179,50 @@
 @stop
 
 @section('js')
-@section('js')
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            $('#postulantes').DataTable({
-                lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
-                pageLength: 10, // Valor predeterminado
-                responsive: true,
-                colReorder: true,
-                autoFill: true,
-                keys: true,
-                language: {
-                    url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-                }
-            });
+            // Verificar si la tabla aún no está inicializada
+            if (!$.fn.DataTable.isDataTable('#postulantes')) {
+                $('#postulantes').DataTable({
+                    lengthMenu: [5, 10, 15, 20, 40, 45, 50, 100],
+                    pageLength: 10, // Valor predeterminado
+                    responsive: true,
+                    colReorder: true,
+                    autoFill: true,
+                    keys: true,
+                    language: {
+                        url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+                    }
+                });
+            }
         });
-    </script>
-    <script>
+
+        // Modal de mensajes
         $(document).on('click', '.btn-message', function() {
             var userId = $(this).data('id');
             var userName = $(this).data('nombre');
 
             $('#sendMessageModalLabel').text('Enviar mensaje a ' + userName);
-
             $('#receiver_id').val(userId);
         });
     </script>
 @stop
 
-@stop
 @section('css')
-<style>
-    .btn-outline-lila {
-        color: #6f42c1;
-        border-color: #6f42c1;
-    }
+    <style>
+        .btn-outline-lila {
+            color: #6f42c1;
+            border-color: #6f42c1;
+        }
 
-    .btn-outline-lila:hover {
-        color: #fff;
-        background-color: #6f42c1;
-        border-color: #6f42c1;
-    }
-</style>
+        .btn-outline-lila:hover {
+            color: #fff;
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+        }
+    </style>
 @stop

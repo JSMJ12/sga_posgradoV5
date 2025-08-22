@@ -111,54 +111,87 @@ class AlumnoController extends Controller
                 ->orderColumn('nombre_completo', function ($query, $order) {
                     $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
                 })
-                ->addColumn('acciones', function ($alumno) {
+                ->addColumn('acciones', function ($alumno) use ($user) {
                     $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
 
-                    if ($alumno->ficha_socioeconomica) {
-                        $acciones .= '<a href="' . route('alumnos.ficha.ver', $alumno->dni) . '" target="_blank" class="btn btn-outline-secondary btn-sm" title="Ver ficha socioeconómica">
-                                        <i class="fas fa-file-word"></i>
-                                    </a>';
+                    // --- COORDINADOR ---
+                    if ($user->hasRole('Coordinador')) {
+                        if ($alumno->matriculas->count() > 0) {
+                            // Botón ojo
+                            $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
+                                data-id="' . $alumno->dni . '" 
+                                data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
+                                    return [
+                                        'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
+                                        'docente' => $matricula->docente
+                                            ? $matricula->docente->nombre1 . ' ' . $matricula->docente->apellidop
+                                            : 'No disponible',
+                                        'cohorte' => $matricula->cohorte->nombre ?? 'No disponible',
+                                        'aula' => $matricula->cohorte->aula->nombre ?? 'No disponible',
+                                        'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
+                                    ];
+                                })) . '\' title="Ver Matrícula">
+                                <i class="fas fa-eye"></i>
+                            </button>';
+
+                            // Reportes
+                            $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
+                            $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
+                            $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
+                            $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
+                        }
                     }
 
-                    
-                    if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->isEmpty()) {
-                        $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular"><i class="fas fa-plus-circle"></i></a>';
-                    }
+                    // --- ADMIN / SECRETARIO ---
+                    else {
+                        if ($alumno->ficha_socioeconomica) {
+                            $acciones .= '<a href="' . route('alumnos.ficha.ver', $alumno->dni) . '" target="_blank" class="btn btn-outline-secondary btn-sm" title="Ver ficha socioeconómica">
+                                            <i class="fas fa-file-word"></i>
+                                        </a>';
+                        }
 
-                    if ($alumno->matriculas->count() > 0) {
-                        $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
-                        data-id="' . $alumno->dni . '" 
-                        data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
-                            return [
-                                'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
-                                'docente' => $matricula->docente
-                                    ? $matricula->docente->nombre1 . ' ' . $matricula->docente->apellidop
-                                    : 'No disponible',
-                                'cohorte' => $matricula->cohorte->nombre ?? 'No disponible',
-                                'aula' => $matricula->cohorte->aula->nombre ?? 'No disponible',
-                                'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
-                            ];
-                        })) . '\' title="Ver Matrícula">
-                        <i class="fas fa-eye"></i>
-                    </button>';
+                        if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->isEmpty()) {
+                            $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular"><i class="fas fa-plus-circle"></i></a>';
+                        }
 
-                        $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
-                        $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
-                        $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
-                        $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
-                    }
+                        if ($alumno->matriculas->count() > 0) {
+                            // Botón ojo
+                            $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
+                                data-id="' . $alumno->dni . '" 
+                                data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
+                                    return [
+                                        'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
+                                        'docente' => $matricula->docente
+                                            ? $matricula->docente->nombre1 . ' ' . $matricula->docente->apellidop
+                                            : 'No disponible',
+                                        'cohorte' => $matricula->cohorte->nombre ?? 'No disponible',
+                                        'aula' => $matricula->cohorte->aula->nombre ?? 'No disponible',
+                                        'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
+                                    ];
+                                })) . '\' title="Ver Matrícula">
+                                <i class="fas fa-eye"></i>
+                            </button>';
 
-                    if (auth()->user()->can('dashboard_admin') && $alumno->matriculas->count() > 0) {
-                        $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar"><i class="fas fa-pencil-alt"></i></a>';
-                    }
+                            // Reportes
+                            $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
+                            $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
+                            $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
+                            $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
+                        }
 
-                    if (auth()->user()->can('dashboard_admin')) {
-                        $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>';
+                        if ($user->can('dashboard_admin') && $alumno->matriculas->count() > 0) {
+                            $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar"><i class="fas fa-pencil-alt"></i></a>';
+                        }
+
+                        if ($user->can('dashboard_admin')) {
+                            $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>';
+                        }
                     }
 
                     $acciones .= '</div>';
                     return $acciones;
                 })
+
                 ->rawColumns(['foto', 'acciones'])
                 ->make(true);
         }

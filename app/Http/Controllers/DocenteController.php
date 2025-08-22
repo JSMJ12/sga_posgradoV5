@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\CalificacionVerificacion;
 use App\Models\Cohorte;
 use App\Models\CohorteDocente;
+use Illuminate\Support\Facades\Hash;
 
 class DocenteController extends Controller
 {
@@ -24,13 +25,11 @@ class DocenteController extends Controller
         $docentes = Docente::query();
 
         if ($user->hasRole('Coordinador')) {
-            // Buscar al docente-coordinador actual
             $coordinador = Docente::where('nombre1', $user->name)
                 ->where('apellidop', $user->apellido)
                 ->where('email', $user->email)
                 ->firstOrFail();
 
-            // Obtener asignaturas asociadas a su(s) maestría(s)
             $asignaturaIds = $coordinador->maestria()
                 ->with('asignaturas')
                 ->get()
@@ -38,8 +37,6 @@ class DocenteController extends Controller
                 ->flatten()
                 ->pluck('id')
                 ->unique();
-
-            // Filtrar docentes que tengan asignaturas en común
             $docentes = $docentes->whereHas('asignaturas', function ($query) use ($asignaturaIds) {
                 $query->whereIn('asignatura_id', $asignaturaIds);
             });
@@ -61,40 +58,67 @@ class DocenteController extends Controller
                 ->orderColumn('nombre_completo', function ($query, $order) {
                     $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
                 })
-                ->addColumn('asignaturas', function ($docente) {
+                ->addColumn('asignaturas', function ($docente) use ($user) {
+                    if ($user->hasRole('Coordinador')) {
+                        // Solo botón de ver
+                        return '<button type="button" 
+                                    class="btn btn-outline-secondary btn-sm btn-modal-asignatura btn-action"  
+                                    data-id="' . $docente->dni . '" 
+                                    data-toggle="modal" 
+                                    data-target="#asignaturasModal" 
+                                    title="Ver Asignaturas">
+                                    <i class="fas fa-eye"></i>
+                                </button>';
+                    }
+
+                    // Coordinador ≠, todos los botones
                     return '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                            <a href="' . route('asignaturas_docentes.create1', $docente->dni) . '" 
-                                class="btn btn-outline-success btn-sm btn-action"  
-                                title="Agregar Asignaturas">
-                                <i class="fas fa-plus"></i>
-                            </a>
-                            <button type="button" 
-                                class="btn btn-outline-secondary btn-sm btn-modal-asignatura btn-action"  
-                                data-id="' . $docente->dni . '" 
-                                data-toggle="modal" 
-                                data-target="#asignaturasModal" 
-                                title="Ver Asignaturas">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>';
+                                <a href="' . route('asignaturas_docentes.create1', $docente->dni) . '" 
+                                    class="btn btn-outline-success btn-sm btn-action"  
+                                    title="Agregar Asignaturas">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <button type="button" 
+                                    class="btn btn-outline-secondary btn-sm btn-modal-asignatura btn-action"  
+                                    data-id="' . $docente->dni . '" 
+                                    data-toggle="modal" 
+                                    data-target="#asignaturasModal" 
+                                    title="Ver Asignaturas">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>';
                 })
-                ->addColumn('cohortes', function ($docente) {
+                ->addColumn('cohortes', function ($docente) use ($user) {
+                    if ($user->hasRole('Coordinador')) {
+                        // Solo botón de ver
+                        return '<button type="button" 
+                                    class="btn btn-outline-info btn-sm btn-modal-cohortes btn-action"  
+                                    data-dni="' . $docente->dni . '"
+                                    data-toggle="modal" 
+                                    data-target="#cohortesModal"  
+                                    data-type="cohortes" 
+                                    title="Ver Cohortes">
+                                    <i class="fas fa-eye"></i>
+                                </button>';
+                    }
+
+                    // Coordinador ≠, todos los botones
                     return '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                            <a href="' . route('cohortes_docentes.create1', $docente->dni) . '" 
-                                class="btn btn-outline-warning btn-sm btn-action"  
-                                title="Agregar Cohortes">
-                                <i class="fas fa-plus"></i>
-                            </a>
-                            <button type="button" 
-                                class="btn btn-outline-info btn-sm btn-modal-cohortes btn-action"  
-                                data-dni="' . $docente->dni . '"
-                                data-toggle="modal" 
-                                data-target="#cohortesModal"  
-                                data-type="cohortes" 
-                                title="Ver Cohortes">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>';
+                                <a href="' . route('cohortes_docentes.create1', $docente->dni) . '" 
+                                    class="btn btn-outline-warning btn-sm btn-action"  
+                                    title="Agregar Cohortes">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <button type="button" 
+                                    class="btn btn-outline-info btn-sm btn-modal-cohortes btn-action"  
+                                    data-dni="' . $docente->dni . '"
+                                    data-toggle="modal" 
+                                    data-target="#cohortesModal"  
+                                    data-type="cohortes" 
+                                    title="Ver Cohortes">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>';
                 })
                 ->addColumn('editar', function ($docente) {
                     return '<a href="' . route('docentes.edit', $docente->dni) . '" 
@@ -109,7 +133,6 @@ class DocenteController extends Controller
 
         return view('docentes.index');
     }
-
 
     public function cargarAsignaturas($dni)
     {
@@ -215,42 +238,47 @@ class DocenteController extends Controller
 
     public function store(Request $request)
     {
-        $docente = new Docente;
-        $docente->nombre1 = $request->input('nombre1');
-        $docente->nombre2 = $request->input('nombre2');
-        $docente->apellidop = $request->input('apellidop');
-        $docente->apellidom = $request->input('apellidom');
-        $docente->contra = bcrypt($request->input('dni')); // Encriptar la contraseña
-        $docente->sexo = $request->input('sexo');
-        $docente->dni = $request->input('dni');
-        $docente->tipo = $request->input('tipo');
-        $docente->email = $request->input('email');
         $request->validate([
-            'docen_foto' => 'nullable|image|max:2048', //máximo tamaño 2MB
+            'docen_foto' => 'nullable|image|max:2048', // máximo tamaño 2MB
+            'nombre1'    => 'required|string|max:255',
+            'apellidop'  => 'required|string|max:255',
+            'dni'        => 'required|string|max:20|unique:docentes,dni',
+            'email'      => 'required|email|unique:users,email',
         ]);
-        $primeraLetra = substr($docente->nombre1, 0, 1);
+
+        // Crear docente
+        $docente = new Docente();
+        $docente->fill($request->only([
+            'nombre1', 'nombre2', 'apellidop', 'apellidom', 'sexo', 'dni', 'tipo', 'email'
+        ]));
+        $docente->contra = Hash::make($request->input('dni')); // Hash seguro de Laravel
+
+        // Manejo de foto
         if ($request->hasFile('docen_foto')) {
-            $path = $request->file('docen_foto')->store('imagenes_usuarios', 'public');
-            $docente->image = $path;
+            $docente->image = $request->file('docen_foto')->store('imagenes_usuarios', 'public');
         } else {
-            $docente->image = 'https://ui-avatars.com/api/?name=' . urlencode($primeraLetra);
+            $docente->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($docente->nombre1, 0, 1));
         }
-        //Almacenar la imagen
+
         $docente->save();
 
-        $usuario = new User;
-        $usuario->name = $request->input('nombre1');
-        $usuario->apellido = $request->input('apellidop');
-        $usuario->sexo = $request->input('sexo');
-        $usuario->password = bcrypt($request->input('dni'));
-        $usuario->status = $request->input('estatus', 'ACTIVO');
-        $usuario->email = $request->input('email');
-        $usuario->image = $docente->image;
-        $docenteRole = Role::findById(2);
-        $usuario->assignRole($docenteRole);
+        // Crear usuario vinculado
+        $usuario = new User();
+        $usuario->fill([
+            'name'     => $docente->nombre1,
+            'apellido' => $docente->apellidop,
+            'sexo'     => $docente->sexo,
+            'email'    => $docente->email,
+            'status'   => $request->input('estatus', 'ACTIVO'),
+            'image'    => $docente->image,
+        ]);
+        $usuario->password = Hash::make($request->input('dni'));
+
         $usuario->save();
 
-
+        // Asignar rol
+        $docenteRole = Role::findById(2);
+        $usuario->assignRole($docenteRole);
 
         return redirect()->route('docentes.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -261,42 +289,51 @@ class DocenteController extends Controller
         return view('docentes.edit', compact('docente'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $dni)
     {
-        $docente = Docente::findOrFail($id);
-        $docente->nombre1 = $request->input('nombre1');
-        $docente->nombre2 = $request->input('nombre2');
-        $docente->apellidop = $request->input('apellidop');
-        $docente->apellidom = $request->input('apellidom');
-        $docente->sexo = $request->input('sexo');
-        $docente->dni = $request->input('dni');
-        $docente->tipo = $request->input('tipo');
-        $docente->email = $request->input('email');
+        $docente = Docente::where('dni', $dni)->firstOrFail();
+
+        // Guardamos el email viejo antes de modificar nada
+        $emailViejo = $docente->email;
+
+        // Buscar usuario con el email viejo
+        $usuario = User::where('email', $emailViejo)->first();
 
         $request->validate([
-            'docen_foto' => 'nullable|image|max:2048', // Máximo tamaño 2MB
+            'docen_foto' => 'nullable|image|max:2048',
         ]);
 
+        // Actualizamos docente
+        $docente->nombre1   = $request->input('nombre1');
+        $docente->nombre2   = $request->input('nombre2');
+        $docente->apellidop = $request->input('apellidop');
+        $docente->apellidom = $request->input('apellidom');
+        $docente->sexo      = $request->input('sexo');
+        $docente->dni       = $request->input('dni');
+        $docente->tipo      = $request->input('tipo');
+        $docente->email     = $request->input('email');
+
         if ($request->hasFile('docen_foto')) {
-            // Eliminar la imagen anterior si existe
             if ($docente->image) {
                 \Storage::disk('public')->delete($docente->image);
             }
-
             $path = $request->file('docen_foto')->store('imagenes_usuarios', 'public');
             $docente->image = $path;
         }
 
         $docente->save();
 
-        $usuario = User::where('email', $docente->email)->firstOrFail();
-        $usuario->name = $docente->nombre1;
-        $usuario->apellido = $docente->apellidop;
-        $usuario->sexo = $docente->sexo;
-        $usuario->email = $docente->email;
-        $usuario->image = $docente->image;
-        $usuario->save();
+        // Actualizamos usuario (si existe)
+        if ($usuario) {
+            $usuario->name     = $docente->nombre1;
+            $usuario->apellido = $docente->apellidop;
+            $usuario->sexo     = $docente->sexo;
+            $usuario->email    = $docente->email; // aquí sí el nuevo
+            $usuario->image    = $docente->image;
+            $usuario->save();
+        }
 
         return redirect()->route('docentes.index')->with('success', 'Docente actualizado exitosamente.');
     }
+
 }

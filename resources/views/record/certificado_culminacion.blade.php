@@ -6,25 +6,32 @@
     <title>Certificado de Culminación</title>
     <style>
         @page {
-            size: A4;
-            margin: 0;
+            margin: 0px;
         }
 
-        html, body {
-            margin: 0;
-            font-family: 'Times New Roman', serif;
-            font-size: 16px;
-            background-image: url("{{ public_path('images/fondopdf.png') }}");
-            background-size: 98% 98%;
-            background-position: center center;
+        body {
+            padding: 115px 20px 120px 80px;
+        }
+
+        /* Fondo a página completa en todas las hojas */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
+            background-size: cover;
             background-repeat: no-repeat;
+            background-position: center center;
+            z-index: -1;
         }
 
         .container {
-            width: 80%;
-            margin: 250px auto 80px auto;
+            width: 90%;
             text-align: justify;
-            line-height: 1.8;
+            line-height: 1.5;
         }
 
         .header {
@@ -41,15 +48,13 @@
             margin: 25px 0;
         }
 
-        .footer {
-            position: absolute;
-            bottom: 290px; 
+       .footer {
+            margin-top: 120px; /* Súbela o bájala ajustando este valor */
             width: 100%;
             text-align: center;
         }
 
         .firma-block {
-            margin-top: 60px;
             text-align: center;
         }
 
@@ -59,11 +64,29 @@
             padding: 5px 20px;
             font-weight: bold;
             text-transform: uppercase;
-            
         }
 
         .cargo {
-            display: inline-block; padding: 0 10px; margin-bottom: 5px; font-size: 10pt; text-transform: uppercase; font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            font-size: 10pt;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* Footer dinámico para Secretario/a EPSU */
+        footer {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            width: 420px;
+            text-align: right;
+            font-size: 10pt;
+            color: #fff;
+            background: #14532d;
+            padding: 10px 30px 10px 10px;
+            border-top-left-radius: 12px;
+            box-shadow: -2px -2px 8px rgba(20, 83, 45, 0.08);
         }
     </style>
 </head>
@@ -98,8 +121,8 @@
             Dado en Jipijapa, {{ $fechaActual }}.
         </p>
     </div>
-    
 
+    <!-- Firma centrada -->
     <div class="footer">
         <div class="firma-block">
             <div class="firma-linea">
@@ -110,6 +133,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer solo si el usuario es Secretario/a EPSU -->
+    @role('Secretario/a EPSU')
+        <footer>
+            Reporte generado por SGA POSGRADO UNESUM el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}
+        </footer>
+    @endrole
 
 </body>
 </html>

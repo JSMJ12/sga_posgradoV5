@@ -8,6 +8,7 @@ use App\Models\Secretario;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use App\Models\Seccion;
+use Illuminate\Support\Facades\Hash;
 
 class SecretarioController extends Controller
 
@@ -57,21 +58,25 @@ class SecretarioController extends Controller
         return view('secretarios.create', compact('secciones'));
     }
 
+
     public function store(Request $request)
     {
         $secretario = new Secretario;
-        $secretario->nombre1 = $request->input('nombre1');
-        $secretario->nombre2 = $request->input('nombre2');
+        $secretario->nombre1   = $request->input('nombre1');
+        $secretario->nombre2   = $request->input('nombre2');
         $secretario->apellidop = $request->input('apellidop');
         $secretario->apellidom = $request->input('apellidom');
-        $secretario->contra = bcrypt($request->input('dni')); // Encriptar la contraseña
-        $secretario->sexo = $request->input('sexo');
-        $secretario->dni = $request->input('dni');
-        $secretario->email = $request->input('email');
+        $secretario->contra    = Hash::make($request->input('dni'));
+        $secretario->sexo      = $request->input('sexo');
+        $secretario->dni       = $request->input('dni');
+        $secretario->email     = $request->input('email');
+
         $request->validate([
-            'image' => 'nullable|image|max:2048', //máximo tamaño 2MB
+            'image' => 'nullable|image|max:2048', // máximo tamaño 2MB
         ]);
+
         $primeraLetra = substr($secretario->nombre1, 0, 1);
+
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('imagenes_usuarios', 'public');
             $secretario->image = $path;
@@ -83,18 +88,17 @@ class SecretarioController extends Controller
         $secretario->save();
 
         $usuario = new User;
-        $usuario->name = $request->input('nombre1');
+        $usuario->name     = $request->input('nombre1');
         $usuario->apellido = $request->input('apellidop');
-        $usuario->sexo = $request->input('sexo');
-        $usuario->password = bcrypt($request->input('dni'));
-        $usuario->status = $request->input('estatus', 'ACTIVO');
-        $usuario->email = $request->input('email');
-        $usuario->image = $secretario->image;
+        $usuario->sexo     = $request->input('sexo');
+        $usuario->password = Hash::make($request->input('dni'));
+        $usuario->status   = $request->input('estatus', 'ACTIVO');
+        $usuario->email    = $request->input('email');
+        $usuario->image    = $secretario->image;
+
         $secretarioRole = Role::findById(3);
         $usuario->assignRole($secretarioRole);
         $usuario->save();
-
-
 
         return redirect()->route('secretarios.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -110,41 +114,46 @@ class SecretarioController extends Controller
     {
         $secretario = Secretario::findOrFail($id);
 
-        $secretario->nombre1 = $request->input('nombre1');
-        $secretario->nombre2 = $request->input('nombre2');
-        $secretario->apellidop = $request->input('apellidop');
-        $secretario->apellidom = $request->input('apellidom');
-        $secretario->sexo = $request->input('sexo');
-        $secretario->dni = $request->input('dni');
-        $secretario->email = $request->input('email');
-        $secretario->seccion_id = $request->input('seccion_id');
+        // Guardar el email viejo ANTES de cambiarlo
+        $oldEmail = $secretario->email;
 
         $request->validate([
             'image' => 'nullable|image|max:2048',
         ]);
 
+        $secretario->nombre1    = $request->input('nombre1');
+        $secretario->nombre2    = $request->input('nombre2');
+        $secretario->apellidop  = $request->input('apellidop');
+        $secretario->apellidom  = $request->input('apellidom');
+        $secretario->sexo       = $request->input('sexo');
+        $secretario->dni        = $request->input('dni');
+        $secretario->email      = $request->input('email');
+        $secretario->seccion_id = $request->input('seccion_id');
+
         if ($request->hasFile('image')) {
-            // Eliminar la imagen anterior si existe
             if ($secretario->image) {
                 \Storage::disk('public')->delete($secretario->image);
             }
-
             $path = $request->file('image')->store('imagenes_usuarios', 'public');
             $secretario->image = $path;
         }
 
         $secretario->save();
 
-        $usuario = User::where('email', $secretario->email)->firstOrFail();
-        $usuario->name = $request->input('nombre1');
+        // Buscar al usuario con el email viejo
+        $usuario = User::where('email', $oldEmail)->firstOrFail();
+        $usuario->name     = $request->input('nombre1');
         $usuario->apellido = $request->input('apellidop');
-        $usuario->sexo = $request->input('sexo');
-        $usuario->email = $request->input('email');
+        $usuario->sexo     = $request->input('sexo');
+        $usuario->email    = $request->input('email');
+
         if ($request->hasFile('image')) {
             $usuario->image = $path;
         }
+
         $usuario->save();
 
         return redirect()->route('secretarios.index')->with('success', 'Secretario actualizado exitosamente.');
     }
+
 }

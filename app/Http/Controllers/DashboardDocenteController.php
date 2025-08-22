@@ -149,7 +149,7 @@ class DashboardDocenteController extends Controller
                 ->where('cohorte_id', $cohorteId)
                 ->where('docente_dni', $docenteId);
         })
-            ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente']);
+        ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte.maestria', 'matriculas.docente']);
 
         if ($aulaId !== null) {
             $query->whereHas('matriculas.cohorte.aula', function ($q) use ($aulaId) {
@@ -157,13 +157,19 @@ class DashboardDocenteController extends Controller
             });
         }
 
+        // Obtener la colección
         $alumnosMatriculados = $query->get();
+
+        // Ordenar alfabéticamente por apellido paterno, luego materno y primer nombre
+        $alumnosMatriculados = $alumnosMatriculados->sortBy(function ($alumno) {
+            return $alumno->apellidop.' '.$alumno->apellidom.' '.$alumno->nombre1;
+        })->values(); // values() para reindexar la colección
 
         $primerAlumno = $alumnosMatriculados->first();
         $nombreCohorte = $primerAlumno ? ($primerAlumno->matriculas->first()->cohorte->nombre ?? 'sin_cohorte') : 'sin_cohorte';
         $asignatura = $primerAlumno ? ($primerAlumno->matriculas->first()->asignatura->nombre ?? 'sin_asignatura') : 'sin_asignatura';
+        $maestria = $primerAlumno ? ($primerAlumno->matriculas->first()->cohorte->maestria->nombre ?? 'sin_maestria') : 'sin_maestria';
 
-        // Obtener el nombre del aula y el paralelo si existe
         if ($aulaId) {
             $aula = Aula::find($aulaId);
             $nombreAula = $aula ? $aula->nombre : 'sin_aula';
@@ -173,7 +179,10 @@ class DashboardDocenteController extends Controller
             $paralelo = 'sin_paralelo';
         }
 
-        // Generar el archivo de Excel con el nombre correcto
-        return Excel::download(new AlumnosExport($alumnosMatriculados), "alumnos_{$nombreCohorte}_{$asignatura}_{$nombreAula}_{$paralelo}.xlsx");
+        return Excel::download(
+            new AlumnosExport($alumnosMatriculados, $maestria, $nombreCohorte, $asignatura),
+            "alumnos_{$nombreCohorte}_{$asignatura}_{$nombreAula}_{$paralelo}.xlsx"
+        );
     }
+
 }

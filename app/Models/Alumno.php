@@ -123,7 +123,6 @@ class Alumno extends Model
     {
         return $this->hasOne(User::class, 'email', 'email_institucional');
     }
-
     public function notas()
     {
         return $this->hasMany(Nota::class);

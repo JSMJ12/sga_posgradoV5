@@ -23,6 +23,7 @@
                                 <th>Maestría</th>
                                 <th>Email Institucional</th>
                                 <th>Sexo</th>
+                                <th>Descuento Aplicado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -70,6 +71,12 @@
                     {
                         data: 'sexo',
                         name: 'sexo'
+                    },
+                    {
+                        data: 'descuento_nombre',
+                        name: 'descuento_nombre',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'acciones',
