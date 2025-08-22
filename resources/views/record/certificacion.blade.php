@@ -31,10 +31,10 @@
         }
 
         .certificate-title {
-            font-size: 11pt;
-            font-weight: bold;
             text-align: center;
-            margin-bottom: 15px;
+            font-size: 22pt;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
 
         .certificate-details {
@@ -81,9 +81,11 @@
         }
 
         .firma-cargo {
-            margin-top: 5px;
-            font-weight: normal;
-            font-size: 9pt;
+            display: inline-block; 
+            padding: 0 10px; 
+            margin-bottom: 5px; 
+            font-size: 10pt; 
+            font-weight: bold;
             text-transform: uppercase;
         }
 
@@ -105,9 +107,9 @@
             la Coordinación de la {{ $alumno->maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se
             desarrolló al {{ $numeroRomano }} PROGRAMA
             DE LA {{ strtoupper($alumno->maestria->nombre) }}, inició sus actividades académicas el
-            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}
+            {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}
             y culminó el
-            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }},
+            {{ \Carbon\Carbon::parse($cohorte->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }},
             con una modalidad {{ $cohorte->modalidad }}, con un total de {{ $totalHoras }} horas, según plan curricular.
         </p>
 

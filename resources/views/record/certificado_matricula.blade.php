@@ -51,6 +51,7 @@
 <body>
     <div class="container">
         <div class="title">CERTIFICADO DE MATRÍCULA</div>
+        <br>
 
         <p class="body-text">
             El Instituto de Posgrado, a través de la Coordinación del Programa de la
@@ -76,10 +77,10 @@
         </p>
 
         <div class="firmante">
-            <div style="display: inline-block; border-top: 1px solid black; padding: 0 10px; margin-bottom: 5px;">
+            <div style="display: inline-block; border-top: 1px solid black; padding: 0 10px; margin-bottom: 5px; font-size: 12pt;">
                 <b>{{ $nombreCompleto }}</b>
             </div>
-            <div style="margin-top: 5px; font-weight: normal; font-size: 9pt; text-transform: uppercase;">
+            <div style="display: inline-block; padding: 0 10px; margin-bottom: 5px; font-size: 10pt; text-transform: uppercase; font-weight: bold;">
                 COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre)}}
             </div>
         </div>

@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
 
 class AlumnoController extends Controller
 {
@@ -230,7 +231,8 @@ class AlumnoController extends Controller
                 'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
             ]));
 
-            $alumno->contra = bcrypt($request->input('dni'));
+            // contraseña del alumno usando Hash
+            $alumno->contra = Hash::make($request->input('dni'));
             $alumno->maestria_id = $maestria->id;
             $alumno->registro = $nuevoRegistro;
             $alumno->monto_total = $arancel;
@@ -254,7 +256,7 @@ class AlumnoController extends Controller
                 'status' => $request->input('estatus', 'ACTIVO'),
                 'image' => $alumno->image,
             ]);
-            $usuario->password = bcrypt($alumno->dni);
+            $usuario->password = Hash::make($request->input('dni'));
             $usuario->save();
 
             $usuario->assignRole(Role::findById(4));
@@ -262,12 +264,10 @@ class AlumnoController extends Controller
             return redirect()->route('alumnos.index')->with('success', 'Usuario creado exitosamente.');
 
         } catch (ValidationException $e) {
-            // Devuelve errores de validación de vuelta al formulario con mensajes
             return redirect()->back()
                 ->withErrors($e->validator)
                 ->withInput();
         } catch (\Exception $e) {
-            // Error general
             Log::error('Error al crear alumno: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Error inesperado al crear el usuario. Intenta nuevamente.')

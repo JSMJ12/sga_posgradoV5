@@ -13,7 +13,7 @@
                 <h3 class="card-title">Listado de Alumnos</h3>
             </div>
             <div class="card-body">
-                <div class="">
+                <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped" id="alumnos">
                         <thead style="background-color: #28a745; color: white;">
                             <tr>
@@ -117,6 +117,7 @@
                             <thead class="thead-light">
                                 <tr class="text-center">
                                     <th>Tipo de Descuento</th>
+                                    <th>Porcentaje</th>
                                     <th>Arancel Original</th>
                                     <th>Descuento</th>
                                     <th>Total con Descuento</th>
@@ -130,6 +131,7 @@
                             htmlTabla += Object.entries(descuentos).map(([tipo, d]) => `
                             <tr class="text-center">
                                 <td><strong>${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</strong></td>
+                                <td>${d.porcentaje}%</td>
                                 <td>$${parseFloat(arancel).toFixed(2)}</td>
                                 <td>$${parseFloat(d.descuento).toFixed(2)}</td>
                                 <td>$${parseFloat(d.total).toFixed(2)}</td>
@@ -143,13 +145,12 @@
                                         <input class="form-check-input" type="radio" name="descuento_id" value="${d.id}" data-tipo="${tipo}">
                                     </div>
                                 </td>
-
                             </tr>
                         `).join('');
                         } else {
                             htmlTabla += `
                             <tr>
-                                <td colspan="6" class="text-center text-muted">No hay descuentos disponibles.</td>
+                                <td colspan="7" class="text-center text-muted">No hay descuentos disponibles.</td>
                             </tr>`;
                         }
 

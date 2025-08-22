@@ -29,7 +29,7 @@
 
         .header {
             text-align: center;
-            font-size: 16px;
+            font-size: 22px;
             font-weight: bold;
             margin-bottom: 40px;
         }
@@ -43,7 +43,7 @@
 
         .footer {
             position: absolute;
-            bottom: 350px; 
+            bottom: 290px; 
             width: 100%;
             text-align: center;
         }
@@ -59,13 +59,11 @@
             padding: 5px 20px;
             font-weight: bold;
             text-transform: uppercase;
+            
         }
 
         .cargo {
-            margin-top: 5px;
-            font-weight: normal;
-            font-size: 9pt;
-            text-transform: uppercase;
+            display: inline-block; padding: 0 10px; margin-bottom: 5px; font-size: 10pt; text-transform: uppercase; font-weight: bold;
         }
     </style>
 </head>
@@ -74,7 +72,6 @@
 
     <div class="container">
         <div class="header">
-            INSTITUTO DE POSGRADO <br>
             CERTIFICADO DE CULMINACIÓN DEL PROGRAMA DE MAESTRÍA
         </div>
 
@@ -92,15 +89,16 @@
             administrativos del programa de Maestría en {{ $alumno->maestria->nombre }}, correspondiente a la cohorte
             {{ $cohorte->nombre }}, cursado en el Período Académico {{ $cohorte->periodo_academico->nombre }},
             desarrollado entre el
-            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->isoFormat('D [de] MMMM [de] YYYY') }}
+            {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->isoFormat('D [de] MMMM [de] YYYY') }}
             y el
-            {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->isoFormat('D [de] MMMM [de] YYYY') }}.
+            {{ \Carbon\Carbon::parse($cohorte->fecha_fin)->isoFormat('D [de] MMMM [de] YYYY') }}.
         </p>
 
         <p>
             Dado en Jipijapa, {{ $fechaActual }}.
         </p>
     </div>
+    
 
     <div class="footer">
         <div class="firma-block">

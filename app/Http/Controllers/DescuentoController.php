@@ -71,6 +71,7 @@ class DescuentoController extends Controller
                 strtolower($descuento->nombre) => [
                     'id' => $descuento->id,
                     'nombre' => $descuento->nombre,
+                    'porcentaje' => $descuento->porcentaje, // Se agrega el porcentaje
                     'descuento' => $montoDescuento,
                     'total' => $maestria->arancel - $montoDescuento,
                     'requisitos' => $descuento->requisitos ? json_decode($descuento->requisitos) : [],

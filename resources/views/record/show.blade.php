@@ -106,8 +106,8 @@
             <strong>Período académico:</strong> {{ $cohorte->periodo_academico->nombre }}<br>
             <strong>Cohorte:</strong> {{ $cohorte->nombre }}<br>
             <strong>Modalidad:</strong> {{ $cohorte->modalidad }}<br>
-            <strong>Fecha de inicio:</strong> {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_inicio)->translatedFormat('d \d\e F \d\e Y') }}<br>
-            <strong>Fecha de fin:</strong> {{ \Carbon\Carbon::parse($cohorte->periodo_academico->fecha_fin)->translatedFormat('d \d\e F \d\e Y') }}
+            <strong>Fecha de inicio:</strong> {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->translatedFormat('d \d\e F \d\e Y') }}<br>
+            <strong>Fecha de fin:</strong> {{ \Carbon\Carbon::parse($cohorte->fecha_fin)->translatedFormat('d \d\e F \d\e Y') }}
         </div>
 
         <table class="student-info">
@@ -152,7 +152,7 @@
         <table class="firmas">
             <tr>
                 <td>
-                    <b>Elaborado por:</b><br><br>
+                    <b>Generado por:</b><br><br>
                     <hr class="firma-linea">
                     @if (isset($secretario))
                         <span class="nombre-firma">{{ $secretario->full_name }}</span><br>

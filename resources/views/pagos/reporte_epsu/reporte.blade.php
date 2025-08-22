@@ -6,7 +6,7 @@
     <title>Reporte EPSU</title>
     <style>
         @page {
-            margin: 2.54cm;
+            margin: 1cm; /* Margen reducido en todos los lados */
         }
 
         body {
@@ -14,57 +14,60 @@
             font-size: 13pt;
             margin: 0;
             padding: 0;
+            position: relative;
+            min-height: 100vh;
         }
 
         .container {
-            padding: 20px;
-            max-width: 900px;
-            margin: auto;
+            padding: 5px;
+            max-width: 1000px;
+            margin: 0 auto 0 auto; /* Más arriba y abajo */
         }
 
         .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            position: relative;
+            text-align: center;
+            margin-bottom: 10px;
+            min-height: 100px;
         }
 
-        .logo-left,
-        .logo-right {
+        .logo {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 70px;
         }
 
-        .header-center {
-            text-align: center;
-            flex-grow: 1;
-            padding: 0 10px;
+        .seal {
+            position: absolute;
+            top: -15px;
+            right: 0;
+            width: 120px;
         }
 
-        .header-center .line1 {
-            font-size: 13pt;
+        .university-name {
+            font-size: 14pt;
             font-weight: bold;
+            margin-top: 10px;
         }
 
-        .header-center .line2 {
+        .institute,
+        .coordinator {
             font-size: 10pt;
-            font-weight: bold;
-            margin-top: 3px;
-        }
-
-        .header-center .line3 {
-            font-size: 10pt;
-            margin-top: 2px;
+            margin: 0;
         }
 
         .divider {
             width: 100%;
             height: 2px;
-            background-color: goldenrod;
-            margin: 10px 0 20px;
+            background-color: #000;
+            margin: 10px 0 20px 0;
         }
 
         .info {
             font-size: 10pt;
             margin-bottom: 12px;
+            text-align: center;
         }
 
         table.excel-style {
@@ -84,15 +87,37 @@
         table.excel-style th {
             background-color: #f0f0f0;
         }
+
+        footer {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            width: 420px;
+            text-align: right;
+            font-size: 10pt;
+            color: #fff;
+            background: #14532d;
+            padding: 10px 30px 10px 10px;
+            border-top-left-radius: 12px;
+            box-shadow: -2px -2px 8px rgba(20, 83, 45, 0.08);
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        
-        <div class="info">
-            <strong>Maestría:</strong> {{ $maestria_nombre }}<br>
-            <strong>Cohorte:</strong> {{ $cohorte->nombre ?? 'Cohorte ' . $cohorte->id }}
+        <div class="header">
+            <img src="{{ public_path() . '/images/unesum.png' }}" alt="Logo UNESUM" class="logo">
+            <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="Sello" class="seal">
+            <p class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</p>
+            <p class="institute">INSTITUTO DE POSGRADO</p>
+            <p class="coordinator">COORDINACIÓN DE LA {{ strtoupper($maestria_nombre) }}</p>
+        </div>
+        <div class="divider"></div>
+
+        <div class="info" style="text-align: center;">
+            <h3 class="titulo">Reporte de Pagos (Aranceles / Matriculas / Inscriciones) - {{ $cohorte->nombre }}</h3>
+            <h4 class="subtitulo">{{  $maestria_nombre }} (Código: {{ $codigoMaestria }})</h4>
         </div>
 
         <div style="overflow-x: auto;">
@@ -160,7 +185,22 @@
                 </tbody>
             </table>
         </div>
+
+        <div style="margin-top:18px; text-align:left; font-size: 11pt;">
+            <strong>Total recaudado:</strong><br>
+            <strong>Arancel:</strong> ${{ number_format($total_recaudado['arancel'],2) }}<br>
+            <strong>Matrícula:</strong> ${{ number_format($total_recaudado['matricula'],2) }}<br>
+            <strong>Inscripción:</strong> ${{ number_format($total_recaudado['inscripcion'],2) }}<br>
+            <br>
+            <strong>Total deuda:</strong><br>
+            <strong>Arancel:</strong> ${{ number_format($total_deuda['arancel'],2) }}<br>
+            <strong>Matrícula:</strong> ${{ number_format($total_deuda['matricula'],2) }}<br>
+            <strong>Inscripción:</strong> ${{ number_format($total_deuda['inscripcion'],2) }}
+        </div>
     </div>
+    <footer>
+        Reporte generado por SGA POSGRADO UNESUM el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}
+    </footer>
 </body>
 
 </html>

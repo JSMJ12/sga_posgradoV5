@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -18,14 +19,14 @@ class UserSeeder extends Seeder
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'admin',
-                'password' => '$2y$10$pEEmboyCEH51h7w79RbH1eG5NhPF4fwPyxjExJ3wEkgosr9o6NIgC',
+                'password' => Hash::make('admin1234'),
                 'sexo' => 'M',
                 'apellido' => 'Apellido',
                 'status' => 'ACTIVO',
                 'image' => 'ruta/foto.jpg'
             ]
         );
-        
+
         $user->assignRole('Administrador');
     }
 }

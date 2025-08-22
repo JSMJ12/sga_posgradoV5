@@ -179,20 +179,28 @@
 @stop
 
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const modalidadPago = document.getElementById('modalidad_pago');
             const tipoPago = document.getElementById('tipo_pago');
             const montoInput = document.getElementById('monto');
-            const mensajeDescuento = document.getElementById('descuento_aplicado');
+            const fechaPago = document.getElementById('fecha_pago');
+            const form = document.querySelector('form[action="{{ route('pagos.store') }}"]');
 
-            const montoBaseArancel = parseFloat(@json($alumno->maestria->arancel));
             const montoMatricula = parseFloat(@json($alumno->monto_matricula));
             const montoInscripcion = parseFloat(@json($alumno->monto_inscripcion));
             const montoTotalAlumno = parseFloat(@json($alumno->monto_total));
             const montoArancel = parseFloat(@json($alumno->maestria->arancel));
             const montoMatricula_t = parseFloat(@json($alumno->maestria->matricula));
             const montoInscripcion_t = parseFloat(@json($alumno->maestria->inscripcion));
+
+            // Deshabilitar opciones si el monto es 0
+            Array.from(tipoPago.options).forEach(opt => {
+                if (opt.value === 'arancel' && montoTotalAlumno === 0) opt.disabled = true;
+                if (opt.value === 'matricula' && montoMatricula === 0) opt.disabled = true;
+                if (opt.value === 'inscripcion' && montoInscripcion === 0) opt.disabled = true;
+            });
 
             function updatePaymentDetails() {
                 const modalidad = modalidadPago.value;
@@ -201,7 +209,7 @@
 
                 if (tipo === 'arancel') {
                     if (modalidad === 'unico') {
-                        montoFinal = montoTotalAlumno < 0 ? 0 : montoTotalAlumno; // si negativo, 0
+                        montoFinal = montoTotalAlumno < 0 ? 0 : montoTotalAlumno;
                     } else if (modalidad === 'trimestral') {
                         montoFinal = montoArancel / 3;
                     }
@@ -228,11 +236,43 @@
                 }
             }
 
-
             modalidadPago.addEventListener('change', updatePaymentDetails);
             tipoPago.addEventListener('change', updatePaymentDetails);
 
             updatePaymentDetails();
+
+            // Validación y alerta antes de enviar
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const montoForm = parseFloat(montoInput.value);
+                const fechaForm = fechaPago.value;
+                const archivo = document.getElementById('archivo_comprobante').files[0];
+
+                if (!archivo) {
+                    Swal.fire('Error', 'Debes subir el comprobante.', 'error');
+                    return;
+                }
+
+                // Opcional: puedes extraer el monto y fecha del nombre del archivo si lo deseas
+                // Ejemplo: comprobante_100.00_2025-08-20.pdf
+                // let nombre = archivo.name.split('_');
+                // let montoArchivo = parseFloat(nombre[1]);
+                // let fechaArchivo = nombre[2]?.split('.')[0];
+
+                Swal.fire({
+                    title: '¿Confirmar pago?',
+                    html: `Monto a enviar: <b>$${montoForm.toFixed(2)}</b><br>Fecha: <b>${fechaForm}</b><br>Verifica que el comprobante corresponda al monto y fecha seleccionados.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, enviar pago',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
         });
     </script>
 @stop
