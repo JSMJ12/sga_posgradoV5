@@ -100,6 +100,7 @@
 
         <div class="info-header">
             <ul style="list-style: none; padding: 0; margin: 0; font-size: 11pt; line-height: 1.6;">
+                <li><strong>Maestría:</strong> {{ $cohorte->maestria->nombre }}</li>
                 <li><strong>Asignatura:</strong> {{ $asignatura->nombre }}</li>
                 @if ($aula)
                     <li><strong>Aula:</strong> {{ $aula->nombre }}</li>
