@@ -12,6 +12,7 @@ class Docente extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'dni',
         'nombre1',
         'nombre2',
         'email',

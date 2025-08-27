@@ -249,7 +249,7 @@ class DocenteController extends Controller
         // === Crear docente ===
         $docente = new Docente();
         $docente->fill($request->only([
-            'nombre1', 'nombre2', 'apellidop', 'apellidom', 'sexo', 'dni', 'tipo', 'email'
+            'dni', 'nombre1', 'nombre2', 'apellidop', 'apellidom', 'sexo', 'tipo', 'email'
         ]));
         $docente->contra = Hash::make($request->input('dni')); // contraseña inicial = dni
 
