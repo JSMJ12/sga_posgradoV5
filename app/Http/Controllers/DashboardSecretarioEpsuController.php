@@ -26,61 +26,75 @@ class DashboardSecretarioEpsuController extends Controller
         $mes = Carbon::now()->startOfMonth();
         $anio = Carbon::now()->startOfYear();
 
-        $pagos = Pago::where('verificado', '1')
-            ->with('user') // cargamos el user directamente
+        // === Cargar pagos verificados con usuario y maestría ===
+        $pagos = Pago::where('verificado', 1)
+            ->with(['user', 'maestria'])
             ->orderBy('fecha_pago')
             ->get();
 
         foreach ($pagos as $pago) {
-            // Cargar manualmente el alumno y postulante a partir del email del user
             $email = $pago->user->email;
 
-            $alumno = Alumno::with(['maestria', 'matriculas.cohorte'])
+            // Relacionar con alumno y sus cohortes
+            $alumno = Alumno::with(['maestrias', 'matriculas.cohorte.maestria'])
                 ->where('email_institucional', $email)
                 ->first();
 
+            // Relacionar con postulante
             $postulante = Postulante::with('maestria')
                 ->where('correo_electronico', $email)
                 ->first();
 
-            // Guardar en el pago para acceder fácilmente
+            // Guardar referencias en el pago
             $pago->alumno_data = $alumno;
             $pago->postulante_data = $postulante;
+
+            // Determinar maestría efectiva del pago
+            $pago->maestria_nombre = $pago->maestria?->nombre
+                ?? $postulante?->maestria?->nombre
+                ?? 'Sin Maestría';
+
+            // Determinar cohorte asociada a la maestría del pago
+            $pago->cohorte_nombre = 'Sin Cohorte';
+            $pago->cohorte_id = null; // inicializamos el ID
+            if ($alumno && $pago->maestria_nombre !== 'Sin Maestría') {
+                $matriculaRelacionada = $alumno->matriculas
+                    ->first(fn($m) => $m->cohorte && $m->cohorte->maestria
+                        && $m->cohorte->maestria->nombre === $pago->maestria_nombre);
+
+                if ($matriculaRelacionada) {
+                    $pago->cohorte_nombre = $matriculaRelacionada->cohorte->nombre;
+                    $pago->cohorte_id = $matriculaRelacionada->cohorte->id; // <-- ID agregado
+                }
+            }
         }
 
-        // Agrupar por cohorte
-        $pagosPorCohorte = $pagos->groupBy(function ($pago) {
-            $cohorte = optional($pago->alumno_data?->matriculas->first())->cohorte;
-            return $cohorte ? $cohorte->nombre : 'Sin Cohorte';
-        });
+        // === Agrupaciones ===
 
+        // Agrupar por cohorte
+        $pagosPorCohorte = $pagos->groupBy('cohorte_nombre');
         $montoPorCohorte = $pagosPorCohorte->map->sum('monto');
         $cantidadPorCohorte = $pagosPorCohorte->map->count();
 
         // Agrupar por maestría
-        $pagosPorMaestria = $pagos->groupBy(function ($pago) {
-            return $pago->alumno_data?->maestria?->nombre ??
-                $pago->postulante_data?->maestria?->nombre ??
-                'Sin Maestría';
-        });
-
+        $pagosPorMaestria = $pagos->groupBy('maestria_nombre');
         $montoPorMaestria = $pagosPorMaestria->map->sum('monto');
         $cantidadPorMaestria = $pagosPorMaestria->map->count();
 
-        // Estadísticas por fecha
-        $pagosPorDia = $pagos->filter(fn($pago) => Carbon::parse($pago->fecha_pago)->isToday())->sum('monto');
+        // === Estadísticas temporales ===
+        $pagosPorDia = $pagos->filter(fn($p) => Carbon::parse($p->fecha_pago)->isToday())->sum('monto');
         $pagosPorMes = $pagos->where('fecha_pago', '>=', $mes)->sum('monto');
         $pagosPorAnio = $pagos->where('fecha_pago', '>=', $anio)->sum('monto');
 
-        $cantidadPorDia = $pagos->filter(fn($pago) => Carbon::parse($pago->fecha_pago)->isToday())->count();
+        $cantidadPorDia = $pagos->filter(fn($p) => Carbon::parse($p->fecha_pago)->isToday())->count();
         $cantidadPorMes = $pagos->where('fecha_pago', '>=', $mes)->count();
         $cantidadPorAnio = $pagos->where('fecha_pago', '>=', $anio)->count();
 
-        // Pagos por verificar y alumnos pendientes
+        // === Pendientes de verificación ===
         $pagosPorVerificar = Pago::where('verificado', false)->count();
 
         $pagosPendientes = Pago::where('verificado', false)
-            ->with('user') // Ahora solo usuario
+            ->with('user')
             ->get();
 
         $alumnosPendientes = collect();
@@ -93,24 +107,28 @@ class DashboardSecretarioEpsuController extends Controller
         }
         $alumnosPendientes = $alumnosPendientes->unique('id');
 
-        // Estadísticas por Maestría + Cohorte
+        // === Estadísticas combinadas (Maestría + Cohorte) ===
         $maestriasConCohortes = [];
 
         foreach ($pagos as $pago) {
-            $alumno = $pago->alumno_data;
-            if (!$alumno) continue;
+            $maestriaNombre = $pago->maestria_nombre;
+            $cohorteNombre = $pago->cohorte_nombre;
 
-            $maestriaNombre = $alumno->maestria->nombre ?? 'Sin Maestría';
-            $cohorte = optional($alumno->matriculas->first())->cohorte;
-            if (!$cohorte) continue;
+            if ($maestriaNombre === 'Sin Maestría' || $cohorteNombre === 'Sin Cohorte') {
+                continue;
+            }
 
-            $cohorteNombre = $cohorte->nombre;
+            $maestriasConCohortes[$maestriaNombre][$cohorteNombre] ??= [
+                'id' => $pago->cohorte_id,  
+                'monto' => 0,
+                'cantidad' => 0
+            ];
 
-            $maestriasConCohortes[$maestriaNombre][$cohorteNombre] ??= ['monto' => 0, 'cantidad' => 0];
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['monto'] += $pago->monto;
             $maestriasConCohortes[$maestriaNombre][$cohorteNombre]['cantidad'] += 1;
         }
-        // Retorno
+
+        // === Retorno ===
         if ($request->ajax()) {
             return response()->json([
                 'pagosPorDia' => $pagosPorDia,
@@ -145,182 +163,89 @@ class DashboardSecretarioEpsuController extends Controller
         ]);
     }
 
-    public function generarPDF(Request $request, $cohorteNombre)
-{
-    try {
-        // Buscar cohorte y su maestría
-        $cohorte = Cohorte::with('maestria')->where('nombre', $cohorteNombre)->firstOrFail();
-        $maestria = $cohorte->maestria;
-        $maestriaNombre = strtoupper($maestria->nombre ?? 'DESCONOCIDA');
-        $codigoMaestria = $maestria->codigo ?? '0000';
-
-        // Obtener alumnos de la cohorte
-        $alumnos = Alumno::with('descuento')
-            ->whereIn('dni', function ($query) use ($cohorte) {
-                $query->select('alumno_dni')
-                    ->from((new Matricula())->getTable())
-                    ->where('cohorte_id', $cohorte->id);
-            })
-            ->get()
-            ->map(function ($alumno) {
-                $usuario = \App\Models\User::where('email', $alumno->email_institucional)->first();
-
-                // Inicializar montos
-                $pagado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
-                $adeudado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
-
-                if ($usuario) {
-                    $pagado['arancel'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'arancel')
-                        ->where('verificado', 1)
-                        ->sum('monto');
-
-                    $pagado['matricula'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'matricula')
-                        ->where('verificado', 1)
-                        ->sum('monto');
-
-                    $pagado['inscripcion'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'inscripcion')
-                        ->where('verificado', 1)
-                        ->sum('monto');
-                }
-
-                // Deuda pendiente
-                $adeudado['arancel'] = max(0, $alumno->monto_total - $pagado['arancel']);
-                $adeudado['matricula'] = max(0, $alumno->monto_matricula - $pagado['matricula']);
-                $adeudado['inscripcion'] = max(0, $alumno->monto_inscripcion - $pagado['inscripcion']);
-
-                return [
-                    'alumno' => $alumno,
-                    'usuario' => $usuario,
-                    'descuento' => $alumno->descuento,
-                    'pagado' => $pagado,
-                    'adeudado' => $adeudado,
-                ];
-            })
-            ->sortBy(function ($item) {
-                $a = $item['alumno'];
-                return strtolower($a->apellidop . ' ' . $a->apellidom . ' ' . $a->nombre1 . ' ' . $a->nombre2);
-            })
-            ->values();
-
-        // Totales
-        $totalRecaudado = [
-            'arancel' => $alumnos->sum(fn($a) => $a['pagado']['arancel']),
-            'matricula' => $alumnos->sum(fn($a) => $a['pagado']['matricula']),
-            'inscripcion' => $alumnos->sum(fn($a) => $a['pagado']['inscripcion']),
-        ];
-
-        $totalDeuda = [
-            'arancel' => $alumnos->sum(fn($a) => $a['adeudado']['arancel']),
-            'matricula' => $alumnos->sum(fn($a) => $a['adeudado']['matricula']),
-            'inscripcion' => $alumnos->sum(fn($a) => $a['adeudado']['inscripcion']),
-        ];
-
-        // Generar PDF
-        $pdf = Pdf::loadView('pagos.reporte_epsu.reporte', [
-            'alumnos' => $alumnos,
-            'cohorte' => $cohorte,
-            'maestria_nombre' => $maestriaNombre,
-            'codigoMaestria' => $codigoMaestria,
-            'total_recaudado' => $totalRecaudado,
-            'total_deuda' => $totalDeuda,
-        ])->setPaper('A4', 'landscape');
-
-        $nombreArchivo = "Reporte_Pagos_Cohorte_{$cohorteNombre}_{$codigoMaestria}.pdf";
-        return $pdf->stream($nombreArchivo);
-
-    } catch (\Exception $e) {
-        Log::error('Error al generar PDF', [
-            'cohorte' => $cohorteNombre,
-            'mensaje' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-
-        return back()->with('error', 'Ocurrió un error al generar el reporte. Revisa el log.');
-    }
-}
-
-
-    public function generador_reporte()
+    public function generarPDF(Request $request, $cohorte_id)
     {
-        $maestrias = Maestria::with('cohortes')->get();
-
-        return view('pagos.reporte_epsu.generador', compact('maestrias'));
-    }
-
-    public function generar_reporte_pdf(Request $request)
-    {
-        $request->validate([
-            'cohorte_id' => 'required|exists:cohortes,id',
-        ]);
-
-        $cohorte_id = $request->input('cohorte_id');
-
-        // Buscar cohorte y maestría
+        // Obtener cohorte y maestría
         $cohorte = Cohorte::with('maestria')->findOrFail($cohorte_id);
         $maestria = $cohorte->maestria;
         $maestria_nombre = strtoupper($maestria->nombre);
         $codigoMaestria = $maestria->codigo;
 
-        // Obtener alumnos de la cohorte
-        $alumnos = Alumno::with('descuento')
-            ->whereIn('dni', function ($query) use ($cohorte_id) {
-                $query->select('alumno_dni')
-                    ->from((new Matricula())->getTable())
-                    ->where('cohorte_id', $cohorte_id);
+        // Obtener alumnos de la cohorte con descuentos y montos
+        $alumnos = Alumno::with(['descuentos', 'montos'])
+            ->whereHas('matriculas', function ($query) use ($cohorte_id) {
+                $query->where('cohorte_id', $cohorte_id);
             })
+            ->get();
+
+        // Cargar usuarios y pagos de una vez para evitar N+1 queries
+        $emails = $alumnos->pluck('email_institucional')->filter()->unique();
+        $usuarios = \App\Models\User::whereIn('email', $emails)
+            ->with(['pagos' => fn($q) => $q->where('verificado', 1)->where('maestria_id', $maestria->id)])
             ->get()
-            ->map(function ($alumno) {
-                $usuario = \App\Models\User::where('email', $alumno->email_institucional)->first();
+            ->keyBy('email');
 
-                // Inicializar montos
-                $pagado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
-                $adeudado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
+        $alumnos = $alumnos->map(function ($alumno) use ($maestria, $usuarios) {
+            $usuario = $usuarios->get($alumno->email_institucional);
 
-                if ($usuario) {
-                    $pagado['arancel'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'arancel')
-                        ->where('verificado', 1)
-                        ->sum('monto');
+            // Obtener montos de la pivot para esta maestría
+            $monto = $alumno->montos->where('id', $maestria->id)->first();
+            $arancelAlumno = $monto?->pivot->monto_arancel ?? 0;
+            $montoMatricula = $monto?->pivot->monto_matricula ?? 0;
+            $montoInscripcion = $monto?->pivot->monto_inscripcion ?? 0;
 
-                    $pagado['matricula'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'matricula')
-                        ->where('verificado', 1)
-                        ->sum('monto');
+            // Filtrar descuento correspondiente a esta maestría
+            $descuento_maestria = $alumno->descuentos
+                ->filter(fn($d) => $d->pivot->maestria_id == $maestria->id)
+                ->first();
 
-                    $pagado['inscripcion'] = \App\Models\Pago::where('user_id', $usuario->id)
-                        ->where('tipo_pago', 'inscripcion')
-                        ->where('verificado', 1)
-                        ->sum('monto');
-                }
+            $descuento_nombre = $descuento_maestria?->nombre ?? '-';
+            $descuento_porcentaje = $descuento_maestria?->porcentaje ?? 0;
 
-                // Monto de arancel viene directamente de monto_total (con descuento aplicado)
-                $adeudado['arancel'] = $alumno->monto_total - $pagado['arancel'];
-                $adeudado['matricula'] = $alumno->monto_matricula - $pagado['matricula'];
-                $adeudado['inscripcion'] = $alumno->monto_inscripcion - $pagado['inscripcion'];
+            // Ajustar arancel con descuento
+            $arancelConDescuento = $arancelAlumno - ($arancelAlumno * ($descuento_porcentaje / 100));
 
-                return [
-                    'alumno' => $alumno,
-                    'usuario' => $usuario,
-                    'descuento' => $alumno->descuento,
-                    'pagado' => $pagado,
-                    'adeudado' => $adeudado,
-                ];
-            })
-            ->sortBy(function ($item) {
-                $a = $item['alumno'];
-                return strtolower($a->apellidop . ' ' . $a->apellidom . ' ' . $a->nombre1 . ' ' . $a->nombre2);
-            })
-            ->values();
+            // Inicializar pagado y adeudado
+            $pagado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
+            $adeudado = [
+                'arancel' => $arancelConDescuento,
+                'matricula' => $montoMatricula,
+                'inscripcion' => $montoInscripcion
+            ];
 
-        // Calcular totales
+            if ($usuario) {
+                $pagos = $usuario->pagos->groupBy('tipo_pago');
+
+                $pagado['arancel'] = $pagos->get('arancel')?->sum('monto') ?? 0;
+                $pagado['matricula'] = $pagos->get('matricula')?->sum('monto') ?? 0;
+                $pagado['inscripcion'] = $pagos->get('inscripcion')?->sum('monto') ?? 0;
+
+                // Actualizar adeudado restando lo pagado
+                $adeudado['arancel'];
+                $adeudado['matricula'];
+                $adeudado['inscripcion'];
+            }
+
+            return [
+                'alumno' => $alumno,
+                'usuario' => $usuario,
+                'descuento_nombre' => $descuento_nombre,
+                'descuento_porcentaje' => $descuento_porcentaje,
+                'pagado' => $pagado,
+                'adeudado' => $adeudado,
+                'arancel_con_descuento' => $arancelConDescuento,
+            ];
+        })
+        ->sortBy(fn($item) => strtolower("{$item['alumno']->apellidop} {$item['alumno']->apellidom} {$item['alumno']->nombre1} {$item['alumno']->nombre2}"))
+        ->values();
+
+        // Totales
         $total_recaudado = [
             'arancel' => $alumnos->sum(fn($a) => $a['pagado']['arancel']),
             'matricula' => $alumnos->sum(fn($a) => $a['pagado']['matricula']),
             'inscripcion' => $alumnos->sum(fn($a) => $a['pagado']['inscripcion']),
         ];
+
         $total_deuda = [
             'arancel' => $alumnos->sum(fn($a) => $a['adeudado']['arancel']),
             'matricula' => $alumnos->sum(fn($a) => $a['adeudado']['matricula']),
@@ -338,4 +263,119 @@ class DashboardSecretarioEpsuController extends Controller
 
         return $pdf->stream("Reporte_EPSU_Cohorte_{$cohorte_id}.pdf");
     }
+
+    public function generador_reporte()
+    {
+        $maestrias = Maestria::with('cohortes')->get();
+
+        return view('pagos.reporte_epsu.generador', compact('maestrias'));
+    }
+
+    public function generar_reporte_pdf(Request $request)
+    {
+        $request->validate([
+            'cohorte_id' => 'required|exists:cohortes,id',
+        ]);
+
+        $cohorte_id = $request->input('cohorte_id');
+
+        // Obtener cohorte y maestría
+        $cohorte = Cohorte::with('maestria')->findOrFail($cohorte_id);
+        $maestria = $cohorte->maestria;
+        $maestria_nombre = strtoupper($maestria->nombre);
+        $codigoMaestria = $maestria->codigo;
+
+        // Obtener alumnos de la cohorte con descuentos y montos
+        $alumnos = Alumno::with(['descuentos', 'montos'])
+            ->whereHas('matriculas', function ($query) use ($cohorte_id) {
+                $query->where('cohorte_id', $cohorte_id);
+            })
+            ->get();
+
+        // Cargar usuarios y pagos de una vez para evitar N+1 queries
+        $emails = $alumnos->pluck('email_institucional')->filter()->unique();
+        $usuarios = \App\Models\User::whereIn('email', $emails)
+            ->with(['pagos' => fn($q) => $q->where('verificado', 1)->where('maestria_id', $maestria->id)])
+            ->get()
+            ->keyBy('email');
+
+        $alumnos = $alumnos->map(function ($alumno) use ($maestria, $usuarios) {
+            $usuario = $usuarios->get($alumno->email_institucional);
+
+            // Obtener montos de la pivot para esta maestría
+            $monto = $alumno->montos->where('id', $maestria->id)->first();
+            $arancelAlumno = $monto?->pivot->monto_arancel ?? 0;
+            $montoMatricula = $monto?->pivot->monto_matricula ?? 0;
+            $montoInscripcion = $monto?->pivot->monto_inscripcion ?? 0;
+
+            // Filtrar descuento correspondiente a esta maestría
+            $descuento_maestria = $alumno->descuentos
+                ->filter(fn($d) => $d->pivot->maestria_id == $maestria->id)
+                ->first();
+
+            $descuento_nombre = $descuento_maestria?->nombre ?? '-';
+            $descuento_porcentaje = $descuento_maestria?->porcentaje ?? 0;
+
+            // Ajustar arancel con descuento
+            $arancelConDescuento = $arancelAlumno - ($arancelAlumno * ($descuento_porcentaje / 100));
+
+            // Inicializar pagado y adeudado
+            $pagado = ['arancel' => 0, 'matricula' => 0, 'inscripcion' => 0];
+            $adeudado = [
+                'arancel' => $arancelConDescuento,
+                'matricula' => $montoMatricula,
+                'inscripcion' => $montoInscripcion
+            ];
+
+            if ($usuario) {
+                $pagos = $usuario->pagos->groupBy('tipo_pago');
+
+                $pagado['arancel'] = $pagos->get('arancel')?->sum('monto') ?? 0;
+                $pagado['matricula'] = $pagos->get('matricula')?->sum('monto') ?? 0;
+                $pagado['inscripcion'] = $pagos->get('inscripcion')?->sum('monto') ?? 0;
+
+                // Actualizar adeudado restando lo pagado
+                $adeudado['arancel'];
+                $adeudado['matricula'];
+                $adeudado['inscripcion'];
+            }
+
+            return [
+                'alumno' => $alumno,
+                'usuario' => $usuario,
+                'descuento_nombre' => $descuento_nombre,
+                'descuento_porcentaje' => $descuento_porcentaje,
+                'pagado' => $pagado,
+                'adeudado' => $adeudado,
+                'arancel_con_descuento' => $arancelConDescuento,
+            ];
+        })
+        ->sortBy(fn($item) => strtolower("{$item['alumno']->apellidop} {$item['alumno']->apellidom} {$item['alumno']->nombre1} {$item['alumno']->nombre2}"))
+        ->values();
+
+        // Totales
+        $total_recaudado = [
+            'arancel' => $alumnos->sum(fn($a) => $a['pagado']['arancel']),
+            'matricula' => $alumnos->sum(fn($a) => $a['pagado']['matricula']),
+            'inscripcion' => $alumnos->sum(fn($a) => $a['pagado']['inscripcion']),
+        ];
+
+        $total_deuda = [
+            'arancel' => $alumnos->sum(fn($a) => $a['adeudado']['arancel']),
+            'matricula' => $alumnos->sum(fn($a) => $a['adeudado']['matricula']),
+            'inscripcion' => $alumnos->sum(fn($a) => $a['adeudado']['inscripcion']),
+        ];
+
+        $pdf = Pdf::loadView('pagos.reporte_epsu.reporte', [
+            'alumnos' => $alumnos,
+            'cohorte' => $cohorte,
+            'maestria_nombre' => $maestria_nombre,
+            'codigoMaestria' => $codigoMaestria,
+            'total_recaudado' => $total_recaudado,
+            'total_deuda' => $total_deuda,
+        ])->setPaper('A4', 'landscape');
+
+        return $pdf->stream("Reporte_EPSU_Cohorte_{$cohorte_id}.pdf");
+    }
+
 }

@@ -103,40 +103,37 @@ class PagoController extends Controller
     {
         $user = Auth::user();
 
-        // Cargar alumno con sus relaciones maestria y descuento
-        $alumno = Alumno::with(['maestria', 'descuento'])
-            ->where('email_institucional', $user->email)
-            ->first();
+        // Cargar alumno con montos y descuentos
+        $alumno = Alumno::with(['montos', 'descuentos'])
+                    ->where('email_institucional', $user->email)
+                    ->first();
 
         if (!$alumno) {
             return redirect()->back()->with('error', 'Alumno no encontrado.');
         }
 
-        $maestria = $alumno->maestria;
-        $descuentoRelacion = $alumno->descuento;
+        // Mapear programas usando los datos de la pivot
+        $programas = $alumno->montos->map(function ($maestria) use ($alumno) {
+            $descuento = $alumno->descuentos->firstWhere('maestria_id', $maestria->id);
 
-        if (!$maestria) {
-            return redirect()->back()->with('error', 'Maestría no encontrada para el alumno.');
-        }
+            return [
+                'maestria_id'       => $maestria->id,
+                'nombre'            => $maestria->nombre,
+                'monto_arancel'     => $maestria->pivot->monto_arancel ?? 0,
+                'monto_matricula'   => $maestria->pivot->monto_matricula ?? 0,
+                'monto_inscripcion' => $maestria->pivot->monto_inscripcion ?? 0,
+                'descuento'         => $descuento ? [
+                    'nombre'     => $descuento->nombre,
+                    'porcentaje' => $descuento->porcentaje,
+                    'monto'      => $descuento->monto ?? 0,
+                ] : null,
+            ];
+        });
 
-        // Cálculo del descuento y total a pagar
-        $arancel = $maestria->arancel;
-        $porcentajeDescuento = $descuentoRelacion?->porcentaje ?? 0;
-        $montoDescuento = ($arancel * $porcentajeDescuento) / 100;
-        $total_pagar = $arancel - $montoDescuento;
-
-        $programa = [
-            'nombre' => $maestria->nombre,
-            'arancel' => $arancel,
-            'descuento' => $montoDescuento,
-            'total_pagar' => $total_pagar,
-            'tipo_descuento' => $descuentoRelacion?->nombre ?? 'Sin descuento',
-        ];
-
+        // Obtener pagos del usuario
         $pagos = $user->pagos()->latest()->get();
-        $pagosPreviosArancel = $user->pagos()->where('tipo_pago', 'arancel')->exists();
 
-        return view('pagos.pago', compact('programa', 'alumno', 'pagos', 'pagosPreviosArancel'));
+        return view('pagos.pago', compact('programas', 'alumno', 'pagos'));
     }
 
     public function store(Request $request)
@@ -146,6 +143,7 @@ class PagoController extends Controller
             'tipo_pago' => 'required|string|in:arancel,matricula,inscripcion',
             'fecha_pago' => 'required|date',
             'monto' => 'required|numeric|min:0.01',
+            'maestria_id' => 'required|exists:maestrias,id',
             'archivo_comprobante' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4048',
         ]);
 
@@ -177,6 +175,7 @@ class PagoController extends Controller
             'fecha_pago' => $request->fecha_pago,
             'archivo_comprobante' => $archivo_path,
             'modalidad_pago' => $request->modalidad_pago,
+            'maestria_id' => $request->maestria_id,
             'tipo_pago' => $request->tipo_pago,
         ]);
 
@@ -207,55 +206,59 @@ class PagoController extends Controller
     public function verificar_pago($id)
     {
         try {
-            // Encontrar el pago por su ID
-            $pago = Pago::with('user')->findOrFail($id);
+            $pago = Pago::with(['user', 'maestria'])->findOrFail($id);
 
-            // Verificar el tipo de pago
             $pago_tipo = $pago->tipo_pago;
 
-            // Buscar primero en alumnos
             $alumno = Alumno::where('email_institucional', $pago->user->email)->first();
 
             if ($alumno) {
-                if ($pago_tipo === 'matricula') {
-                    $nuevo_monto_matricula = $alumno->monto_matricula - $pago->monto;
-                    $alumno->update(['monto_matricula' => $nuevo_monto_matricula]);
-                } elseif ($pago_tipo === 'inscripcion') {
-                    $nuevo_monto_inscripcion = $alumno->monto_inscripcion - $pago->monto;
-                    $alumno->update(['monto_inscripcion' => $nuevo_monto_inscripcion]);
-                } elseif ($pago_tipo === 'arancel') {
-                    $nuevo_monto_total = $alumno->monto_total - $pago->monto;
-                    $alumno->update(['monto_total' => $nuevo_monto_total]);
+                $pivot = $alumno->montos()->where('maestria_id', $pago->maestria_id)->first();
+
+                if (!$pivot) {
+                    return redirect()->route('pagos.index')->with('error', 'El alumno no tiene montos registrados para esta maestría.');
                 }
 
-                // Marcar el pago como verificado
+                if ($pago_tipo === 'matricula') {
+                    $nuevoMonto = $pivot->pivot->monto_matricula - $pago->monto;
+                    $alumno->montos()->updateExistingPivot($pago->maestria_id, [
+                        'monto_matricula' => $nuevoMonto,
+                    ]);
+                } elseif ($pago_tipo === 'inscripcion') {
+                    $nuevoMonto = $pivot->pivot->monto_inscripcion - $pago->monto;
+                    $alumno->montos()->updateExistingPivot($pago->maestria_id, [
+                        'monto_inscripcion' => $nuevoMonto,
+                    ]);
+                } elseif ($pago_tipo === 'arancel') {
+                    $nuevoMonto = $pivot->pivot->monto_arancel - $pago->monto;
+                    $alumno->montos()->updateExistingPivot($pago->maestria_id, [
+                        'monto_arancel' => $nuevoMonto,
+                    ]);
+                }
+
                 $pago->update(['verificado' => true]);
 
-                return redirect()->route('pagos.index')->with('success', 'Pago verificado y monto del alumno actualizado.');
+                return redirect()->route('pagos.index')->with('success', 'Pago verificado y montos actualizados para el alumno.');
             }
 
-            // Si no es alumno, buscar en postulantes
             $postulante = Postulante::where('correo_electronico', $pago->user->email)->first();
 
             if ($postulante) {
                 if ($pago_tipo === 'matricula') {
-                    $nuevo_monto_matricula = $postulante->monto_matricula - $pago->monto;
-                    $postulante->update(['monto_matricula' => $nuevo_monto_matricula]);
+                    $nuevoMonto = $postulante->monto_matricula - $pago->monto;
+                    $postulante->update(['monto_matricula' => $nuevoMonto]);
                 } elseif ($pago_tipo === 'inscripcion') {
-                    $nuevo_monto_inscripcion = $postulante->monto_inscripcion - $pago->monto;
-                    $postulante->update(['monto_inscripcion' => $nuevo_monto_inscripcion]);
+                    $nuevoMonto = $postulante->monto_inscripcion - $pago->monto;
+                    $postulante->update(['monto_inscripcion' => $nuevoMonto]);
                 }
 
-                // Marcar el pago como verificado para el postulante
                 $pago->update(['verificado' => true]);
 
                 return redirect()->route('pagos.index')->with('success', 'Pago verificado para postulante.');
             }
 
-            // Si no es ni alumno ni postulante
             return redirect()->route('pagos.index')->with('error', 'No se encontró un alumno o postulante asociado al pago.');
         } catch (\Exception $e) {
-            // Capturar cualquier error inesperado y mostrar mensaje
             return redirect()->route('pagos.index')->with('error', 'Error al verificar el pago: ' . $e->getMessage());
         }
     }

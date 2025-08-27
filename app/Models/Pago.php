@@ -17,10 +17,15 @@ class Pago extends Model
         'verificado',
         'modalidad_pago',
         'tipo_pago',
+        'maestria_id'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+     public function maestria()
+    {
+        return $this->belongsTo(Maestria::class);
     }
 }

@@ -52,28 +52,50 @@
                     <h2 class="mb-0"><i class="fas fa-book-open"></i> Asignaturas Matriculadas</h2>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        @forelse ($asignaturas as $asignatura)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>
-                                    <i class="fas fa-book text-primary"></i> {{ $asignatura->nombre }}
-                                </span>
-                                @if ($asignatura->silabo)
-                                    <a href="{{ asset('storage/' . $asignatura->silabo) }}" target="_blank"
-                                        class="btn btn-outline-success btn-sm">
-                                        <i class="fas fa-file-pdf"></i> Ver Sílabo
-                                    </a>
-                                @endif
-                            </li>
+                    <div id="maestriasAccordion">
+                        @forelse ($asignaturasPorMaestria as $maestriaId => $data)
+                            <div class="card mb-2">
+                                <div class="card-header" id="heading-{{ $maestriaId }}">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link text-left w-100" type="button" data-toggle="collapse" data-target="#collapse-{{ $maestriaId }}" aria-expanded="false" aria-controls="collapse-{{ $maestriaId }}"
+                                            style="color: black; text-decoration: none; font-size: 20px; font-family: 'Arial', serif;">
+                                            {{ $data['nombre'] }}
+                                        </button>
+                                    </h5>
+                                </div>
+
+                                <div id="collapse-{{ $maestriaId }}" class="collapse" aria-labelledby="heading-{{ $maestriaId }}" data-parent="#maestriasAccordion">
+                                    <ul class="list-group list-group-flush">
+                                        @forelse ($data['asignaturas'] as $asignatura)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <i class="fas fa-book text-primary"></i> {{ $asignatura->nombre }}
+                                                </span>
+                                                @if ($asignatura->silabo)
+                                                    <a href="{{ asset('storage/' . $asignatura->silabo) }}" target="_blank" class="btn btn-outline-success btn-sm">
+                                                        <i class="fas fa-file-pdf"></i> Ver Sílabo
+                                                    </a>
+                                                @endif
+                                            </li>
+                                        @empty
+                                            <li class="list-group-item text-center text-muted">
+                                                <i class="fas fa-info-circle"></i> No hay asignaturas para esta maestría.
+                                            </li>
+                                        @endforelse
+                                    </ul>
+                                </div>
+                            </div>
                         @empty
                             <li class="list-group-item text-center text-muted">
                                 <i class="fas fa-info-circle"></i> Aún no se asignan Docentes a las asignaturas.
                             </li>
                         @endforelse
-                    </ul>
+                    </div>
                 </div>
             </div>
         </div>
+
+
     </div>
 </div>
 

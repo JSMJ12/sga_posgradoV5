@@ -151,8 +151,8 @@
                             <td>{{ $item['alumno']->apellidop }} {{ $item['alumno']->apellidom }}</td>
                             <td>{{ $item['alumno']->email_institucional }}</td>
                             <td>{{ $item['alumno']->celular }}</td>
-                            <td>{{ $item['descuento']->nombre ?? '-' }}</td>
-                            <td>{{ $item['descuento']->porcentaje ?? '0' }}%</td>
+                            <td>{{ $item['descuento_nombre'] }}</td>
+                            <td>{{ $item['descuento_porcentaje'] }}%</td>
                             <td>{{ number_format($item['pagado']['arancel'], 2) }}</td>
                             <td>
                                 @if ($item['adeudado']['arancel'] < 0)

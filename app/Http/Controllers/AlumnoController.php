@@ -55,144 +55,147 @@ class AlumnoController extends Controller
     {
         if ($request->ajax()) {
             $user = auth()->user();
+            $query = Alumno::query();
 
-            // Filtrar los alumnos según el rol del usuario
+            $maestriasPermitidas = collect();
+
+            // Filtrar alumnos según rol
             if ($user->hasRole('Administrador')) {
-                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
-                    ->withCount('matriculas')
-                    ->orderBy('matriculas_count')
-                    ->orderBy('created_at', 'desc');
-            } elseif ($user->hasRole('Secretario')) {
-                $secretario = Secretario::where('nombre1', $user->name)
-                    ->where('apellidop', $user->apellido)
-                    ->where('email', $user->email)
-                    ->firstOrFail();
+                $query = $query->with([
+                    'maestrias',
+                    'matriculas.asignatura',
+                    'matriculas.docente',
+                    'matriculas.cohorte.aula',
+                    'matriculas.cohorte.maestria'
+                ])
+                ->withCount('matriculas')
+                ->orderBy('matriculas_count')
+                ->orderBy('created_at', 'desc');
 
-                $maestriasIds = $secretario->seccion->maestrias->pluck('id');
-                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
-                    ->withCount('matriculas')
-                    ->whereIn('maestria_id', $maestriasIds)
-                    ->orderBy('matriculas_count')
-                    ->orderBy('created_at', 'desc');
-            } elseif ($user->hasRole('Coordinador')) {
-                $docente = Docente::where('nombre1', $user->name)
-                    ->where('apellidop', $user->apellido)
-                    ->where('email', $user->email)
-                    ->firstOrFail();
+                $maestriasPermitidas = Maestria::all(); // Admin puede ver todas
+            } 
+            elseif ($user->hasRole('Secretario')) {
+                $secretario = Secretario::where('email', $user->email)->firstOrFail();
+                $maestriasPermitidas = $secretario->seccion->maestrias;
 
+                $query = $query->with([
+                    'maestrias',
+                    'matriculas.asignatura',
+                    'matriculas.docente',
+                    'matriculas.cohorte.aula',
+                    'matriculas.cohorte.maestria'
+                ])
+                ->withCount('matriculas')
+                ->whereHas('maestrias', function ($q) use ($maestriasPermitidas) {
+                    $q->whereIn('maestrias.id', $maestriasPermitidas->pluck('id'));
+                })
+                ->orderBy('matriculas_count')
+                ->orderBy('created_at', 'desc');
+            } 
+            elseif ($user->hasRole('Coordinador')) {
+                $docente = Docente::where('email', $user->email)->firstOrFail();
                 $maestria = $docente->maestria->first();
                 if (!$maestria) {
                     abort(403, 'El coordinador no tiene ninguna maestría asignada.');
                 }
+                $maestriasPermitidas = collect([$maestria]);
 
-                $query = Alumno::with('maestria', 'matriculas.asignatura', 'matriculas.docente', 'matriculas.cohorte.aula')
-                    ->withCount('matriculas')
-                    ->where('maestria_id', $maestria->id)
-                    ->orderBy('matriculas_count')
-                    ->orderBy('created_at', 'desc');
-            } else {
+                $query = $query->with([
+                    'maestrias',
+                    'matriculas.asignatura',
+                    'matriculas.docente',
+                    'matriculas.cohorte.aula',
+                    'matriculas.cohorte.maestria'
+                ])
+                ->withCount('matriculas')
+                ->whereHas('maestrias', function ($q) use ($maestria) {
+                    $q->where('maestrias.id', $maestria->id);
+                })
+                ->orderBy('matriculas_count')
+                ->orderBy('created_at', 'desc');
+            } 
+            else {
                 abort(403, 'No autorizado');
             }
 
-            // Configurar DataTables
             return datatables()->eloquent($query)
                 ->addColumn('maestria_nombre', function ($alumno) {
-                    return $alumno->maestria->nombre ?? 'Sin Maestría';
+                    return $alumno->maestrias->pluck('nombre')->implode(', ') ?: 'Sin Maestría';
+                })
+                ->filterColumn('maestria_nombre', function ($query, $keyword) {
+                    $query->whereHas('maestrias', function ($q) use ($keyword) {
+                        $q->where('nombre', 'like', "%{$keyword}%");
+                    });
                 })
                 ->addColumn('foto', function ($alumno) {
-                    return '<img src="' . asset('storage/' . $alumno->image) . '" alt="Foto de ' . $alumno->nombre1 . '" class="img-thumbnail rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">';
+                    $image = $alumno->image ? asset('storage/' . $alumno->image) : asset('images/default.png');
+                    return '<img src="' . $image . '" class="img-thumbnail rounded-circle" style="width:60px;height:60px;object-fit:cover;">';
                 })
                 ->addColumn('nombre_completo', function ($alumno) {
                     return trim("{$alumno->nombre1} {$alumno->nombre2} {$alumno->apellidop} {$alumno->apellidom}");
                 })
                 ->filterColumn('nombre_completo', function ($query, $keyword) {
-                    $query->whereRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) like ?", ["%{$keyword}%"]);
+                    $query->whereRaw("CONCAT(nombre1,' ',nombre2,' ',apellidop,' ',apellidom) like ?", ["%{$keyword}%"]);
                 })
                 ->orderColumn('nombre_completo', function ($query, $order) {
-                    $query->orderByRaw("CONCAT(nombre1, ' ', nombre2, ' ', apellidop, ' ', apellidom) {$order}");
+                    $query->orderByRaw("CONCAT(nombre1,' ',nombre2,' ',apellidop,' ',apellidom) {$order}");
                 })
-                ->addColumn('acciones', function ($alumno) use ($user) {
-                    $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
+                ->addColumn('acciones', function ($alumno) use ($user, $maestriasPermitidas) {
+                    $acciones = '<div style="display:flex;gap:8px;align-items:center;">';
 
-                    // --- COORDINADOR ---
-                    if ($user->hasRole('Coordinador')) {
-                        if ($alumno->matriculas->count() > 0) {
-                            // Botón ojo
-                            $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
-                                data-id="' . $alumno->dni . '" 
-                                data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
-                                    return [
-                                        'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
-                                        'docente' => $matricula->docente
-                                            ? $matricula->docente->nombre1 . ' ' . $matricula->docente->apellidop
-                                            : 'No disponible',
-                                        'cohorte' => $matricula->cohorte->nombre ?? 'No disponible',
-                                        'aula' => $matricula->cohorte->aula->nombre ?? 'No disponible',
-                                        'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
-                                    ];
-                                })) . '\' title="Ver Matrícula">
-                                <i class="fas fa-eye"></i>
-                            </button>';
+                    // Filtrar maestrías y matriculas del alumno según permisos
+                    $maestriasAlumno = $alumno->maestrias->filter(fn($m) => $maestriasPermitidas->pluck('id')->contains($m->id));
+                    $matriculasFiltradas = $alumno->matriculas->filter(fn($m) => $maestriasPermitidas->pluck('id')->contains($m->cohorte->maestria->id));
 
-                            // Reportes
-                            $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
-                            $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
-                            $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
-                            $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
+                    // === Ver Matrículas ===
+                    if ($matriculasFiltradas->count() > 0) {
+                        $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
+                            data-id="' . $alumno->dni . '" 
+                            data-matriculas=\'' . json_encode($matriculasFiltradas->map(function($m){
+                                return [
+                                    'asignatura' => $m->asignatura->nombre ?? 'No disponible',
+                                    'docente' => $m->docente ? $m->docente->nombre1.' '.$m->docente->apellidop : 'No disponible',
+                                    'cohorte' => $m->cohorte->nombre ?? 'No disponible',
+                                    'maestria' => $m->cohorte->maestria->nombre ?? 'No disponible',
+                                    'aula' => $m->cohorte->aula->nombre ?? 'No disponible',
+                                    'paralelo' => $m->cohorte->aula->paralelo ?? 'No disponible',
+                                ];
+                            })) . '\' title="Ver Matrícula"><i class="fas fa-eye"></i></button>';
+                    }
+
+                    // === Matricular (solo si tiene maestrías pendientes) ===
+                    if ($maestriasAlumno->count() > 0 && ($user->hasRole('Administrador') || $user->hasRole('Secretario'))) {
+                        $maestriasConMatriculas = $matriculasFiltradas->map(fn($m) => $m->cohorte->maestria->id)->unique();
+                        $faltanMatriculas = $maestriasAlumno->filter(fn($m) => !$maestriasConMatriculas->contains($m->id));
+
+                        if ($faltanMatriculas->count() > 0) {
+                            $acciones .= '<button type="button" class="btn btn-outline-success btn-sm open-matricula-modal" 
+                                data-dni="' . $alumno->dni . '" 
+                                data-maestrias=\'' . json_encode($faltanMatriculas->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])) . '\' title="Matricular"><i class="fas fa-plus-circle"></i></button>';
                         }
                     }
 
-                    // --- ADMIN / SECRETARIO ---
-                    else {
-                        if ($alumno->ficha_socioeconomica) {
-                            $acciones .= '<a href="' . route('alumnos.ficha.ver', $alumno->dni) . '" target="_blank" class="btn btn-outline-secondary btn-sm" title="Ver ficha socioeconómica">
-                                            <i class="fas fa-file-word"></i>
-                                        </a>';
-                        }
+                    // === Reportes ===
+                    if ($matriculasFiltradas->count() > 0) {
+                        $acciones .= '<button type="button" class="btn btn-outline-warning btn-sm open-reportes" 
+                            data-dni="' . $alumno->dni . '" 
+                            data-nombre="' . $alumno->nombre1.' '.$alumno->apellidop . '" 
+                            data-maestrias=\'' . json_encode($maestriasAlumno->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])) . '\' title="Ver Reportes"><i class="fas fa-file-alt"></i></button>';
+                    }
 
-                        if ($alumno->maestria && $alumno->maestria->cohortes && $alumno->matriculas->isEmpty()) {
-                            $acciones .= '<a href="' . url('/matriculas/create', $alumno->dni) . '" class="btn btn-outline-success btn-sm" title="Matricular"><i class="fas fa-plus-circle"></i></a>';
-                        }
+                    // === Botones Admin ===
+                    if ($user->can('dashboard_admin') && $alumno->matriculas->count() > 0) {
+                        $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar"><i class="fas fa-pencil-alt"></i></a>';
+                    }
 
-                        if ($alumno->matriculas->count() > 0) {
-                            // Botón ojo
-                            $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
-                                data-id="' . $alumno->dni . '" 
-                                data-matriculas=\'' . json_encode($alumno->matriculas->map(function ($matricula) {
-                                    return [
-                                        'asignatura' => $matricula->asignatura->nombre ?? 'No disponible',
-                                        'docente' => $matricula->docente
-                                            ? $matricula->docente->nombre1 . ' ' . $matricula->docente->apellidop
-                                            : 'No disponible',
-                                        'cohorte' => $matricula->cohorte->nombre ?? 'No disponible',
-                                        'aula' => $matricula->cohorte->aula->nombre ?? 'No disponible',
-                                        'paralelo' => $matricula->cohorte->aula->paralelo ?? 'No disponible',
-                                    ];
-                                })) . '\' title="Ver Matrícula">
-                                <i class="fas fa-eye"></i>
-                            </button>';
-
-                            // Reportes
-                            $acciones .= '<a href="' . route('certificado.matricula', $alumno->dni) . '" target="_blank" class="btn btn-outline-danger btn-sm" title="Certificado de Matrícula"><i class="fas fa-file-pdf"></i></a>';
-                            $acciones .= '<a href="' . route('record.show', $alumno->dni) . '" class="btn btn-outline-warning btn-sm" title="Record Académico" target="_blank"><i class="fas fa-file-alt"></i></a>';
-                            $acciones .= '<a href="' . route('certificado', $alumno->dni) . '" target="_blank" class="btn btn-outline-info btn-sm" title="Certificado"><i class="fas fa-file-pdf"></i></a>';
-                            $acciones .= '<a href="' . route('certificado_culminacion', $alumno->dni) . '" target="_blank" class="btn btn-outline-success btn-sm" title="Certificado de Culminación"><i class="fas fa-file-pdf"></i></a>';
-                        }
-
-                        if ($user->can('dashboard_admin') && $alumno->matriculas->count() > 0) {
-                            $acciones .= '<a href="' . url('/notas/create', $alumno->dni) . '" class="btn btn-outline-info btn-sm" title="Calificar"><i class="fas fa-pencil-alt"></i></a>';
-                        }
-
-                        if ($user->can('dashboard_admin')) {
-                            $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>';
-                        }
+                    if ($user->can('dashboard_admin')) {
+                        $acciones .= '<a href="' . route('alumnos.edit', $alumno->dni) . '" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>';
                     }
 
                     $acciones .= '</div>';
                     return $acciones;
                 })
-
-                ->rawColumns(['foto', 'acciones'])
+                ->rawColumns(['foto','acciones'])
                 ->make(true);
         }
 
@@ -212,7 +215,7 @@ class AlumnoController extends Controller
             $maestriasIds = $secretario->seccion->maestrias->pluck('id');
             $maestrias = Maestria::whereIn('id', $maestriasIds)->get();
         } else {
-            $maestrias = Maestria::all(); // Obtener todas las maestrías sin filtrar por estado
+            $maestrias = Maestria::all();
         }
 
         return view('alumnos.create', compact('provincias', 'maestrias'));
@@ -220,145 +223,134 @@ class AlumnoController extends Controller
 
     public function store(Request $request)
     {
-        try {
-            $request->validate([
-                'maestria_id' => 'required|exists:maestrias,id',
-                'image' => 'nullable|image|max:2048',
-                'dni' => [
-                    'required',
-                    'string',
-                    'max:20',
-                    Rule::unique('alumnos', 'dni'),
-                    Rule::unique('postulantes', 'dni'),
-                ],
-                'email_institucional' => [
-                    'required',
-                    'email',
-                    Rule::notIn(User::pluck('email')->toArray()),
-                ],
-            ], [
-                // Mensajes personalizados
-                'maestria_id.required' => 'La maestría es obligatoria.',
-                'maestria_id.exists' => 'La maestría seleccionada no existe.',
-                'image.image' => 'El archivo debe ser una imagen.',
-                'image.max' => 'La imagen no puede superar los 2MB.',
-                'dni.required' => 'El DNI es obligatorio.',
-                'dni.unique' => 'Este DNI ya está registrado.',
-                'email_institucional.required' => 'El correo institucional es obligatorio.',
-                'email_institucional.email' => 'El correo institucional debe tener un formato válido.',
-                'email_institucional.not_in' => 'Este correo institucional ya está en uso.',
-            ]);
+        $request->validate([
+            'maestrias' => 'required|array',
+            'maestrias.*' => 'exists:maestrias,id',
+            'image' => 'nullable|image|max:2048',
+            'dni' => 'required|string|max:20|unique:alumnos,dni|unique:postulantes,dni',
+            'email_institucional' => 'required|email|unique:users,email',
+        ]);
 
-            $maestria = Maestria::findOrFail($request->input('maestria_id'));
-            $arancel = $maestria->arancel ?? 0;
-            $inscripcion = $maestria->incripcion ?? 0;
-            $matricula = $maestria->matricula ?? 0;
-            $nuevoRegistro = Alumno::where('maestria_id', $maestria->id)->count() + 1;
+        $alumno = new Alumno();
+        $alumno->fill($request->only([
+            'nombre1', 'nombre2', 'apellidop', 'apellidom',
+            'sexo', 'dni', 'email_institucional', 'email_personal',
+            'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
+            'barrio', 'direccion', 'nacionalidad', 'etnia',
+            'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
+        ]));
+        $alumno->contra = Hash::make($request->dni);
 
-            $alumno = new Alumno();
-            $alumno->fill($request->only([
-                'nombre1', 'nombre2', 'apellidop', 'apellidom',
-                'sexo', 'dni', 'email_institucional', 'email_personal',
-                'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
-                'barrio', 'direccion', 'nacionalidad', 'etnia',
-                'carnet_discapacidad', 'tipo_discapacidad', 'porcentaje_discapacidad'
-            ]));
-
-            // contraseña del alumno usando Hash
-            $alumno->contra = Hash::make($request->input('dni'));
-            $alumno->maestria_id = $maestria->id;
-            $alumno->registro = $nuevoRegistro;
-            $alumno->monto_total = $arancel;
-            $alumno->monto_inscripcion = $inscripcion;
-            $alumno->monto_matricula = $matricula;
-
-            if ($request->hasFile('image')) {
-                $alumno->image = $request->file('image')->store('imagenes_usuarios', 'public');
-            } else {
-                $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($alumno->nombre1, 0, 1));
-            }
-
-            $alumno->save();
-
-            $usuario = new User();
-            $usuario->fill([
-                'name' => $alumno->nombre1,
-                'apellido' => $alumno->apellidop,
-                'sexo' => $alumno->sexo,
-                'email' => $alumno->email_institucional,
-                'status' => $request->input('estatus', 'ACTIVO'),
-                'image' => $alumno->image,
-            ]);
-            $usuario->password = Hash::make($request->input('dni'));
-            $usuario->save();
-
-            $usuario->assignRole(Role::findById(4));
-
-            return redirect()->route('alumnos.index')->with('success', 'Usuario creado exitosamente.');
-
-        } catch (ValidationException $e) {
-            return redirect()->back()
-                ->withErrors($e->validator)
-                ->withInput();
-        } catch (\Exception $e) {
-            Log::error('Error al crear alumno: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Error inesperado al crear el usuario. Intenta nuevamente.')
-                ->withInput();
+        if ($request->hasFile('image')) {
+            $alumno->image = $request->file('image')->store('imagenes_usuarios', 'public');
+        } else {
+            $alumno->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($alumno->nombre1, 0, 1));
         }
+
+        $alumno->save();
+
+        // Asociar maestrías y sus montos
+        foreach ($request->maestrias as $maestriaId) {
+            $maestria = Maestria::find($maestriaId);
+
+            $alumno->montos()->attach($maestriaId, [
+                'monto_arancel' => $maestria->arancel ?? 0,
+                'monto_matricula' => $maestria->matricula ?? 0,
+                'monto_inscripcion' => $maestria->inscripcion ?? 0,
+            ]);
+        }
+
+        // Crear usuario
+        $usuario = User::create([
+            'name' => $alumno->nombre1,
+            'apellido' => $alumno->apellidop,
+            'sexo' => $alumno->sexo,
+            'email' => $alumno->email_institucional,
+            'status' => 'ACTIVO',
+            'image' => $alumno->image,
+            'password' => Hash::make($request->dni),
+        ]);
+        $usuario->assignRole(Role::findById(4));
+
+        return redirect()->route('alumnos.index')->with('success', 'Alumno creado exitosamente con montos.');
     }
 
     public function edit($dni)
     {
         $maestrias = Maestria::where('status', 'ACTIVO')->get();
-        $alumno = Alumno::where('dni', $dni)->firstOrFail();
+        $alumno = Alumno::where('dni', $dni)->with('maestrias')->firstOrFail();
         $provincias = ['Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro', 'Esmeraldas', 'Galápagos', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos', 'Manabí', 'Morona Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha', 'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua', 'Zamora Chinchipe'];
         return view('alumnos.edit', compact('alumno', 'provincias', 'maestrias'));
     }
 
     public function update(Request $request, $dni)
     {
+        $request->validate([
+            'maestrias'   => 'required|array',
+            'maestrias.*' => 'exists:maestrias,id',
+            'image'       => 'nullable|image|max:2048',
+        ]);
 
-        try {
-            $maestria = Maestria::findOrFail($request->input('maestria_id'));
-            $arancel = $maestria->arancel;
+        $alumno = Alumno::where('dni', $dni)->firstOrFail();
+        $alumno->fill($request->only([
+            'nombre1', 'nombre2', 'apellidop', 'apellidom', 'dni',
+            'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
+            'barrio', 'direccion', 'nacionalidad', 'etnia',
+            'email_personal', 'carnet_discapacidad', 'tipo_discapacidad',
+            'porcentaje_discapacidad', 'sexo',
+        ]));
 
-            $alumno = Alumno::where('dni', $dni)->firstOrFail();
-
-            $alumno->fill($request->only([
-                'nombre1', 'nombre2', 'apellidop', 'apellidom', 'dni',
-                'estado_civil', 'fecha_nacimiento', 'provincia', 'canton',
-                'barrio', 'direccion', 'nacionalidad', 'etnia',
-                'email_personal', 'carnet_discapacidad', 'tipo_discapacidad',
-                'porcentaje_discapacidad', 'sexo', 'maestria_id'
-            ]));
-
-            $alumno->monto_total = $arancel;
-
-            // Procesar imagen si se sube
-            if ($request->hasFile('image')) {
-                if ($alumno->image) {
-                    Storage::disk('public')->delete($alumno->image);
-                }
-
-                $path = $request->file('image')->store('imagenes_usuarios', 'public');
-                $alumno->image = $path;
-
-                // También actualiza imagen del usuario asociado
-                $usuario = User::where('email', $alumno->email_institucional)->first();
-                if ($usuario) {
-                    $usuario->image = $path;
-                    $usuario->save();
-                }
+        // === Manejo de imagen ===
+        if ($request->hasFile('image')) {
+            if ($alumno->image) {
+                Storage::disk('public')->delete($alumno->image);
             }
+            $path = $request->file('image')->store('imagenes_usuarios', 'public');
+            $alumno->image = $path;
 
-            $alumno->save();
-
-            return redirect()->route('alumnos.index')->with('success', 'Alumno actualizado correctamente');
-
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Ocurrió un error al actualizar el alumno: ' . $e->getMessage());
+            // Actualizar también al usuario vinculado
+            $usuario = User::where('email', $alumno->email_institucional)->first();
+            if ($usuario) {
+                $usuario->image = $path;
+                $usuario->save();
+            }
         }
+
+        $alumno->save();
+
+        // === Sincronización de maestrías ===
+        $maestriasActuales = $alumno->maestrias->pluck('id')->toArray();
+
+        // Aseguramos que el request traiga solo IDs
+        $maestriasNuevas = collect($request->maestrias)->map(function ($m) {
+            return is_array($m) ? $m['id'] : $m;
+        })->toArray();
+
+        // Maestrías eliminadas
+        $maestriasEliminar = array_diff($maestriasActuales, $maestriasNuevas);
+        if (!empty($maestriasEliminar)) {
+            $alumno->montos()->whereIn('maestria_id', $maestriasEliminar)->delete();
+        }
+
+        // Sincronizar maestrías en la tabla pivote
+        $alumno->maestrias()->sync($maestriasNuevas);
+
+        // Crear montos para las nuevas maestrías
+        $maestriasAgregar = array_diff($maestriasNuevas, $maestriasActuales);
+        foreach ($maestriasAgregar as $maestriaId) {
+            $maestria = Maestria::find($maestriaId);
+            if ($maestria) {
+                $alumno->montos()->create([
+                    'maestria_id'      => $maestriaId,
+                    'monto_arancel'    => $maestria->arancel ?? 0,
+                    'monto_matricula'  => $maestria->matricula ?? 0,
+                    'monto_inscripcion'=> $maestria->inscripcion ?? 0,
+                ]);
+            }
+        }
+
+        return redirect()->route('alumnos.index')
+            ->with('success', 'Alumno actualizado correctamente con montos.');
     }
 
     public function retirarse(Request $request, $dni)

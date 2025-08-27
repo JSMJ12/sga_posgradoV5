@@ -7,16 +7,13 @@ use App\Models\Docente;
 use App\Models\Secretario;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-
 class RecordController extends Controller
 {
     protected $directorDocente;
-    protected $secretario;
 
     public function __construct()
     {
@@ -24,86 +21,71 @@ class RecordController extends Controller
 
         // Buscar al primer usuario con rol 'director'
         $directorUser = User::role('director')->first();
-
-        // Buscar en tabla docentes por su email
         $this->directorDocente = Docente::where('email', $directorUser?->email)->first();
     }
 
-    private function getSecretario($alumno)
+    private function getSecretario($maestria_id)
     {
-        $seccion = $alumno->maestria->secciones->first();
-        if (!$seccion) {
-            return null;
-        }
-        return Secretario::where('seccion_id', $seccion->id)->first();
+        $seccion = \App\Models\Seccion::whereHas('maestrias', function($q) use ($maestria_id){
+            $q->where('maestrias.id', $maestria_id);
+        })->first();
+
+        return $seccion ? Secretario::where('seccion_id', $seccion->id)->first() : null;
     }
 
-    public function show($alumno_dni)
+    private function getAlumnoEnMaestria($alumno_dni, $maestria_id)
     {
-        $alumno = Alumno::findOrFail($alumno_dni);
+        return Alumno::where('dni', $alumno_dni)
+            ->whereHas('maestrias', function($q) use ($maestria_id){
+                $q->where('maestrias.id', $maestria_id);
+            })
+            ->firstOrFail();
+    }
 
-        $this->secretario = $this->getSecretario($alumno);
+    protected function getMatriculaPorMaestria($alumno, $maestria_id)
+    {
+        return $alumno->matriculas->first(function ($matricula) use ($maestria_id) {
+            return $matricula->cohorte && $matricula->cohorte->maestria_id == $maestria_id;
+        });
+    }
+
+    public function record_academico($alumno_dni, $maestria_id)
+    {
+        $alumno = $this->getAlumnoEnMaestria($alumno_dni, $maestria_id);
+        $secretario = $this->getSecretario($maestria_id);
         $directorDocente = $this->directorDocente;
-        $secretario = $this->secretario;
 
-        // Obtener asignaturas de la maestría
-        $asignaturas = $alumno->maestria->asignaturas ?? collect();
-
-        // Obtener notas registradas con relaciones
+        $asignaturas = $alumno->maestrias->find($maestria_id)?->asignaturas ?? collect();
         $notasRegistradas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-        // Crear estructura completa de "notas", incluyendo asignaturas sin nota
         $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas) {
-            // Buscar si hay una nota para esta asignatura
             $notaExistente = $notasRegistradas->firstWhere('asignatura_id', $asignatura->id);
+            if ($notaExistente) return $notaExistente;
 
-            if ($notaExistente) {
-                return $notaExistente;
-            }
-
-            // Crear objeto "falso" de Nota si no existe
             $notaFalsa = new \stdClass();
             $notaFalsa->asignatura = $asignatura;
             $notaFalsa->docente = $asignatura->docente ?? null;
             $notaFalsa->total = null;
-
             return $notaFalsa;
         });
 
-        // Total de horas (usando horas_duracion o crédito * 48)
-        $totalHoras = $notasCompletas->sum(function ($nota) {
-            return $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48);
-        });
+        $totalHoras = $notasCompletas->sum(fn($nota) => $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48));
+        $promedio = $notasCompletas->map(fn($nota) => $nota->total ?? 0)->avg();
+        $cantidadAsignaturas = $notasCompletas->filter(fn($nota) => !is_null($nota->total) && $nota->total >= 7)->count();
 
-        // Promedio considerando todas las asignaturas, usando 0 si no hay nota
-        $totalNotas = $notasCompletas->map(function ($nota) {
-            return $nota->total ?? 0;
-        });
-        $promedio = $totalNotas->avg();
-
-        // Asignaturas aprobadas (nota >= 7 y no nula)
-        $cantidadAsignaturas = $notasCompletas
-            ->filter(fn($nota) => !is_null($nota->total) && $nota->total >= 7)
-            ->count();
-
-        // Datos de cohorte
-        $matricula = $alumno->matriculas->first();
-        $cohorte = $matricula->cohorte;
+        $matricula = $this->getMatriculaPorMaestria($alumno, $maestria_id);
+        $cohorte = $matricula?->cohorte;
         $cohorteNombre = $cohorte->nombre ?? '--';
 
-        // Fecha actual en español
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Código QR con enlace al record
-        $url = route('record.show', $alumno_dni);
-        // Coordinador de la maestría
-        $coordinadorDni = $alumno->maestria->coordinador;
-        $coordinador = Docente::where('dni', $coordinadorDni)->first();
-        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
+        $coordinador = Docente::where('dni', $alumno->maestrias->find($maestria_id)?->coordinador)->first();
+        $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+        $maestria = $alumno->maestrias->find($maestria_id);
 
-        // Generar PDF con los datos
-        $pdf = Pdf::loadView('record.show', compact(
+        $pdf = Pdf::loadView('record.record_academico', compact(
             'alumno',
+            'maestria',
             'notasCompletas',
             'cohorte',
             'cohorteNombre',
@@ -118,90 +100,66 @@ class RecordController extends Controller
 
         return $pdf->stream('record_academico_' . $alumno->dni . '.pdf');
     }
-    public function certificado_matricula($alumno_dni)
-    {
-        $alumno = Alumno::findOrFail($alumno_dni);
 
-        $matricula = $alumno->matriculas->first();
-        if (!$matricula || !$matricula->cohorte) {
-            return back()->with('error', 'El alumno no tiene matrícula o cohorte.');
-        }
+    public function certificado_matricula($alumno_dni, $maestria_id)
+    {
+        $alumno = $this->getAlumnoEnMaestria($alumno_dni, $maestria_id);
+        $matricula = $this->getMatriculaPorMaestria($alumno, $maestria_id);
+
+        if (!$matricula || !$matricula->cohorte) return back()->with('error', 'El alumno no tiene matrícula o cohorte en esta maestría.');
 
         $cohorte = $matricula->cohorte;
-
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
-
         $nombreLimpio = Str::slug($alumno->apellidop . '_' . $alumno->nombre1);
-        $url = url()->full();
 
-       
-        $coordinador = Docente::where('dni', $alumno->maestria->coordinador)->first();
+        $coordinador = Docente::where('dni', $alumno->maestrias->find($maestria_id)?->coordinador)->first();
         $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+        $maestria = $alumno->maestrias->find($maestria_id);
 
-       $pdf = Pdf::loadView('record.certificado_matricula', compact(
+        $pdf = Pdf::loadView('record.certificado_matricula', compact(
             'alumno',
+            'maestria',
             'cohorte',
             'fechaActual',
             'nombreCompleto'
         ))->setPaper('A4', 'portrait');
 
-
         return $pdf->stream("certificado_matricula_{$nombreLimpio}.pdf");
     }
-    public function certificado($alumno_dni)
+
+    public function certificado($alumno_dni, $maestria_id)
     {
-        // Obtener el alumno
-        $alumno = Alumno::findOrFail($alumno_dni);
-
-        // Obtener asignaturas de la maestría
-        $asignaturas = $alumno->maestria->asignaturas ?? collect();
-
-        // Obtener notas registradas con relaciones
+        $alumno = $this->getAlumnoEnMaestria($alumno_dni, $maestria_id);
+        $asignaturas = $alumno->maestrias->find($maestria_id)?->asignaturas ?? collect();
         $notasRegistradas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-        // Crear estructura completa de asignaturas (con o sin nota)
         $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas) {
             $notaExistente = $notasRegistradas->firstWhere('asignatura_id', $asignatura->id);
-
-            if ($notaExistente) {
-                return $notaExistente;
-            }
+            if ($notaExistente) return $notaExistente;
 
             $notaFalsa = new \stdClass();
             $notaFalsa->asignatura = $asignatura;
             $notaFalsa->docente = $asignatura->docente ?? null;
             $notaFalsa->total = null;
-
             return $notaFalsa;
         });
 
-        // Total de horas
-        $totalHoras = $notasCompletas->sum(function ($nota) {
-            return $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48);
-        });
-
-        $matricula = $alumno->matriculas->first();
-        $cohorte = $matricula->cohorte;
-
-        // Extraer número romano del cohorte
-        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte->nombre, $matches);
+        $totalHoras = $notasCompletas->sum(fn($nota) => $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48));
+        $matricula = $this->getMatriculaPorMaestria($alumno, $maestria_id);
+        $cohorte = $matricula?->cohorte;
+        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte?->nombre ?? '', $matches);
         $numeroRomano = $matches[1] ?? '';
-
-        $periodo_academico = $cohorte->periodo_academico;
+        $periodo_academico = $cohorte?->periodo_academico;
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Código QR
-        $url = route('certificado', $alumno->dni);
+        $coordinador = Docente::where('dni', $alumno->maestrias->find($maestria_id)?->coordinador)->first();
+        $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+        $maestria = $alumno->maestrias->find($maestria_id);
 
-        // Coordinador
-        $coordinadorDni = $alumno->maestria->coordinador;
-        $coordinador = Docente::where('dni', $coordinadorDni)->first();
-        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
-
-        // Renderizar PDF
         $pdf = Pdf::loadView('record.certificacion', compact(
             'alumno',
             'notasCompletas',
+            'maestria',
             'periodo_academico',
             'cohorte',
             'totalHoras',
@@ -213,35 +171,23 @@ class RecordController extends Controller
         return $pdf->stream('certificado_' . $alumno->dni . '.pdf');
     }
 
-
-    public function certificado_culminacion($alumno_dni)
+    public function certificado_culminacion($alumno_dni, $maestria_id)
     {
-        // Obtener el alumno y sus notas
-        $alumno = Alumno::findOrFail($alumno_dni);
+        $alumno = $this->getAlumnoEnMaestria($alumno_dni, $maestria_id);
         $notas = $alumno->notas()->with('asignatura', 'docente')->get();
+        $totalHoras = $notas->sum(fn($nota) => $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48));
 
-        $totalHoras = $notas->sum(function ($nota) {
-            return $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48;
-        });
-
-        $matricula = $alumno->matriculas->first();
-        $cohorte = $matricula->cohorte;
-
-        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte->nombre, $matches);
+        $matricula = $this->getMatriculaPorMaestria($alumno, $maestria_id);
+        $cohorte = $matricula?->cohorte;
+        preg_match('/cohorte[:\s\-]*([A-Z0-9]+)/i', $cohorte?->nombre ?? '', $matches);
         $numeroRomano = $matches[1] ?? '';
-
-        $periodo_academico = $cohorte->periodo_academico;
-
+        $periodo_academico = $cohorte?->periodo_academico;
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        // Generar el código QR con URL de visualización (si deseas usarlo aún)
-        $url = route('certificado_culminacion', $alumno->dni);
-        
-        $coordinadorDni = $alumno->maestria->coordinador;
-        $coordinador = Docente::where('dni', $coordinadorDni)->first();
-        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
+        $coordinador = Docente::where('dni', $alumno->maestrias->find($maestria_id)?->coordinador)->first();
+        $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+        $maestria = $alumno->maestrias->find($maestria_id);
 
-        // Generar y retornar el PDF en línea (sin guardar)
         $pdf = Pdf::loadView('record.certificado_culminacion', compact(
             'alumno',
             'notas',
@@ -249,10 +195,12 @@ class RecordController extends Controller
             'cohorte',
             'totalHoras',
             'numeroRomano',
+            'maestria',
             'fechaActual',
             'nombreCompleto'
         ));
 
         return $pdf->stream('certificado_culminacion_' . $alumno->dni . '.pdf');
     }
+
 }

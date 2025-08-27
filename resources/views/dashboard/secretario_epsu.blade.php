@@ -99,8 +99,7 @@
                                                     <td>${{ number_format($datos['monto'], 2) }}</td>
                                                     <td>{{ $datos['cantidad'] }}</td>
                                                     <td>
-                                                        <a href="{{ route('pagos.pdf', ['cohorte' => $cohorteNombre]) }}"
-                                                            class="btn btn-danger btn-sm" target="_blank">
+                                                        <a href="{{ route('pagos.pdf', ['cohorte_id' => $datos['id']]) }}" class="btn btn-danger btn-sm" target="_blank">
                                                             Descargar PDF
                                                         </a>
                                                     </td>

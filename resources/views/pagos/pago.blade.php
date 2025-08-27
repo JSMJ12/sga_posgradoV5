@@ -5,48 +5,51 @@
     <h1>Pagos y Descuentos</h1>
 @stop
 
-
 @section('content')
     <div class="container">
         <div class="row">
+
             <!-- Información del Alumno (lado izquierdo) -->
             <div class="col-md-6 col-sm-12 mb-3">
-                <div class="payment-history-box mt-4" style="min-height: 400px;"> <!-- Añade una altura mínima -->
+                <div class="payment-history-box mt-4" style="min-height: 400px;">
                     <div class="payment-history-header">
                         <h3>Historial de Pagos Realizados</h3>
                     </div>
                     <div class="payment-history-body">
                         <p><strong>Cédula/Pasaporte:</strong> {{ $alumno->dni }}</p>
-                        <p><strong>Maestría:</strong> {{ $programa['nombre'] }}</p>
-                        <p><strong>Deuda de Arancel:</strong>
-                            @if ($alumno->monto_total < 0)
-                                <span style="color: green;">Reembolso a recibir:
-                                    ${{ number_format(abs($alumno->monto_total), 2) }}</span>
-                            @else
-                                ${{ number_format($alumno->monto_total, 2) }}
-                            @endif
-                        </p>
 
-                        <p><strong>Deuda de Matrícula:</strong>
-                            @if ($alumno->monto_matricula < 0)
-                                <span style="color: green;">Reembolso a recibir:
-                                    ${{ number_format(abs($alumno->monto_matricula), 2) }}</span>
-                            @else
-                                ${{ number_format($alumno->monto_matricula, 2) }}
-                            @endif
-                        </p>
+                        @foreach($programas as $programa)
+                            <div class="mb-2">
+                                <p><strong>Maestría:</strong> {{ $programa['nombre'] }}</p>
 
-                        <p><strong>Deuda de Inscripción:</strong>
-                            @if ($alumno->monto_inscripcion < 0)
-                                <span style="color: green;">Reembolso a recibir:
-                                    ${{ number_format(abs($alumno->monto_inscripcion), 2) }}</span>
-                            @else
-                                ${{ number_format($alumno->monto_inscripcion, 2) }}
-                            @endif
-                        </p>
+                                <p><strong>Deuda de Arancel:</strong>
+                                    @if (($programa['monto_arancel'] ?? 0) < 0)
+                                        <span style="color: green;">Reembolso a recibir: ${{ number_format(abs($programa['monto_arancel']), 2) }}</span>
+                                    @else
+                                        ${{ number_format($programa['monto_arancel'], 2) }}
+                                    @endif
+                                </p>
 
+                                <p><strong>Deuda de Matrícula:</strong>
+                                    @if (($programa['monto_matricula'] ?? 0) < 0)
+                                        <span style="color: green;">Reembolso a recibir: ${{ number_format(abs($programa['monto_matricula']), 2) }}</span>
+                                    @else
+                                        ${{ number_format($programa['monto_matricula'], 2) }}
+                                    @endif
+                                </p>
 
-                        <!-- Contenedor para hacer que la tabla sea desplazable -->
+                                <p><strong>Deuda de Inscripción:</strong>
+                                    @if (($programa['monto_inscripcion'] ?? 0) < 0)
+                                        <span style="color: green;">Reembolso a recibir: ${{ number_format(abs($programa['monto_inscripcion']), 2) }}</span>
+                                    @else
+                                        ${{ number_format($programa['monto_inscripcion'], 2) }}
+                                    @endif
+                                </p>
+                                <hr>
+                            </div>
+                        @endforeach
+
+                        <!-- Tabla de pagos -->
                         <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
                             <table class="table table-striped" id="pagosTable">
                                 <thead>
@@ -55,8 +58,8 @@
                                         <th>Fecha de Pago</th>
                                         <th>Comprobante</th>
                                         <th>Estado</th>
-                                        <th>Tipo de Pago</th> <!-- Nueva columna -->
-                                        <th>Modalidad</th> <!-- Nueva columna -->
+                                        <th>Tipo de Pago</th>
+                                        <th>Modalidad</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -66,7 +69,7 @@
                                             <td>{{ $pago->fecha_pago }}</td>
                                             <td>
                                                 <a href="{{ asset('storage/' . $pago->archivo_comprobante) }}"
-                                                    target="_blank" class="btn btn-info btn-sm" title="Ver Comprobante">
+                                                target="_blank" class="btn btn-info btn-sm" title="Ver Comprobante">
                                                     <i class="fas fa-file-alt"></i>
                                                 </a>
                                             </td>
@@ -88,10 +91,10 @@
                                 </tbody>
                             </table>
                         </div>
+
                     </div>
                 </div>
             </div>
-
 
             <!-- Detalles del Pago y Modalidad de Pago (lado derecho) -->
             <div class="col-md-6 col-sm-12">
@@ -100,22 +103,37 @@
                         <h3>Detalles del Monto a Pagar</h3>
                     </div>
                     <div class="payment-details-body">
-                        @if ($alumno->descuento)
-                            <p>Descuento {{ $alumno->descuento->nombre }} ({{ $alumno->descuento->porcentaje }}%):
-                                ${{ number_format($programa['descuento'], 2) }}
-                            </p>
-                            <p>Arancel Total a Pagar con Descuento {{ $alumno->descuento->nombre }}:
-                                ${{ number_format($alumno->maestria->arancel - $programa['descuento'], 2) }}
-                            </p>
+
+                        @php
+                            $maestriasConDeuda = collect($programas)->filter(function($p){
+                                return ($p['monto_arancel'] ?? 0) > 0 || ($p['monto_matricula'] ?? 0) > 0 || ($p['monto_inscripcion'] ?? 0) > 0;
+                            });
+                            $mostrarSelectMaestria = $maestriasConDeuda->count() > 1;
+                            $maestriaInicial = $maestriasConDeuda->first();
+                        @endphp
+
+                        @if($mostrarSelectMaestria)
+                            <div class="form-group">
+                                <label for="maestria_select">Selecciona Maestría:</label>
+                                <select class="form-control" id="maestria_select">
+                                    @foreach($maestriasConDeuda as $m)
+                                        <option value="{{ $m['maestria_id'] }}"
+                                                data-arancel="{{ $m['monto_arancel'] ?? 0 }}"
+                                                data-matricula="{{ $m['monto_matricula'] ?? 0 }}"
+                                                data-inscripcion="{{ $m['monto_inscripcion'] ?? 0 }}">
+                                            {{ $m['nombre'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         @else
-                            <p>Sin descuento aplicado</p>
-                            <p>Total a Pagar de Arancel: ${{ number_format($alumno->maestria->arancel, 2) }}</p>
+                            <p><strong>Maestría a Pagar:</strong> {{ $maestriaInicial['nombre'] }}</p>
                         @endif
 
-
-                        <form action="{{ route('pagos.store') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('pagos.store') }}" method="POST" enctype="multipart/form-data" id="pagoForm">
                             @csrf
                             <input type="hidden" id="dni" name="dni" value="{{ $alumno->dni }}">
+                            <input type="hidden" id="maestria_id" name="maestria_id" value="{{ $maestriaInicial['maestria_id'] ?? '' }}">
 
                             <!-- Tipo de Pago -->
                             <div class="form-group">
@@ -126,7 +144,6 @@
                                     <option value="inscripcion">Inscripción</option>
                                 </select>
                             </div>
-
 
                             <!-- Modalidad -->
                             <div class="form-group">
@@ -141,22 +158,19 @@
                             <!-- Monto -->
                             <div class="form-group">
                                 <label for="monto">Monto a Pagar:</label>
-                                <input type="number" class="form-control" id="monto" name="monto" step="0.01"
-                                    value="{{ $alumno->monto_total }}" readonly>
+                                <input type="number" class="form-control" id="monto" name="monto" step="0.01" readonly>
                             </div>
 
                             <!-- Fecha -->
                             <div class="form-group">
                                 <label for="fecha_pago">Fecha de Pago:</label>
-                                <input type="date" class="form-control" id="fecha_pago" name="fecha_pago"
-                                    value="{{ date('Y-m-d') }}" required>
+                                <input type="date" class="form-control" id="fecha_pago" name="fecha_pago" value="{{ date('Y-m-d') }}" required>
                             </div>
 
                             <!-- Comprobante -->
                             <div class="form-group">
                                 <label for="archivo_comprobante">Subir Comprobante:</label>
-                                <input type="file" class="form-control" id="archivo_comprobante"
-                                    name="archivo_comprobante" required>
+                                <input type="file" class="form-control" id="archivo_comprobante" name="archivo_comprobante" required>
                             </div>
 
                             <div class="mb-3">
@@ -165,14 +179,15 @@
                                 </button>
                             </div>
                         </form>
+
                     </div>
                 </div>
             </div>
 
         </div>
     </div>
-
 @stop
+
 
 @section('css')
     <link rel="stylesheet" href="{{ asset('css/pagos.css') }}">
@@ -181,98 +196,106 @@
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modalidadPago = document.getElementById('modalidad_pago');
-            const tipoPago = document.getElementById('tipo_pago');
-            const montoInput = document.getElementById('monto');
-            const fechaPago = document.getElementById('fecha_pago');
-            const form = document.querySelector('form[action="{{ route('pagos.store') }}"]');
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalidadPago   = document.getElementById('modalidad_pago');
+            const tipoPago        = document.getElementById('tipo_pago');
+            const montoInput      = document.getElementById('monto');
+            const fechaPago       = document.getElementById('fecha_pago');
+            const form            = document.getElementById('pagoForm');
+            const maestriaSelect  = document.getElementById('maestria_select');
+            const maestriaIdInput = document.getElementById('maestria_id');
+            const archivoInput    = document.getElementById('archivo_comprobante');
 
-            const montoMatricula = parseFloat(@json($alumno->monto_matricula));
-            const montoInscripcion = parseFloat(@json($alumno->monto_inscripcion));
-            const montoTotalAlumno = parseFloat(@json($alumno->monto_total));
-            const montoArancel = parseFloat(@json($alumno->maestria->arancel));
-            const montoMatricula_t = parseFloat(@json($alumno->maestria->matricula));
-            const montoInscripcion_t = parseFloat(@json($alumno->maestria->inscripcion));
+            // Valores iniciales de deuda según maestría seleccionada
+            let montoArancel     = parseFloat(maestriaSelect ? maestriaSelect.selectedOptions[0].dataset.arancel     : {{ $maestriaInicial['monto_total'] ?? 0 }});
+            let montoMatricula   = parseFloat(maestriaSelect ? maestriaSelect.selectedOptions[0].dataset.matricula   : {{ $maestriaInicial['monto_matricula'] ?? 0 }});
+            let montoInscripcion = parseFloat(maestriaSelect ? maestriaSelect.selectedOptions[0].dataset.inscripcion : {{ $maestriaInicial['monto_inscripcion'] ?? 0 }});
 
-            // Deshabilitar opciones si el monto es 0
-            Array.from(tipoPago.options).forEach(opt => {
-                if (opt.value === 'arancel' && montoTotalAlumno === 0) opt.disabled = true;
-                if (opt.value === 'matricula' && montoMatricula === 0) opt.disabled = true;
-                if (opt.value === 'inscripcion' && montoInscripcion === 0) opt.disabled = true;
-            });
-
+            /** 🔄 Actualiza el monto mostrado según tipo/modalidad */
             function updatePaymentDetails() {
                 const modalidad = modalidadPago.value;
                 const tipo = tipoPago.value;
                 let montoFinal = 0;
 
-                if (tipo === 'arancel') {
-                    if (modalidad === 'unico') {
-                        montoFinal = montoTotalAlumno < 0 ? 0 : montoTotalAlumno;
-                    } else if (modalidad === 'trimestral') {
-                        montoFinal = montoArancel / 3;
-                    }
-                } else if (tipo === 'matricula') {
-                    if (modalidad === 'unico') {
-                        montoFinal = montoMatricula < 0 ? 0 : montoMatricula;
-                    } else if (modalidad === 'trimestral') {
-                        montoFinal = montoMatricula_t / 3;
-                    }
-                } else if (tipo === 'inscripcion') {
-                    if (modalidad === 'unico') {
-                        montoFinal = montoInscripcion < 0 ? 0 : montoInscripcion;
-                    } else if (modalidad === 'trimestral') {
-                        montoFinal = montoInscripcion_t / 3;
-                    }
+                switch (tipo) {
+                    case 'arancel':
+                        montoFinal = modalidad === 'trimestral' ? montoArancel / 3 : montoArancel;
+                        break;
+                    case 'matricula':
+                        montoFinal = modalidad === 'trimestral' ? montoMatricula / 3 : montoMatricula;
+                        break;
+                    case 'inscripcion':
+                        montoFinal = modalidad === 'trimestral' ? montoInscripcion / 3 : montoInscripcion;
+                        break;
                 }
 
                 if (modalidad === 'otro') {
                     montoInput.value = '';
                     montoInput.readOnly = false;
                 } else {
-                    montoInput.value = montoFinal.toFixed(2);
+                    montoInput.value = Math.max(0, montoFinal).toFixed(2);
                     montoInput.readOnly = true;
                 }
+            }
+
+            /** 🔄 Cambia de maestría y actualiza montos */
+            if (maestriaSelect) {
+                maestriaSelect.addEventListener('change', () => {
+                    const selected = maestriaSelect.selectedOptions[0];
+
+                    montoArancel     = parseFloat(selected.dataset.arancel)     || 0;
+                    montoMatricula   = parseFloat(selected.dataset.matricula)   || 0;
+                    montoInscripcion = parseFloat(selected.dataset.inscripcion) || 0;
+
+                    maestriaIdInput.value = selected.value;
+
+                    // Habilitar/deshabilitar tipo de pago según deuda
+                    [...tipoPago.options].forEach(opt => {
+                        opt.disabled = false;
+                        if (opt.value === 'arancel'     && montoArancel     <= 0) opt.disabled = true;
+                        if (opt.value === 'matricula'   && montoMatricula   <= 0) opt.disabled = true;
+                        if (opt.value === 'inscripcion' && montoInscripcion <= 0) opt.disabled = true;
+                    });
+
+                    updatePaymentDetails();
+                });
             }
 
             modalidadPago.addEventListener('change', updatePaymentDetails);
             tipoPago.addEventListener('change', updatePaymentDetails);
 
+            // Cargar valores iniciales
             updatePaymentDetails();
 
-            // Validación y alerta antes de enviar
-            form.addEventListener('submit', function(e) {
+            /** ✅ Validación y confirmación antes de enviar */
+            form.addEventListener('submit', e => {
                 e.preventDefault();
 
-                const montoForm = parseFloat(montoInput.value);
+                const montoForm = parseFloat(montoInput.value || 0);
                 const fechaForm = fechaPago.value;
-                const archivo = document.getElementById('archivo_comprobante').files[0];
+                const archivo   = archivoInput.files[0];
 
                 if (!archivo) {
-                    Swal.fire('Error', 'Debes subir el comprobante.', 'error');
+                    Swal.fire('Error', 'Debes subir el comprobante', 'error');
+                    return;
+                }
+                if (isNaN(montoForm) || montoForm <= 0) {
+                    Swal.fire('Error', 'El monto debe ser mayor a 0', 'error');
                     return;
                 }
 
-                // Opcional: puedes extraer el monto y fecha del nombre del archivo si lo deseas
-                // Ejemplo: comprobante_100.00_2025-08-20.pdf
-                // let nombre = archivo.name.split('_');
-                // let montoArchivo = parseFloat(nombre[1]);
-                // let fechaArchivo = nombre[2]?.split('.')[0];
-
                 Swal.fire({
                     title: '¿Confirmar pago?',
-                    html: `Monto a enviar: <b>$${montoForm.toFixed(2)}</b><br>Fecha: <b>${fechaForm}</b><br>Verifica que el comprobante corresponda al monto y fecha seleccionados.`,
+                    html: `Monto a enviar: <b>$${montoForm.toFixed(2)}</b><br>Fecha: <b>${fechaForm}</b>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Sí, enviar pago',
                     cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
+                }).then(result => {
+                    if (result.isConfirmed) form.submit();
                 });
             });
         });
     </script>
+
 @stop

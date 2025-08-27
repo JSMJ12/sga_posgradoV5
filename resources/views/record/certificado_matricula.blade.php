@@ -63,7 +63,7 @@
 
         <p class="body-text">
             El Instituto de Posgrado, a través de la Coordinación del Programa de la
-            {{ ucfirst(strtolower($alumno->maestria->nombre)) }}, hace constar que:
+            {{ ucfirst(strtolower($maestria->nombre)) }}, hace constar que:
         </p>
         <br>
 
@@ -73,7 +73,7 @@
         <br>
         <p class="body-text">
             Con número de identificación {{ $alumno->dni }}, ha formalizado su matrícula en la
-            {{ ucfirst(strtolower($alumno->maestria->nombre)) }}, correspondiente a la {{ $cohorte->nombre }},
+            {{ ucfirst(strtolower($maestria->nombre)) }}, correspondiente a la {{ $cohorte->nombre }},
             en el Período Académico {{ $cohorte->periodo_academico->nombre }}, con fecha de inicio el
             {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}
             y fecha de culminación prevista para el
@@ -89,7 +89,7 @@
                 <b>{{ $nombreCompleto }}</b>
             </div>
             <div style="display: inline-block; padding: 0 10px; margin-bottom: 5px; font-size: 10pt; text-transform: uppercase; font-weight: bold;">
-                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre)}}
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($maestria->nombre)}}
             </div>
         </div>
     </div>

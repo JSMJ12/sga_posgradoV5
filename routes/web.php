@@ -199,7 +199,7 @@ Route::get('mensajes/buzon', [MessageController::class, 'index'])->name('message
 Route::delete('/mensajes/{id_message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
 //Pagos
-Route::get('/pagos/pdf/{cohorte}', [DashboardSecretarioEpsuController::class, 'generarPdf'])->name('pagos.pdf')->middleware('can:secretario_coordinador');
+Route::get('/pagos/pdf/{cohorte_id}', [DashboardSecretarioEpsuController::class, 'generarPdf'])->name('pagos.pdf')->middleware('can:secretario_coordinador');
 Route::middleware(['can:dashboard_secretario_epsu'])->group(function () {
     // Listar todos los pagos (equivalente a index)
     Route::get('/pagos/dashboard', [PagoController::class, 'index'])->name('pagos.index');
@@ -221,9 +221,14 @@ Route::delete('/pagos/{id}/rechazar', [PagoController::class, 'rechazar_pago'])-
 
 
 //Matriculas
-Route::get('/matriculas/create/{alumno_dni}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
-Route::get('/matriculas/create/{alumno_dni}/{cohorte_id}', [MatriculaController::class, 'create'])->middleware('can:dashboard_secretario');
-Route::resource('matriculas', MatriculaController::class)->middleware('can:dashboard_secretario');
+Route::get('/matriculas/create/{alumno_dni}/{maestria_id}', [MatriculaController::class, 'create'])
+    ->middleware('can:dashboard_secretario')
+    ->name('matriculas.create');
+
+// Ruta para guardar matrícula
+Route::post('/matriculas', [MatriculaController::class, 'store'])
+    ->middleware('can:dashboard_secretario')
+    ->name('matriculas.store');
 
 //NOTAS ADMINISTRADOR
 Route::get('/notas/create/{alumno_dni}', [NotaController::class, 'create'])->name('notas.create')->middleware('can:dashboard_secretario');
@@ -235,10 +240,10 @@ Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paral
     ->name('pdf.notas.asignatura');
 
 //PDFS RECORD ACADEMICO ADMINISTRADOR
-Route::resource('record', RecordController::class)->middleware('can:dashboard_secretario');
-Route::get('/certificado-matricula/{id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware('can:dashboard_secretario');
-Route::get('/certificado/{id}', [RecordController::class, 'certificado'])->name('certificado')->middleware('can:dashboard_secretario');
-Route::get('/certificado_culminacion/{id}', [RecordController::class, 'certificado_culminacion'])->name('certificado_culminacion')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_secretario_epsu');
+Route::get('/record_academico/{alumno_dni}/{maestria_id}', [RecordController::class, 'record_academico'])->name('record_academico')->middleware('can:dashboard_secretario');
+Route::get('/certificado-matricula/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware('can:dashboard_secretario');
+Route::get('/certificado/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado'])->name('certificado')->middleware('can:dashboard_secretario');
+Route::get('/certificado_culminacion/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_culminacion'])->name('certificado_culminacion')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_secretario_epsu');
 
 //CALIFICACIONES DOCENTES
 Route::get('/calificaciones/create/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'create'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.create1');

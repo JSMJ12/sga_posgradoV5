@@ -28,164 +28,133 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- El contenido se cargará dinámicamente mediante DataTables -->
+                            <!-- DataTables carga los alumnos -->
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Modal --}}
     @include('modales.asignar_descuento_modal')
+    @include('modales.botones_alumnos_modal')
 @stop
 
 @section('js')
     <script>
         $(document).ready(function() {
-            // Inicializar la tabla de alumnos
+
+            // Inicializar DataTable
             let alumnosTable = $('#alumnos').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('descuentos.alumnos') }}",
-                columns: [{
-                        data: 'dni',
-                        name: 'dni'
-                    },
-                    {
-                        data: 'foto',
-                        name: 'foto',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'nombre_completo',
-                        name: 'nombre_completo'
-                    },
-                    {
-                        data: 'maestria_nombre',
-                        name: 'maestria.nombre'
-                    },
-                    {
-                        data: 'email_institucional',
-                        name: 'email_institucional'
-                    },
-                    {
-                        data: 'sexo',
-                        name: 'sexo'
-                    },
-                    {
-                        data: 'descuento_nombre',
-                        name: 'descuento_nombre',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'acciones',
-                        name: 'acciones',
-                        orderable: false,
-                        searchable: false
-                    }
+                columns: [
+                    { data: 'dni', name: 'dni' },
+                    { data: 'foto', name: 'foto', orderable: false, searchable: false },
+                    { data: 'nombre_completo', name: 'nombre_completo' },
+                    { data: 'maestria_nombre', name: 'maestria.nombre' },
+                    { data: 'email_institucional', name: 'email_institucional' },
+                    { data: 'sexo', name: 'sexo' },
+                    { data: 'descuento_nombre', name: 'descuento_nombre', orderable: false, searchable: false },
+                    { data: 'acciones', name: 'acciones', orderable: false, searchable: false }
                 ],
-                language: {
-                    url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-                }
+                language: { url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" }
             });
 
-            // Al hacer clic en el botón de seleccionar descuento
+            // Abrir modal para seleccionar descuento
             $('#alumnos').on('click', '.select-descuento', function() {
                 let dniAlumno = $(this).data('dni');
 
-                // Mostrar spinner de carga
-                $('#contenedorTablaDescuentos').html(`
-                <div class="d-flex justify-content-center my-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Cargando...</span>
-                    </div>
-                </div>
-            `);
-
-                // Resetear formulario y ocultar documento de autenticidad
-                $('#documentoAutenticidad').addClass('d-none');
+                // Spinner mientras carga
+                $('#contenedorTablaDescuentos').html('<div class="spinner-border text-primary"></div>');
                 $('#formSeleccionarDescuento')[0].reset();
                 $('#dniAlumnoInput').val(dniAlumno);
-
-                // Abrir modal
+                $('#maestriaSelect').empty();
+                $('#documentoAutenticidad').addClass('d-none');
                 $('#modalSeleccionarDescuento').modal('show');
 
-                // Cargar descuentos vía AJAX
+                // Obtener maestrías pendientes y descuentos
                 $.ajax({
                     url: `/descuentos/alumno/${dniAlumno}`,
-                    method: "GET",
+                    method: 'GET',
                     success: function(response) {
-                        let descuentos = response.programa.descuentos;
-                        let arancel = response.programa.arancel;
+                        const descuentos = response.descuentos;
+                        const maestriasPendientes = response.maestrias;
 
-                        let htmlTabla = `
-                        <table class="table table-striped align-middle">
-                            <thead class="thead-light">
-                                <tr class="text-center">
-                                    <th>Tipo de Descuento</th>
-                                    <th>Porcentaje</th>
-                                    <th>Arancel Original</th>
-                                    <th>Descuento</th>
-                                    <th>Total con Descuento</th>
-                                    <th>Requisitos</th>
-                                    <th>Seleccionar</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-
-                        if (Object.keys(descuentos).length > 0) {
-                            htmlTabla += Object.entries(descuentos).map(([tipo, d]) => `
-                            <tr class="text-center">
-                                <td><strong>${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</strong></td>
-                                <td>${d.porcentaje}%</td>
-                                <td>$${parseFloat(arancel).toFixed(2)}</td>
-                                <td>$${parseFloat(d.descuento).toFixed(2)}</td>
-                                <td>$${parseFloat(d.total).toFixed(2)}</td>
-                                <td class="text-left">
-                                    <ul class="mb-0">
-                                        ${d.requisitos.map(req => `<li>${req}</li>`).join('')}
-                                    </ul>
-                                </td>
-                                <td>
-                                    <div class="form-check d-flex justify-content-center">
-                                        <input class="form-check-input" type="radio" name="descuento_id" value="${d.id}" data-tipo="${tipo}">
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('');
-                        } else {
-                            htmlTabla += `
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">No hay descuentos disponibles.</td>
-                            </tr>`;
+                        // Si no hay maestrías pendientes
+                        if (maestriasPendientes.length === 0) {
+                            $('#contenedorTablaDescuentos').html('<div class="alert alert-info text-center">Todas las maestrías ya tienen descuento aplicado.</div>');
+                            return;
                         }
 
-                        htmlTabla += `</tbody></table>`;
-
-                        $('#contenedorTablaDescuentos').html(htmlTabla);
-
-                        // Detectar selección de descuento
-                        $('input[name="descuento_id"]').on('change', function() {
-                            let tipoSeleccionado = $(this).data('tipo');
-                            if (tipoSeleccionado === 'mejor_graduado') {
-                                $('#documentoAutenticidad').removeClass('d-none');
-                            } else {
-                                $('#documentoAutenticidad').addClass('d-none');
-                            }
+                        // Llenar select con maestrías pendientes
+                        maestriasPendientes.forEach(m => {
+                            $('#maestriaSelect').append(`<option value="${m.id}" data-arancel="${m.arancel}">${m.nombre}</option>`);
                         });
+
+                        // Función para renderizar tabla de descuentos
+                        function renderTabla(arancel) {
+                            let html = `<table class="table table-striped">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th>Tipo</th>
+                                        <th>%</th>
+                                        <th>Arancel</th>
+                                        <th>Descuento</th>
+                                        <th>Total</th>
+                                        <th>Requisitos</th>
+                                        <th>Seleccionar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+                            if (Object.keys(descuentos).length > 0) {
+                                html += Object.entries(descuentos).map(([tipo, d]) => {
+                                    let descuentoMonto = (d.porcentaje / 100) * arancel;
+                                    let total = arancel - descuentoMonto;
+                                    return `<tr class="text-center">
+                                        <td>${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</td>
+                                        <td>${d.porcentaje}%</td>
+                                        <td>$${arancel.toFixed(2)}</td>
+                                        <td>$${descuentoMonto.toFixed(2)}</td>
+                                        <td>$${total.toFixed(2)}</td>
+                                        <td class="text-left"><ul>${d.requisitos.map(req => `<li>${req}</li>`).join('')}</ul></td>
+                                        <td><input type="radio" name="descuento_id" value="${d.id}" data-tipo="${tipo}"></td>
+                                    </tr>`;
+                                }).join('');
+                            } else {
+                                html += `<tr><td colspan="7" class="text-center text-muted">No hay descuentos disponibles.</td></tr>`;
+                            }
+
+                            html += '</tbody></table>';
+                            $('#contenedorTablaDescuentos').html(html);
+
+                            // Mostrar campo de documento si el tipo requiere
+                            $('input[name="descuento_id"]').off('change').on('change', function() {
+                                $('#documentoAutenticidad').toggle($(this).data('tipo') === 'mejor_graduado');
+                            });
+                        }
+
+                        // Render inicial con primera maestría
+                        let arancelInicial = parseFloat($('#maestriaSelect option:selected').data('arancel')) || 0;
+                        renderTabla(arancelInicial);
+
+                        // Re-render al cambiar maestría
+                        $('#maestriaSelect').off('change').on('change', function() {
+                            let arancel = parseFloat($(this).find(':selected').data('arancel')) || 0;
+                            renderTabla(arancel);
+                        });
+
                     },
                     error: function() {
-                        $('#contenedorTablaDescuentos').html(`
-                        <div class="alert alert-danger text-center">
-                            Error al cargar los descuentos. Intenta nuevamente.
-                        </div>
-                    `);
+                        $('#contenedorTablaDescuentos').html('<div class="alert alert-danger">Error al cargar descuentos</div>');
                     }
                 });
             });
 
-            // Validar selección antes de enviar el formulario
+            // Validar antes de enviar
             $('#formSeleccionarDescuento').on('submit', function(e) {
                 if (!$('input[name="descuento_id"]:checked').val()) {
                     e.preventDefault();
@@ -193,13 +162,42 @@
                 }
             });
 
-            // Limpiar el modal cuando se cierra
+            // Limpiar modal al cerrar
             $('#modalSeleccionarDescuento').on('hidden.bs.modal', function() {
                 $('#contenedorTablaDescuentos').empty();
                 $('#documentoAutenticidad').addClass('d-none');
                 $('#formSeleccionarDescuento')[0].reset();
+                $('#maestriaSelect').empty();
             });
+
+            // Modal de reportes
+            $(document).on('click', '.open-reportes', function() {
+                let dni = $(this).data('dni');
+                let nombre = $(this).data('nombre');
+                let maestrias = JSON.parse($(this).data('maestrias'));
+
+                $('#modalAlumnoNombre').text(nombre);
+                let tbody = $('#tablaReportes');
+                tbody.empty();
+
+                maestrias.forEach(m => {
+                    tbody.append(`
+                        <tr>
+                            <td>${m.nombre}</td>
+                            <td>
+                                <a href="/certificado_culminacion/${dni}/${m.id}" target="_blank" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-file-pdf"></i> Culminación
+                                </a>
+                            </td>
+                        </tr>
+                    `);
+                });
+
+                new bootstrap.Modal(document.getElementById("modalReportes")).show();
+            });
+
         });
     </script>
-
 @stop
+
+

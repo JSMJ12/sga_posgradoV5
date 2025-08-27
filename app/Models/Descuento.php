@@ -15,6 +15,13 @@ class Descuento extends Model
     ];
     public function alumnos()
     {
-        return $this->hasMany(Alumno::class);
+        return $this->belongsToMany(
+            Alumno::class,
+            'alumno_descuento_maestria',
+            'descuento_id',
+            'alumno_dni'
+        )
+        ->withPivot('maestria_id')
+        ->withTimestamps();
     }
 }

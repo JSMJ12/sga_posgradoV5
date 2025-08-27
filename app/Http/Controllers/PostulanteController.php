@@ -402,129 +402,123 @@ class PostulanteController extends Controller
         if (!$postulante) {
             return redirect()->back()->with('error', 'El postulante no existe.');
         }
-        $usuario = User::where('email', $postulante->correo_electronico)->first();
 
+        if (!$postulante->status) {
+            return redirect()->back()->with('error', 'El postulante no puede ser convertido en estudiante.');
+        }
+
+        // Crear email institucional
+        $email_institucional = strtolower($postulante->apellidop) . '-' . strtolower($postulante->nombre1) . substr($postulante->dni, -4) . '@unesum.edu.ec';
+
+        // Directorio de PDFs
         $rutaDirectorio = 'public/alumnos/pdf';
         if (!Storage::exists($rutaDirectorio)) {
             Storage::makeDirectory($rutaDirectorio);
         }
 
-        $pdf_cedula_path = $postulante->pdf_cedula;
-        $pdf_papelvotacion_path = $postulante->pdf_papelvotacion;
-        $pdf_titulouniversidad_path = $postulante->pdf_titulouniversidad;
-        $pdf_conadis_path = $postulante->pdf_conadis;
-        $pdf_hojavida_path = $postulante->pdf_hojavida;
-        $carta_aceptacion_path = $postulante->carta_aceptacion;
-        $pago_matricula_path = $postulante->pago_matricula;
+        // Crear el alumno con todos los campos
+        $estudiante = Alumno::create([
+            'dni' => $postulante->dni,
+            'nombre1' => $postulante->nombre1,
+            'nombre2' => $postulante->nombre2,
+            'apellidop' => $postulante->apellidop,
+            'apellidom' => $postulante->apellidom,
+            'email_personal' => $postulante->correo_electronico,
+            'email_institucional' => $email_institucional,
+            'estado_civil' => $postulante->estado_civil,
+            'fecha_nacimiento' => $postulante->fecha_nacimiento,
+            'provincia' => $postulante->provincia,
+            'canton' => $postulante->canton,
+            'barrio' => $postulante->barrio,
+            'direccion' => $postulante->direccion,
+            'nacionalidad' => $postulante->nacionalidad,
+            'etnia' => $postulante->etnia,
+            'carnet_discapacidad' => $postulante->carnet_discapacidad,
+            'tipo_discapacidad' => $postulante->tipo_discapacidad,
+            'porcentaje_discapacidad' => $postulante->porcentaje_discapacidad,
+            'contra' => bcrypt($postulante->dni),
+            'image' => $postulante->imagen,
+            'celular' => $postulante->celular,
+            'titulo_profesional' => $postulante->titulo_profesional,
+            'universidad_titulo' => $postulante->universidad_titulo,
+            'tipo_colegio' => $postulante->tipo_colegio,
+            'cantidad_miembros_hogar' => $postulante->cantidad_miembros_hogar,
+            'ingreso_total_hogar' => $postulante->ingreso_total_hogar,
+            'nivel_formacion_padre' => $postulante->nivel_formacion_padre,
+            'nivel_formacion_madre' => $postulante->nivel_formacion_madre,
+            'origen_recursos_estudios' => $postulante->origen_recursos_estudios,
+            'sexo' => $postulante->sexo,
+            'pdf_cedula' => $postulante->pdf_cedula,
+            'pdf_papelvotacion' => $postulante->pdf_papelvotacion,
+            'pdf_titulouniversidad' => $postulante->pdf_titulouniversidad,
+            'pdf_conadis' => $postulante->pdf_conadis,
+            'pdf_hojavida' => $postulante->pdf_hojavida,
+            'carta_aceptacion' => $postulante->carta_aceptacion,
+            'telefono_convencional' => $postulante->telefono_convencional,
+            'edad' => $postulante->edad,
+            'tipo_sangre' => $postulante->tipo_sangre,
+            'anios_residencia' => $postulante->anios_residencia,
+            'libreta_militar' => $postulante->libreta_militar,
+            'pais_residencia' => $postulante->pais_residencia,
+            'parroquia' => $postulante->parroquia,
+            'calle_principal' => $postulante->calle_principal,
+            'numero_direccion' => $postulante->numero_direccion,
+            'calle_secundaria' => $postulante->calle_secundaria,
+            'referencia_direccion' => $postulante->referencia_direccion,
+            'telefono_domicilio' => $postulante->telefono_domicilio,
+            'celular_residencia' => $postulante->celular_residencia,
+            'contacto_apellidos' => $postulante->contacto_apellidos,
+            'contacto_nombres' => $postulante->contacto_nombres,
+            'contacto_parentesco' => $postulante->contacto_parentesco,
+            'contacto_telefono' => $postulante->contacto_telefono,
+            'contacto_celular' => $postulante->contacto_celular,
+            'especialidad_bachillerato' => $postulante->especialidad_bachillerato,
+            'colegio_bachillerato' => $postulante->colegio_bachillerato,
+            'ciudad_bachillerato' => $postulante->ciudad_bachillerato,
+            'especialidad_mencion' => $postulante->especialidad_mencion,
+            'ciudad_universidad' => $postulante->ciudad_universidad,
+            'pais_universidad' => $postulante->pais_universidad,
+            'registro_senescyt' => $postulante->registro_senescyt,
+            'titulo_posgrado' => $postulante->titulo_posgrado,
+            'denominacion_posgrado' => $postulante->denominacion_posgrado,
+            'universidad_posgrado' => $postulante->universidad_posgrado,
+            'ciudad_posgrado' => $postulante->ciudad_posgrado,
+            'pais_posgrado' => $postulante->pais_posgrado,
+            'lugar_trabajo' => $postulante->lugar_trabajo,
+            'funcion_laboral' => $postulante->funcion_laboral,
+            'ciudad_trabajo' => $postulante->ciudad_trabajo,
+            'direccion_trabajo' => $postulante->direccion_trabajo,
+            'telefono_trabajo' => $postulante->telefono_trabajo,
+        ]);
 
-        if ($postulante->status) {
-            $email_institucional = strtolower($postulante->apellidop) . '-' . strtolower($postulante->nombre1) . substr($postulante->dni, -4) . '@unesum.edu.ec';
+        $estudiante->maestrias()->attach($postulante->maestria_id);
 
-            $estudiante = Alumno::create([
-                'dni' => $postulante->dni,
-                'nombre1' => $postulante->nombre1,
-                'nombre2' => $postulante->nombre2,
-                'apellidop' => $postulante->apellidop,
-                'apellidom' => $postulante->apellidom,
-                'email_personal' => $postulante->correo_electronico,
-                'email_institucional' => $email_institucional,
-                'estado_civil' => $postulante->estado_civil,
-                'fecha_nacimiento' => $postulante->fecha_nacimiento,
-                'provincia' => $postulante->provincia,
-                'canton' => $postulante->canton,
-                'barrio' => $postulante->barrio,
-                'direccion' => $postulante->direccion,
-                'nacionalidad' => $postulante->nacionalidad,
-                'etnia' => $postulante->etnia,
-                'carnet_discapacidad' => $postulante->carnet_discapacidad,
-                'tipo_discapacidad' => $postulante->tipo_discapacidad,
-                'porcentaje_discapacidad' => $postulante->porcentaje_discapacidad,
-                'contra' => bcrypt($postulante->dni),
-                'image' => $postulante->imagen,
-                'maestria_id' => $postulante->maestria_id,
-                'celular' => $postulante->celular,
-                'titulo_profesional' => $postulante->titulo_profesional,
-                'universidad_titulo' => $postulante->universidad_titulo,
-                'tipo_colegio' => $postulante->tipo_colegio,
-                'cantidad_miembros_hogar' => $postulante->cantidad_miembros_hogar,
-                'ingreso_total_hogar' => $postulante->ingreso_total_hogar,
-                'nivel_formacion_padre' => $postulante->nivel_formacion_padre,
-                'nivel_formacion_madre' => $postulante->nivel_formacion_madre,
-                'origen_recursos_estudios' => $postulante->origen_recursos_estudios,
-                'sexo'  => $postulante->sexo,
-                'pdf_cedula' => $pdf_cedula_path,
-                'pdf_papelvotacion' => $pdf_papelvotacion_path,
-                'pdf_titulouniversidad' => $pdf_titulouniversidad_path,
-                'pdf_conadis' => $pdf_conadis_path,
-                'pdf_hojavida' => $pdf_hojavida_path,
-                'carta_aceptacion' => $carta_aceptacion_path,
-                'pago_matricula' => $pago_matricula_path,
-                'monto_total' => $postulante->maestria->arancel,
-                'monto_matricula' => $postulante->monto_matricula,
-                'monto_inscripcion' => $postulante->monto_inscripcion,
-                'telefono_convencional' => $postulante->telefono_convencional,
-                'edad' => $postulante->edad,
-                'tipo_sangre' => $postulante->tipo_sangre,
-                'anios_residencia' => $postulante->anios_residencia,
-                'libreta_militar' => $postulante->libreta_militar,
-                'pais_residencia' => $postulante->pais_residencia,
-                'parroquia' => $postulante->parroquia,
-                'calle_principal' => $postulante->calle_principal,
-                'numero_direccion' => $postulante->numero_direccion,
-                'calle_secundaria' => $postulante->calle_secundaria,
-                'referencia_direccion' => $postulante->referencia_direccion,
-                'telefono_domicilio' => $postulante->telefono_domicilio,
-                'celular_residencia' => $postulante->celular_residencia,
-                'contacto_apellidos' => $postulante->contacto_apellidos,
-                'contacto_nombres' => $postulante->contacto_nombres,
-                'contacto_parentesco' => $postulante->contacto_parentesco,
-                'contacto_telefono' => $postulante->contacto_telefono,
-                'contacto_celular' => $postulante->contacto_celular,
-                'especialidad_bachillerato' => $postulante->especialidad_bachillerato,
-                'colegio_bachillerato' => $postulante->colegio_bachillerato,
-                'ciudad_bachillerato' => $postulante->ciudad_bachillerato,
-                'especialidad_mencion' => $postulante->especialidad_mencion,
-                'ciudad_universidad' => $postulante->ciudad_universidad,
-                'pais_universidad' => $postulante->pais_universidad,
-                'registro_senescyt' => $postulante->registro_senescyt,
-                'titulo_posgrado' => $postulante->titulo_posgrado,
-                'denominacion_posgrado' => $postulante->denominacion_posgrado,
-                'universidad_posgrado' => $postulante->universidad_posgrado,
-                'ciudad_posgrado' => $postulante->ciudad_posgrado,
-                'pais_posgrado' => $postulante->pais_posgrado,
-                'lugar_trabajo' => $postulante->lugar_trabajo,
-                'funcion_laboral' => $postulante->funcion_laboral,
-                'ciudad_trabajo' => $postulante->ciudad_trabajo,
-                'direccion_trabajo' => $postulante->direccion_trabajo,
-                'telefono_trabajo' => $postulante->telefono_trabajo,
-            ]);
+        // Guardar los montos en alumno_maestria_monto
+        $estudiante->montos()->attach($postulante->maestria_id, [
+            'monto_arancel' => $postulante->maestria->arancel ?? 0,
+            'monto_matricula' => $postulante->monto_matricula ?? 0,
+            'monto_inscripcion' => $postulante->monto_inscripcion ?? 0,
+        ]);
 
-            $user = User::where('name', $postulante->nombre1)
-                ->where('apellido', $postulante->apellidop)
-                ->where('email', $postulante->correo_electronico)
-                ->first();
+        // Actualizar usuario y roles
+        if ($usuario) {
+            $usuario->assignRole('Alumno');
+            $usuario->removeRole('Postulante');
+            $usuario->email = $email_institucional;
+            $usuario->save();
 
-            Notification::route('mail', $user->email)
-                ->notify(new MatriculaExito($user, $email_institucional, $user->name, $postulante->dni, $user->id));
+            DB::table('sessions')->where('user_id', $usuario->id)->delete();
 
-            if ($user) {
-                $user->assignRole('Alumno');
-                $user->removeRole('Postulante');
-
-                $user->email = $email_institucional;
-                $user->save();
-
-                DB::table('sessions')
-                    ->where('user_id', $user->id)
-                    ->delete();
-            }
-
-            $postulante->delete();
-            return redirect()->back()->with('success', 'El postulante ha sido convertido en estudiante.');
+            Notification::route('mail', $usuario->email)
+                ->notify(new MatriculaExito($usuario, $email_institucional, $usuario->name, $postulante->dni, $usuario->id));
         }
 
-        return redirect()->back()->with('error', 'El postulante no puede ser convertido en estudiante.');
+        // Eliminar postulante
+        $postulante->delete();
+
+        return redirect()->back()->with('success', 'El postulante ha sido convertido en estudiante con maestría y montos asignados.');
     }
+
     public function fichaInscripcionPdf($dni)
     {
         $postulante = Postulante::findOrFail($dni);

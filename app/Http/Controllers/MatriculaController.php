@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Http\Request;
 use App\Models\Alumno;
 use App\Models\Matricula;
@@ -10,7 +9,6 @@ use App\Models\Cohorte;
 use App\Models\Maestria;
 use App\Models\TasaTitulacion;
 use App\Models\Asignatura;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class MatriculaController extends Controller
@@ -20,34 +18,42 @@ class MatriculaController extends Controller
         $this->middleware('auth');
     }
 
-    public function create($alumno_dni, $cohorte_id = null)
+    /**
+     * Mostrar formulario de creación de matrícula
+     */
+    public function create($alumno_dni, $maestria_id)
     {
         $alumno = Alumno::where('dni', $alumno_dni)->firstOrFail();
-        $maestria = Maestria::findOrFail($alumno->maestria_id);
+        $maestria = Maestria::findOrFail($maestria_id);
 
+        // Cohortes disponibles para la maestría
         $cohortes = $maestria->cohortes
-            ->filter(function ($cohorte) {
-                return $cohorte->aforo > 0;
-            })
+            ->filter(fn($cohorte) => $cohorte->aforo > 0)
             ->sortByDesc('id');
 
-        $estaMatriculado = $this->verificarMatriculacion($alumno);
+        // Verificar si el alumno ya está matriculado en esta maestría
+        $estaMatriculado = $this->verificarMatriculacion($alumno, $maestria_id);
 
         if ($estaMatriculado) {
-            return redirect()->back()->with('error', 'El alumno ya está matriculado en este cohorte.');
+            return redirect()->back()->with('error', 'El alumno ya está matriculado en algún cohorte de esta maestría.');
         }
 
-        return view('matriculas.create', compact('alumno', 'cohortes'));
+        return view('matriculas.create', compact('alumno', 'maestria', 'cohortes'));
     }
 
-
-    private function verificarMatriculacion($alumno)
+    /**
+     * Verificar si el alumno ya tiene matrícula en la maestría indicada
+     */
+    private function verificarMatriculacion($alumno, $maestria_id)
     {
-        $dni = $alumno->dni;
-        // Verificar si el alumno está matriculado en alguna asignatura de este cohorte
-        return $alumno->matriculas()->where('alumno_dni', $dni)->exists();
+        return $alumno->matriculas()
+            ->whereHas('cohorte', fn($q) => $q->where('maestria_id', $maestria_id))
+            ->exists();
     }
 
+    /**
+     * Guardar matrículas
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -58,65 +64,50 @@ class MatriculaController extends Controller
         try {
             DB::beginTransaction();
 
-            // Obtener el cohorte
-            $cohorte = Cohorte::find($request->cohorte_id, ['id', 'aforo', 'maestria_id']);
+            $cohorte = Cohorte::findOrFail($request->cohorte_id);
 
-            if (!$cohorte || $cohorte->aforo <= 0) {
+            if ($cohorte->aforo <= 0) {
                 return redirect()->back()->with('error', 'No hay cupo disponible en este cohorte.');
             }
 
-            // Obtener todas las asignaturas asociadas a la maestría del cohorte
+            // Asignaturas de la maestría del cohorte
             $asignaturas = Asignatura::where('maestria_id', $cohorte->maestria_id)
-                ->with('docentes') // Cargar los docentes asociados
+                ->with('docentes')
                 ->get();
 
-            // Filtrar las asignaturas que el alumno aún no tiene matriculadas
-            $asignaturasNoMatriculadas = $asignaturas->reject(function ($asignatura) use ($request, $cohorte) {
-                return Matricula::where('alumno_dni', $request->alumno_dni)
+            // Filtrar asignaturas que el alumno aún no tiene matriculadas
+            $asignaturasNoMatriculadas = $asignaturas->reject(fn($asignatura) =>
+                Matricula::where('alumno_dni', $request->alumno_dni)
                     ->where('asignatura_id', $asignatura->id)
                     ->where('cohorte_id', $cohorte->id)
-                    ->exists();
-            });
+                    ->exists()
+            );
 
             if ($asignaturasNoMatriculadas->isEmpty()) {
                 return redirect()->back()->with('info', 'El alumno ya está matriculado en todas las asignaturas de este cohorte.');
             }
 
-            // Crear las matrículas para las asignaturas no matriculadas
-            $matriculas = $asignaturasNoMatriculadas->map(function ($asignatura) use ($request, $cohorte) {
-                // Se asume que la asignatura tiene un docente asignado
-                return [
-                    'alumno_dni' => $request->alumno_dni,
-                    'asignatura_id' => $asignatura->id,
-                    'cohorte_id' => $cohorte->id,
-                    'docente_dni' => optional($asignatura->docentes->first())->dni, // Obtener el primer docente asignado
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            });
+            // Crear matrículas
+            $matriculas = $asignaturasNoMatriculadas->map(fn($asignatura) => [
+                'alumno_dni' => $request->alumno_dni,
+                'asignatura_id' => $asignatura->id,
+                'cohorte_id' => $cohorte->id,
+                'docente_dni' => optional($asignatura->docentes->first())->dni,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-            // Insertar las matrículas
             Matricula::insert($matriculas->toArray());
 
-            // Reducir el aforo del cohorte
+            // Reducir aforo
             $cohorte->decrement('aforo');
 
-            // Buscar o crear la tasa de titulación para el cohorte y la maestría
-            $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorte->id)
-                ->where('maestria_id', $cohorte->maestria_id)
-                ->first();
-
-            if ($tasaTitulacion) {
-                $tasaTitulacion->numero_matriculados += 1;
-                $tasaTitulacion->save();
-            } else {
-                // Si no existe, lo creamos con valores iniciales
-                TasaTitulacion::create([
-                    'cohorte_id' => $cohorte->id,
-                    'maestria_id' => $cohorte->maestria_id,
-                    'numero_matriculados' => 1,
-                ]);
-            }
+            // Actualizar o crear tasa de titulación
+            $tasa = TasaTitulacion::firstOrCreate(
+                ['cohorte_id' => $cohorte->id, 'maestria_id' => $cohorte->maestria_id],
+                ['numero_matriculados' => 0]
+            );
+            $tasa->increment('numero_matriculados');
 
             DB::commit();
             return redirect(route('alumnos.index'))->with('success', 'Matrícula realizada exitosamente.');

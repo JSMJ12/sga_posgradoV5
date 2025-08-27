@@ -15,21 +15,21 @@ class DescuentoController extends Controller
 
     public function index()
     {
-        $descuentos = Descuento::all(); // O puedes usar paginación si quieres
+        $descuentos = Descuento::all();
 
         return view('descuentos.index', compact('descuentos'));
     }
     public function alumnos(Request $request)
     {
         if ($request->ajax()) {
-            $query = Alumno::with('maestria', 'descuento')
+            $query = Alumno::with(['maestrias', 'descuentos', 'matriculas'])
                 ->orderBy('apellidop')  
                 ->orderBy('apellidom')   
                 ->orderBy('nombre1');    
 
             return datatables()->eloquent($query)
                 ->addColumn('maestria_nombre', function ($alumno) {
-                    return $alumno->maestria ? $alumno->maestria->nombre : 'Sin Maestría';
+                    return $alumno->maestrias->pluck('nombre')->join(', ') ?: 'Sin Maestría';
                 })
                 ->addColumn('foto', function ($alumno) {
                     return '<img src="' . asset('storage/' . $alumno->image) . '" alt="Foto de ' . $alumno->nombre1 . '" 
@@ -39,32 +39,44 @@ class DescuentoController extends Controller
                     return "{$alumno->nombre1} {$alumno->nombre2} {$alumno->apellidop} {$alumno->apellidom}";
                 })
                 ->addColumn('descuento_nombre', function ($alumno) {
-                    return $alumno->descuento ? $alumno->descuento->nombre : 'Sin descuento';
+                    return $alumno->descuentos->pluck('nombre')->join(', ') ?: 'Sin descuento';
                 })
                 ->addColumn('acciones', function ($alumno) {
                     $acciones = '';
 
-                    if ($alumno->descuento_id !== null) {
-                        $acciones .= '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Descuento aplicado</span>';
-                    } else {
-                        $acciones .= '<button class="btn btn-primary btn-sm select-descuento" data-dni="' . $alumno->dni . '" data-toggle="modal">
+                    // IDs de maestrías con descuento
+                    $maestriasConDescuento = $alumno->descuentos->map(fn($d) => $d->pivot->maestria_id)->toArray();
+
+                    // Maestrías pendientes
+                    $maestriasPendientes = $alumno->maestrias
+                        ->filter(fn($m) => !in_array($m->id, $maestriasConDescuento))
+                        ->map(fn($m) => ['id' => $m->id, 'nombre' => $m->nombre]);
+
+                    if ($maestriasPendientes->isNotEmpty()) {
+                        $acciones .= '<button class="btn btn-primary btn-sm select-descuento" 
+                                        data-dni="' . $alumno->dni . '" 
+                                        data-maestrias=\'' . json_encode($maestriasPendientes) . '\' 
+                                        data-toggle="modal">
                                         <i class="fas fa-tags"></i> Descuento
                                     </button>';
+                    } else {
+                        $acciones .= '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Todos los descuentos aplicados</span>';
                     }
 
-                    // Botón de certificado solo si el alumno tiene matrículas
+                    // Botón de reportes
                     if ($alumno->matriculas && $alumno->matriculas->count() > 0) {
-                        $acciones .= ' <a href="' . route('certificado_culminacion', $alumno->dni) . '" 
-                                        target="_blank" 
-                                        class="btn btn-outline-success btn-sm" 
-                                        title="Certificado de Culminación">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </a>';
+                        $maestriasAlumno = $alumno->maestrias->map(fn($m) => ['id' => $m->id, 'nombre' => $m->nombre]);
+                        $acciones .= ' <button type="button" class="btn btn-outline-warning btn-sm open-reportes" 
+                                        data-dni="' . $alumno->dni . '" 
+                                        data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '" 
+                                        data-maestrias=\'' . json_encode($maestriasAlumno) . '\' 
+                                        title="Ver Reportes">
+                                        <i class="fas fa-file-alt"></i>
+                                    </button>';
                     }
 
                     return $acciones;
                 })
-
                 ->rawColumns(['foto', 'acciones', 'nombre_completo'])
                 ->toJson();
         }
@@ -72,55 +84,58 @@ class DescuentoController extends Controller
         return view('descuentos.alumnos');
     }
 
+    
     public function showDescuentoForm($dni)
     {
-        $alumno = Alumno::where('dni', $dni)->first();
+        $alumno = Alumno::with(['maestrias', 'descuentos'])->where('dni', $dni)->first();
 
         if (!$alumno) {
             return response()->json(['error' => 'Alumno no encontrado.'], 404);
         }
 
-        $maestria = $alumno->maestria;
+        // IDs de maestrías con descuento
+        $maestriasConDescuento = $alumno->descuentos->map(fn($d) => $d->pivot->maestria_id)->toArray();
 
-        if (!$maestria) {
-            return response()->json(['error' => 'Maestría no encontrada para el alumno.'], 404);
-        }
+        // Maestrías pendientes (puede estar vacío)
+        $maestriasPendientes = $alumno->maestrias
+            ->filter(fn($m) => !in_array($m->id, $maestriasConDescuento))
+            ->map(fn($m) => [
+                'id' => $m->id,
+                'nombre' => $m->nombre,
+                'arancel' => $m->arancel ?? 0,
+            ])
+            ->values(); // para resetear índices
 
-        // Obtener descuentos activos, formateándolos como objeto clave => valor
-        $descuentos = Descuento::where('activo', true)->get()->mapWithKeys(function ($descuento) use ($maestria) {
-            $montoDescuento = ($descuento->porcentaje / 100) * $maestria->arancel;
-            return [
-                strtolower($descuento->nombre) => [
-                    'id' => $descuento->id,
-                    'nombre' => $descuento->nombre,
-                    'porcentaje' => $descuento->porcentaje, // Se agrega el porcentaje
-                    'descuento' => $montoDescuento,
-                    'total' => $maestria->arancel - $montoDescuento,
-                    'requisitos' => $descuento->requisitos ? json_decode($descuento->requisitos) : [],
-                ]
-            ];
-        });
+        // Descuentos activos
+        $descuentos = Descuento::where('activo', true)->get()->mapWithKeys(fn($d) => [
+            strtolower($d->nombre) => [
+                'id' => $d->id,
+                'nombre' => $d->nombre,
+                'porcentaje' => $d->porcentaje,
+                'requisitos' => $d->requisitos ? json_decode($d->requisitos) : [],
+            ]
+        ]);
 
-        $programa = [
-            'nombre' => $maestria->nombre,
-            'arancel' => $maestria->arancel,
-            'descuentos' => $descuentos,
-        ];
-
-        return response()->json(['programa' => $programa, 'alumno' => $alumno]);
+        return response()->json([
+            'alumno' => $alumno,
+            'maestrias' => $maestriasPendientes, // puede estar vacío
+            'descuentos' => $descuentos
+        ]);
     }
+
 
 
     public function processDescuento(Request $request)
     {
         $request->validate([
             'dni' => 'required|string',
+            'maestria_id' => 'required|exists:maestrias,id',
             'descuento_id' => 'required|exists:descuentos,id',
             'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
         try {
-            $alumno = Alumno::where('dni', $request->dni)->first();
+            $alumno = Alumno::with(['montos', 'descuentos'])->where('dni', $request->dni)->first();
             if (!$alumno) {
                 return redirect()->back()->with('error', 'Alumno no encontrado.');
             }
@@ -130,58 +145,60 @@ class DescuentoController extends Controller
                 return redirect()->back()->with('error', 'Descuento inválido.');
             }
 
-            $maestria = $alumno->maestria;
-            if (!$maestria) {
-                return redirect()->back()->with('error', 'Maestría no encontrada para el alumno.');
+            // Obtener el monto del arancel actual del alumno para la maestría seleccionada
+            $montoRelacion = $alumno->montos()->where('maestria_id', $request->maestria_id)->first();
+            if (!$montoRelacion) {
+                return redirect()->back()->with('error', 'El alumno no tiene registrado el monto de arancel para esta maestría.');
             }
 
-            // Calcular el nuevo monto total con descuento
-            $montoConDescuento = $maestria->arancel - ($maestria->arancel * ($descuento->porcentaje / 100));
+            $arancelActual = $montoRelacion->pivot->monto_arancel ?? 0;
 
-            // Buscar usuario por el email institucional
+            // Total pagado antes de aplicar el descuento
             $usuario = \App\Models\User::where('email', $alumno->email_institucional)->first();
-
-            if (!$usuario) {
-                return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado, pero no se encontró el usuario con el email institucional.');
+            $totalPagado = 0;
+            if ($usuario) {
+                $totalPagado = \App\Models\Pago::where('user_id', $usuario->id)
+                    ->where('verificado', 1)
+                    ->where('tipo_pago', 'arancel')
+                    ->where('maestria_id', $request->maestria_id)
+                    ->sum('monto');
             }
 
-            // Total pagado por el usuario (solo verificados y tipo arancel)
-            $totalPagado = \App\Models\Pago::where('user_id', $usuario->id)
-                ->where('verificado', 1)
-                ->where('tipo_pago', 'arancel')
-                ->sum('monto');
+            // Calcular monto con descuento
+            $montoConDescuento = $arancelActual - ($arancelActual * ($descuento->porcentaje / 100));
 
-            // Calcular diferencia: si negativa => reembolso, si positiva => deuda
-            $diferencia = $totalPagado - $montoConDescuento;
-            $deudaRestante = $montoConDescuento - $totalPagado;
+            // Guardar el descuento aplicado en la tabla pivote
+            $alumno->descuentos()->syncWithoutDetaching([
+                $descuento->id => ['maestria_id' => $request->maestria_id]
+            ]);
 
-            // Mensaje informativo
-            if ($totalPagado == 0) {
-                $mensaje_pago = 'No se han registrado pagos verificados. Se ha aplicado el descuento correctamente.';
-            } elseif ($diferencia < 0) {
-                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
-                    ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
-                    ' | Reembolso pendiente: $' . number_format(abs($diferencia), 2);
-            } else {
-                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
-                    ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
-                    ' | Deuda restante: $' . number_format($deudaRestante, 2);
-            }
+            // Actualizar monto_arancel en la tabla pivote alumno_maestria_monto
+            $alumno->montos()->updateExistingPivot($request->maestria_id, [
+                'monto_arancel' => $montoConDescuento
+            ]);
 
-            // Actualizar descuento y documento si aplica
-            $alumno->descuento_id = $descuento->id;
-
+            // Guardar documento si aplica
             if ($request->hasFile('documento')) {
                 $documentoPath = $request->file('documento')->store('documentos_autenticidad', 'public');
                 $alumno->documento = $documentoPath;
+                $alumno->save();
             }
 
-            // Guardar deuda real (puede ser negativa si pagó de más)
-            $alumno->monto_total = $deudaRestante;
-
-            $alumno->save();
+            // Calcular deuda o reembolso
+            if ($totalPagado < $montoConDescuento) {
+                $deudaRestante = $montoConDescuento - $totalPagado;
+                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
+                                ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
+                                ' | Deuda restante: $' . number_format($deudaRestante, 2);
+            } else {
+                $reembolso = $totalPagado - $montoConDescuento;
+                $mensaje_pago = 'Total pagado: $' . number_format($totalPagado, 2) .
+                                ' | Monto con descuento: $' . number_format($montoConDescuento, 2) .
+                                ' | Reembolso pendiente: $' . number_format($reembolso, 2);
+            }
 
             return redirect()->route('descuentos.alumnos')->with('success', 'Descuento aplicado correctamente. ' . $mensaje_pago);
+
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Ocurrió un error al aplicar el descuento: ' . $e->getMessage());
         }

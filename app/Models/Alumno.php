@@ -113,23 +113,35 @@ class Alumno extends Model
         'status',
         'carta_aceptacion',
         'pago_matricula',
-        'monto_total',
-        'monto_matricula',
-        'monto_inscripcion',
-        'maestria_id',
-        'descuento_id'
     ];
     public function user()
     {
         return $this->hasOne(User::class, 'email', 'email_institucional');
     }
+    public function descuentos()
+    {
+        return $this->belongsToMany(
+            Descuento::class,                 
+            'alumno_descuento_maestria',      
+            'alumno_dni',                     
+            'descuento_id'                     
+        )
+        ->withPivot('maestria_id')           
+        ->withTimestamps();
+    }
+    public function montos()
+    {
+        return $this->belongsToMany(Maestria::class, 'alumno_maestria_monto', 'alumno_dni', 'maestria_id')
+                    ->withPivot('monto_arancel', 'monto_matricula', 'monto_inscripcion')
+                    ->withTimestamps();
+    }
     public function notas()
     {
         return $this->hasMany(Nota::class);
     }
-    public function maestria()
+    public function maestrias()
     {
-        return $this->belongsTo(Maestria::class);
+        return $this->belongsToMany(Maestria::class, 'alumnos_maestrias', 'alumno_dni', 'maestria_id');
     }
     public function matriculas()
     {
@@ -149,40 +161,16 @@ class Alumno extends Model
         return $this->hasMany(Titulacion::class, 'alumno_dni', 'dni');
     }
     protected static function boot()
-{
-    parent::boot();
+    {
+        parent::boot();
 
-    static::creating(function ($alumno) {
-        if (empty($alumno->registro)) {
-            $alumno->registro = self::getNextRegistro();
-        }
-    });
+        static::creating(function ($alumno) {
+            if (empty($alumno->registro)) {
+                $alumno->registro = self::getNextRegistro();
+            }
+        });
 
-    static::updating(function ($alumno) {
-        $alumno->verificarMontos();
-    });
-
-    // 🔹 Esto se ejecuta cada vez que se obtiene un Alumno desde la DB
-    static::retrieved(function ($alumno) {
-        $alumno->verificarMontos();
-    });
-}
-
-public function verificarMontos()
-{
-    // Si el alumno tiene usuario relacionado
-    $tienePagos = $this->user && $this->user->pagos()->count() > 0;
-
-    if (!$tienePagos && empty($this->descuento_id) && $this->maestria) {
-        $this->monto_inscripcion = $this->maestria->incripcion ?? 0;
-        $this->monto_matricula = $this->maestria->matricula ?? 0;
-
-        if ($this->isDirty(['monto_inscripcion', 'monto_matricula'])) {
-            $this->saveQuietly();
-        }
     }
-}
-
 
     private static function getNextRegistro()
     {
@@ -197,10 +185,6 @@ public function verificarMontos()
         return $this->hasOne(ExamenComplexivo::class, 'alumno_dni', 'dni');
     }
 
-    public function descuento()
-    {
-        return $this->belongsTo(Descuento::class);
-    }
     public function getFullNameAttribute()
     {
         return "{$this->nombre1} {$this->nombre2} {$this->apellidop} {$this->apellidom}";

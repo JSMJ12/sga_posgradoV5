@@ -30,17 +30,40 @@ class DashboardAlumnoController extends Controller
 
         // Eager load de relaciones necesarias
         $alumno->load([
-            'matriculas.asignatura.cohortes.aula',
+            'matriculas.cohorte.maestria', 
             'matriculas.asignatura.notas' => function ($query) use ($alumno) {
                 $query->where('alumno_dni', $alumno->dni);
             }
         ]);
 
-        $asignaturas = $alumno->matriculas->map->asignatura;
+        // Mapear asignaturas agrupadas por maestría con id y nombre
+        $asignaturasPorMaestria = $alumno->matriculas
+            ->filter(function ($m) {
+                return $m->asignatura && $m->cohorte;
+            })
+            ->groupBy(function ($m) {
+                $maestria = $m->cohorte->maestria;
+                return $maestria 
+                    ? $maestria->id . '|' . $maestria->nombre  
+                    : '0|Sin Maestría';
+            })
+            ->mapWithKeys(function ($matriculas, $key) {
+                [$id, $nombre] = explode('|', $key);
+                $asignaturas = $matriculas->map(function($m) {
+                    return $m->asignatura;
+                })->sortBy('nombre')->values();
 
-        // Retornar la vista con los datos
-        return view('dashboard.alumno', compact('asignaturas', 'alumno'));
+                return [
+                    $id => [
+                        'nombre' => $nombre,
+                        'asignaturas' => $asignaturas
+                    ]
+                ];
+            });
+
+        return view('dashboard.alumno', compact('alumno', 'asignaturasPorMaestria'));
     }
+
     public function alumnos_notas(Request $request)
     {
         $perPage = $request->input('perPage', 10);

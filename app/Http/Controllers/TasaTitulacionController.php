@@ -45,29 +45,34 @@ class TasaTitulacionController extends Controller
         $maestria = Maestria::findOrFail($maestria_id);
         $cohorte = Cohorte::findOrFail($cohorte_id);
 
-        
-        $alumnos = Alumno::whereHas('matriculas', function ($query) use ($cohorte_id) {
-            $query->where('cohorte_id', $cohorte_id);
+        $alumnos = Alumno::whereHas('matriculas', function ($query) use ($cohorte_id, $maestria_id) {
+            $query->where('cohorte_id', $cohorte_id)
+                ->whereHas('cohorte', function ($q) use ($maestria_id) {
+                    $q->where('maestria_id', $maestria_id);
+                });
         })
-            ->where('maestria_id', $maestria_id)
-            ->distinct('dni') 
-            ->get();
+        ->distinct('dni')
+        ->get();
 
         return Excel::download(new EstudiantesExport($alumnos, $maestria, $cohorte), 'Estudiantes_SIIES.xlsx');
     }
+
     public function export2($maestria_id, $cohorte_id)
     {
         $maestria = Maestria::findOrFail($maestria_id);
         $cohorte = Cohorte::findOrFail($cohorte_id);
 
-        $alumnos = Alumno::whereHas('matriculas', function ($query) use ($cohorte_id) {
-            $query->where('cohorte_id', $cohorte_id);
+        $alumnos = Alumno::whereHas('matriculas', function ($query) use ($cohorte_id, $maestria_id) {
+            $query->where('cohorte_id', $cohorte_id)
+                ->whereHas('cohorte', function ($q) use ($maestria_id) {
+                    $q->where('maestria_id', $maestria_id);
+                });
         })
-        ->where('maestria_id', $maestria_id)
-        ->whereHas('titulaciones') // Filtrar solo alumnos con titulaciones
-        ->distinct('dni') 
-        ->get();    
+        ->whereHas('titulaciones') // solo alumnos con titulaciones
+        ->distinct('dni')
+        ->get();
 
         return Excel::download(new TitulacionExport($alumnos, $maestria, $cohorte), 'Graduados_SIIES.xlsx');
     }
+
 }

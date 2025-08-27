@@ -17,15 +17,23 @@
                     <!-- Columna 1 -->
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="maestria_id"><i class="fas fa-graduation-cap"></i> Maestría:</label>
-                            <select class="form-control" id="maestria_id" name="maestria_id" required>
-                                <option value="">Seleccione una maestría</option>
+                            <label><i class="fas fa-graduation-cap"></i> Maestrías:</label>
+                            <div>
                                 @foreach ($maestrias as $maestria)
-                                    <option value="{{ $maestria->id }}" {{ $alumno->maestria_id == $maestria->id ? 'selected' : '' }}>
-                                        {{ $maestria->nombre }}
-                                    </option>
+                                    <div class="form-check">
+                                        <input 
+                                            class="form-check-input" 
+                                            type="checkbox" 
+                                            name="maestrias[]" 
+                                            value="{{ $maestria->id }}" 
+                                            id="maestria_{{ $maestria->id }}"
+                                            {{ $alumno->maestrias->contains($maestria->id) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="maestria_{{ $maestria->id }}">
+                                            {{ $maestria->nombre }} {{ $maestria->codigo }}
+                                        </label>
+                                    </div>
                                 @endforeach
-                            </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="dni">Cédula / Pasaporte</label>

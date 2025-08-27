@@ -100,7 +100,7 @@
 
         <p>
             El Instituto de Posgrado, a través de la Coordinación del Programa de Maestría en
-            {{ $alumno->maestria->nombre }}, hace constar que:
+            {{ $maestria->nombre }}, hace constar que:
         </p>
 
         <div class="nombre">
@@ -109,7 +109,7 @@
 
         <p>
             con cédula de identidad {{ $alumno->dni }}, ha cumplido con todos los requisitos académicos y
-            administrativos del programa de Maestría en {{ $alumno->maestria->nombre }}, correspondiente a la cohorte
+            administrativos del programa de la {{ $maestria->nombre }}, correspondiente a la
             {{ $cohorte->nombre }}, cursado en el Período Académico {{ $cohorte->periodo_academico->nombre }},
             desarrollado entre el
             {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->isoFormat('D [de] MMMM [de] YYYY') }}
@@ -129,7 +129,7 @@
                 {{ strtoupper($nombreCompleto) }}
             </div>
             <div class="cargo">
-                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($maestria->nombre) }}
             </div>
         </div>
     </div>

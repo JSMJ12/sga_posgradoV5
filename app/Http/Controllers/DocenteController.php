@@ -246,23 +246,24 @@ class DocenteController extends Controller
             'email'      => 'required|email|unique:users,email',
         ]);
 
-        // Crear docente
+        // === Crear docente ===
         $docente = new Docente();
         $docente->fill($request->only([
             'nombre1', 'nombre2', 'apellidop', 'apellidom', 'sexo', 'dni', 'tipo', 'email'
         ]));
-        $docente->contra = Hash::make($request->input('dni')); // Hash seguro de Laravel
+        $docente->contra = Hash::make($request->input('dni')); // contraseña inicial = dni
 
         // Manejo de foto
         if ($request->hasFile('docen_foto')) {
             $docente->image = $request->file('docen_foto')->store('imagenes_usuarios', 'public');
         } else {
-            $docente->image = 'https://ui-avatars.com/api/?name=' . urlencode(substr($docente->nombre1, 0, 1));
+            $primeraLetra = substr($docente->nombre1, 0, 1);
+            $docente->image = 'https://ui-avatars.com/api/?name=' . urlencode($primeraLetra);
         }
 
         $docente->save();
 
-        // Crear usuario vinculado
+        // === Crear usuario vinculado ===
         $usuario = new User();
         $usuario->fill([
             'name'     => $docente->nombre1,
@@ -276,11 +277,11 @@ class DocenteController extends Controller
 
         $usuario->save();
 
-        // Asignar rol
+        // Asignar rol (id=2 para docentes)
         $docenteRole = Role::findById(2);
         $usuario->assignRole($docenteRole);
 
-        return redirect()->route('docentes.index')->with('success', 'Usuario creado exitosamente.');
+        return redirect()->route('docentes.index')->with('success', 'Usuario y Docente creados exitosamente.');
     }
 
     public function edit($dni)
@@ -323,12 +324,11 @@ class DocenteController extends Controller
 
         $docente->save();
 
-        // Actualizamos usuario (si existe)
         if ($usuario) {
             $usuario->name     = $docente->nombre1;
             $usuario->apellido = $docente->apellidop;
             $usuario->sexo     = $docente->sexo;
-            $usuario->email    = $docente->email; // aquí sí el nuevo
+            $usuario->email    = $docente->email; 
             $usuario->image    = $docente->image;
             $usuario->save();
         }

@@ -108,9 +108,9 @@
 
         <p class="certificate-details">
             Que de acuerdo a los registros que reposan en la Secretaría Académica de
-            la Coordinación de la {{ $alumno->maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se
+            la Coordinación de la {{ $maestria->nombre }} de la Universidad Estatal del Sur de Manabí, se
             desarrolló al {{ $numeroRomano }} PROGRAMA
-            DE LA {{ strtoupper($alumno->maestria->nombre) }}, inició sus actividades académicas el
+            DE LA {{ strtoupper($maestria->nombre) }}, inició sus actividades académicas el
             {{ \Carbon\Carbon::parse($cohorte->fecha_inicio)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }}
             y culminó el
             {{ \Carbon\Carbon::parse($cohorte->fecha_fin)->locale('es')->isoFormat('DD [de] MMMM [de] YYYY') }},
@@ -150,7 +150,7 @@
                 {{ strtoupper($nombreCompleto) }}
             </div>
             <div class="firma-cargo">
-                COORDINADOR DEL PROGRAMA DE {{ strtoupper($alumno->maestria->nombre) }}
+                COORDINADOR DEL PROGRAMA DE {{ strtoupper($maestria->nombre) }}
             </div>
         </div>
 

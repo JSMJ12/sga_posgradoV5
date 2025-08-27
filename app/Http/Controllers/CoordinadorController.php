@@ -20,24 +20,35 @@ class CoordinadorController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $docente = Docente::where('email', $user->email)->first();
 
+        // Obtener el docente
+        $docente = Docente::where('email', $user->email)->first();
         if (!$docente || $docente->maestria()->count() === 0) {
-            return redirect()->route('dashboard')->with('error', 'No estás asignado a ninguna maestría.');
+            return redirect()->route('dashboard_docente')->with('error', 'No estás asignado a ninguna maestría.');
         }
 
+        // Tomar la primera maestría asignada al docente
         $maestria = $docente->maestria->first();
-        $alumnos = Alumno::where('maestria_id', $maestria->id)->with('matriculas.cohorte')->get();
-        $cantidadPostulantes = Postulante::where('maestria_id', $maestria->id)->count();
+
+        // Obtener alumnos que pertenecen a esta maestría
+        $alumnos = Alumno::whereHas('maestrias', function ($q) use ($maestria) {
+                $q->where('maestrias.id', $maestria->id);
+            })
+            ->with(['matriculas.cohorte', 'montos' => function ($q) use ($maestria) {
+                $q->where('maestria_id', $maestria->id);
+            }, 'user.pagos'])
+            ->get();
+
         $totalAlumnos = $alumnos->count();
-        $totalPostulantes = $cantidadPostulantes;
-        $totalDocentes = Docente::whereHas('asignaturas', function ($query) use ($maestria) {
-            $query->whereHas('maestria', function ($query) use ($maestria) {
-                $query->where('id', $maestria->id);
-            });
+        $totalPostulantes = Postulante::where('maestria_id', $maestria->id)->count();
+
+        // Contar docentes que tengan asignaturas en esta maestría
+        $totalDocentes = Docente::whereHas('asignaturas.maestria', function ($q) use ($maestria) {
+            $q->where('id', $maestria->id);
         })->count();
 
-        $cohortesMaestria = $maestria->cohortes()->with('matriculas.alumno')->get();
+        $cohortesMaestria = $maestria->cohortes()->with('matriculas.alumno.user.pagos')->get();
+
         $cohortes = [];
         $deudaArancelPorCohorte = [];
         $deudaMatriculaPorCohorte = [];
@@ -48,24 +59,26 @@ class CoordinadorController extends Controller
 
         foreach ($cohortesMaestria as $cohorte) {
             $cohortes[] = $cohorte->nombre;
-            $alumnosUnicos = $cohorte->matriculas->unique('alumno_dni');
-            $cantidadAlumnos = $alumnosUnicos->count();
-            $pagosCohorte = collect();
 
-            foreach ($alumnosUnicos as $matricula) {
-                $alumno = $matricula->alumno;
-                if ($alumno) {
-                    $userPago = User::where('email', $alumno->email_institucional)->first();
-                    if ($userPago) {
-                        $pagosVerificados = $userPago->pagos()->where('verificado', '1')->get();
-                        $pagosCohorte = $pagosCohorte->merge($pagosVerificados);
-                    }
-                }
+            $alumnosUnicos = $cohorte->matriculas->pluck('alumno')->filter()->unique('dni');
+            $cantidadAlumnos = $alumnosUnicos->count();
+
+            $pagosCohorte = collect();
+            foreach ($alumnosUnicos as $alumno) {
+                // Filtrar montos y pagos de la maestría del docente
+                $monto = $alumno->montos->first();
+                $pagosVerificados = $alumno->user
+                    ? $alumno->user->pagos->where('verificado', '1')->where('maestria_id', $maestria->id)
+                    : collect();
+
+                $pagosCohorte = $pagosCohorte->merge($pagosVerificados);
             }
 
-            $deudaArancel = $cantidadAlumnos * $maestria->arancel;
-            $deudaMatricula = $cantidadAlumnos * $maestria->matricula;
-            $deudaInscripcion = $cantidadAlumnos * $maestria->inscripcion;
+            // Deuda basada en montos específicos de cada alumno
+            $deudaArancel = $alumnosUnicos->sum(fn($a) => $a->montos->first()?->monto_arancel ?? $maestria->arancel);
+            $deudaMatricula = $alumnosUnicos->sum(fn($a) => $a->montos->first()?->monto_matricula ?? $maestria->matricula);
+            $deudaInscripcion = $alumnosUnicos->sum(fn($a) => $a->montos->first()?->monto_inscripcion ?? $maestria->inscripcion);
+
             $recaudadoArancel = $pagosCohorte->where('tipo_pago', 'arancel')->sum('monto');
             $recaudadoMatricula = $pagosCohorte->where('tipo_pago', 'matricula')->sum('monto');
             $recaudadoInscripcion = $pagosCohorte->where('tipo_pago', 'inscripcion')->sum('monto');
@@ -79,10 +92,18 @@ class CoordinadorController extends Controller
         }
 
         return view('dashboard.coordinador', compact(
-            'maestria', 'totalAlumnos', 'totalDocentes', 'totalPostulantes',
-            'cohortes', 'deudaArancelPorCohorte', 'deudaMatriculaPorCohorte',
-            'deudaInscripcionPorCohorte', 'recaudadoArancelPorCohorte', 
-            'recaudadoMatriculaPorCohorte', 'recaudadoInscripcionPorCohorte'
+            'maestria',
+            'totalAlumnos',
+            'totalDocentes',
+            'totalPostulantes',
+            'cohortes',
+            'deudaArancelPorCohorte',
+            'deudaMatriculaPorCohorte',
+            'deudaInscripcionPorCohorte',
+            'recaudadoArancelPorCohorte',
+            'recaudadoMatriculaPorCohorte',
+            'recaudadoInscripcionPorCohorte'
         ));
     }
+
 }

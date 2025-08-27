@@ -111,7 +111,7 @@ class Postulante extends Model
 
     public function maestria()
     {
-        return $this->belongsTo(Maestria::class, 'maestria_id');
+        return $this->belongsTo(Maestria::class, 'maestria_id', 'id');
     }
 
     public function documentos_verificados()

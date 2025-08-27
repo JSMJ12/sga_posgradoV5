@@ -20,7 +20,7 @@ class Maestria extends Model
     }
     public function alumnos()
     {
-        return $this->hasMany(Alumno::class);
+        return $this->belongsToMany(Alumno::class, 'alumnos_maestrias', 'maestria_id', 'alumno_dni');
     }
     public function asignaturas()
     {
@@ -32,7 +32,7 @@ class Maestria extends Model
     }
     public function postulantes()
     {
-        return $this->belongsToMany(Postulante::class);
+        return $this->hasMany(Postulante::class, 'maestria_id', 'id');
     }
     public function docentes()
     {
@@ -46,4 +46,26 @@ class Maestria extends Model
     {
         return $this->hasMany(TasaTitulacion::class);
     }
+    public function descuentosAlumnos()
+    {
+        return $this->belongsToMany(
+            Descuento::class,
+            'alumno_descuento_maestria',
+            'maestria_id',
+            'descuento_id'
+        )
+        ->withPivot('alumno_dni')
+        ->withTimestamps();
+    }
+    public function alumnos_montos()
+    {
+        return $this->belongsToMany(Alumno::class, 'alumno_maestria_monto', 'maestria_id', 'alumno_dni')
+                    ->withPivot('monto_arancel', 'monto_matricula', 'monto_inscripcion')
+                    ->withTimestamps();
+    }
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class);
+    }
+
 }

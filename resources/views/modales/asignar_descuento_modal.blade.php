@@ -12,11 +12,23 @@
             <form id="formSeleccionarDescuento" action="{{ route('descuentos.procesar') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="dni" id="dniAlumnoInput">
+
                 <div class="modal-body" style="max-height: 75vh; overflow-y: auto; overflow-x: auto;">
+                    
+                    <!-- Select de Maestrías -->
+                    <div class="mb-3">
+                        <label for="maestriaSelect" class="form-label">Seleccionar Maestría:</label>
+                        <select id="maestriaSelect" name="maestria_id" class="form-control" required>
+                            <!-- Se llena dinámicamente vía JS -->
+                        </select>
+                    </div>
+
+                    <!-- Tabla de descuentos -->
                     <div id="contenedorTablaDescuentos" class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                         <!-- Aquí se cargará la tabla de descuentos dinámicamente -->
                     </div>
 
+                    <!-- Documento de autenticidad -->
                     <div id="documentoAutenticidad" class="mt-3 d-none">
                         <div class="mb-3">
                             <label for="documento" class="form-label">Subir Documento de Autenticidad:</label>
@@ -26,6 +38,7 @@
                             Para aplicar este descuento, debe subir el documento solicitado.
                         </div>
                     </div>
+
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="submit" class="btn btn-primary">Confirmar Selección</button>

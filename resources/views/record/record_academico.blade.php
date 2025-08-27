@@ -108,6 +108,7 @@
         <p class="certificate-title">RECORD ACADÉMICO</p>
 
         <div class="student-details">
+            <strong>Maestria:</strong> {{ $maestria->nombre }}<br>
             <strong>Estudiante:</strong> {{ $alumno->apellidop }} {{ $alumno->apellidom }} {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}<br>
             <strong>Cédula/Pasaporte:</strong> {{ $alumno->dni }}<br>
             <strong>Período académico:</strong> {{ $cohorte->periodo_academico->nombre }}<br>
