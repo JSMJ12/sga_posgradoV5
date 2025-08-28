@@ -79,21 +79,22 @@
                             <tbody>
                                 @foreach ($cohortes as $index => $cohorte)
                                     @php
-                                        $deudaArancel = $deudaArancelPorCohorte[$cohorte] ?? 0;
-                                        $deudaMatricula = $deudaMatriculaPorCohorte[$cohorte] ?? 0;
-                                        $deudaInscripcion = $deudaInscripcionPorCohorte[$cohorte] ?? 0;
+                                        $nombreCohorte = $cohorte['nombre'];
+                                        $cohorteid = $cohorte['id'];
+                                        $deudaArancel = $deudaArancelPorCohorte[$nombreCohorte] ?? 0;
+                                        $deudaMatricula = $deudaMatriculaPorCohorte[$nombreCohorte] ?? 0;
+                                        $deudaInscripcion = $deudaInscripcionPorCohorte[$nombreCohorte] ?? 0;
 
-                                        $recaudadoArancel = $recaudadoArancelPorCohorte[$cohorte] ?? 0;
-                                        $recaudadoMatricula = $recaudadoMatriculaPorCohorte[$cohorte] ?? 0;
-                                        $recaudadoInscripcion = $recaudadoInscripcionPorCohorte[$cohorte] ?? 0;
+                                        $recaudadoArancel = $recaudadoArancelPorCohorte[$nombreCohorte] ?? 0;
+                                        $recaudadoMatricula = $recaudadoMatriculaPorCohorte[$nombreCohorte] ?? 0;
+                                        $recaudadoInscripcion = $recaudadoInscripcionPorCohorte[$nombreCohorte] ?? 0;
 
                                         $totalDeuda = $deudaArancel + $deudaMatricula + $deudaInscripcion;
-                                        $totalRecaudado =
-                                            $recaudadoArancel + $recaudadoMatricula + $recaudadoInscripcion;
+                                        $totalRecaudado = $recaudadoArancel + $recaudadoMatricula + $recaudadoInscripcion;
                                         $porcentaje = $totalDeuda > 0 ? ($totalRecaudado / $totalDeuda) * 100 : 0;
                                     @endphp
                                     <tr>
-                                        <td>{{ $cohorte }}</td>
+                                        <td>{{ $nombreCohorte }}</td>
                                         <td>${{ number_format($deudaArancel, 2) }}</td>
                                         <td>${{ number_format($recaudadoArancel, 2) }}</td>
                                         <td>${{ number_format($deudaMatricula, 2) }}</td>
@@ -103,7 +104,7 @@
                                         <td>{{ number_format($porcentaje, 2) }}%</td>
                                         <td>
                                             @if ($recaudadoArancel > 0 || $recaudadoMatricula > 0 || $recaudadoInscripcion > 0)
-                                                <a href="{{ route('pagos.pdf', ['cohorte' => $cohorte]) }}"
+                                                <a href="{{ route('pagos.pdf', ['cohorte_id' => $cohorteid]) }}"
                                                     class="btn btn-danger btn-sm" target="_blank" title="Descargar PDF">
                                                     <i class="fas fa-file-pdf"></i>
                                                 </a>

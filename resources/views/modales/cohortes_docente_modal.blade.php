@@ -29,6 +29,8 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    const esCoordinador = @json(auth()->user()->hasRole('Coordinador'));
+
     $(document).on('click', '.btn-modal-cohortes', function() {
         const docenteDni = $(this).data('dni');
         const docenteNombre = $(this).data('nombre'); 
@@ -64,62 +66,76 @@
                 } else {
                     // Procesar los cohortes y asignaturas
                     let tableRows = response.cohortes.map(cohorte => {
-                        // Obtener la primera asignatura para la fila principal
                         let firstAsignatura = cohorte.asignaturas[0];
 
-                        // Crear la fila principal con rowspan
+                        let radios = '';
+                        if (!esCoordinador) {
+                            radios = `
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" id="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" 
+                                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
+                                        value="1" class="form-check-input" ${firstAsignatura.editar ? 'checked' : ''}>
+                                    <label for="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">Sí</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" id="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" 
+                                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
+                                        value="0" class="form-check-input" ${!firstAsignatura.editar ? 'checked' : ''}>
+                                    <label for="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">No</label>
+                                </div>
+                            `;
+                        }
+
                         let mainRow = `
-        <tr>
-            <td rowspan="${cohorte.asignaturas.length}">${cohorte.maestria}</td>
-            <td rowspan="${cohorte.asignaturas.length}">${cohorte.nombre}</td>
-            <td rowspan="${cohorte.asignaturas.length}">${cohorte.modalidad}</td>
-            <td rowspan="${cohorte.asignaturas.length}">${cohorte.aula}</td>
-            <td rowspan="${cohorte.asignaturas.length}">${cohorte.paralelo}</td>
-            <td>${firstAsignatura.nombre}</td>
-            <td>${firstAsignatura.calificado}</td>
-            <td>
-                <div class="form-check form-check-inline">
-                    <input type="radio" id="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" 
-                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
-                        value="1" class="form-check-input" ${firstAsignatura.editar ? 'checked' : ''}>
-                    <label for="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">Sí</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input type="radio" id="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" 
-                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
-                        value="0" class="form-check-input" ${!firstAsignatura.editar ? 'checked' : ''}>
-                    <label for="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">No</label>
-                </div>
-            </td>
-        </tr>
-    `;
+                            <tr>
+                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.maestria}</td>
+                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.nombre}</td>
+                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.modalidad}</td>
+                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.aula}</td>
+                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.paralelo}</td>
+                                <td>${firstAsignatura.nombre}</td>
+                                <td>${firstAsignatura.calificado}</td>
+                                <td>${radios}</td>
+                            </tr>
+                        `;
 
-                        // Crear filas para el resto de las asignaturas
-                        let asignaturasRows = cohorte.asignaturas.slice(1).map(asignatura => `
-        <tr>
-            <td>${asignatura.nombre}</td>
-            <td>${asignatura.calificado}</td>
-            <td>
-                <div class="form-check form-check-inline">
-                    <input type="radio" id="permiso_editar_si_${cohorte.id}_${asignatura.id}" 
-                        name="permiso_editar[${cohorte.id}][${asignatura.id}]" 
-                        value="1" class="form-check-input" ${asignatura.editar ? 'checked' : ''}>
-                    <label for="permiso_editar_si_${cohorte.id}_${asignatura.id}" class="form-check-label">Sí</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input type="radio" id="permiso_editar_no_${cohorte.id}_${asignatura.id}" 
-                        name="permiso_editar[${cohorte.id}][${asignatura.id}]" 
-                        value="0" class="form-check-input" ${!asignatura.editar ? 'checked' : ''}>
-                    <label for="permiso_editar_no_${cohorte.id}_${asignatura.id}" class="form-check-label">No</label>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+                        let asignaturasRows = cohorte.asignaturas.slice(1).map(asignatura => {
+                            let radios = '';
+                            if (!esCoordinador) {
+                                radios = `
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" id="permiso_editar_si_${cohorte.id}_${asignatura.id}" 
+                                            name="permiso_editar[${cohorte.id}][${asignatura.id}]" 
+                                            value="1" class="form-check-input" ${asignatura.editar ? 'checked' : ''}>
+                                        <label for="permiso_editar_si_${cohorte.id}_${asignatura.id}" class="form-check-label">Sí</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" id="permiso_editar_no_${cohorte.id}_${asignatura.id}" 
+                                            name="permiso_editar[${cohorte.id}][${asignatura.id}]" 
+                                            value="0" class="form-check-input" ${!asignatura.editar ? 'checked' : ''}>
+                                        <label for="permiso_editar_no_${cohorte.id}_${asignatura.id}" class="form-check-label">No</label>
+                                    </div>
+                                `;
+                            }
+                            return `
+                                <tr>
+                                    <td>${asignatura.nombre}</td>
+                                    <td>${asignatura.calificado}</td>
+                                    <td>${radios}</td>
+                                </tr>
+                            `;
+                        }).join('');
 
-                        // Unir la fila principal con las filas de asignaturas adicionales
                         return mainRow + asignaturasRows;
                     }).join('');
 
+
+                    // Botón guardar solo si no es coordinador
+                    let guardarBtn = !esCoordinador ? `
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                        </div>
+                    ` : '';
 
                     modalBody.html(`
                         <form action="{{ route('guardarCambios') }}" method="POST">
@@ -142,9 +158,7 @@
                                     <tbody>${tableRows}</tbody>
                                 </table>
                             </div>
-                            <div class="form-group text-center">
-                                <button type="submit" class="btn btn-success">Guardar Cambios</button>
-                            </div>
+                            ${guardarBtn}
                         </form>
                     `);
                 }

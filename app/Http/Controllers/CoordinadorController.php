@@ -58,7 +58,10 @@ class CoordinadorController extends Controller
         $recaudadoInscripcionPorCohorte = [];
 
         foreach ($cohortesMaestria as $cohorte) {
-            $cohortes[] = $cohorte->nombre;
+            $cohortes[] = [
+                'id' => $cohorte->id,
+                'nombre' => $cohorte->nombre
+            ];
 
             $alumnosUnicos = $cohorte->matriculas->pluck('alumno')->filter()->unique('dni');
             $cantidadAlumnos = $alumnosUnicos->count();

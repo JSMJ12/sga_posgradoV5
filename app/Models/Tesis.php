@@ -19,6 +19,7 @@ class Tesis extends Model
         'solicitud_pdf',
         'estado',
         'tipo',
+        'maestria_id',
     ];
 
     public function alumno()
@@ -33,5 +34,9 @@ class Tesis extends Model
     public function tutorias()
     {
         return $this->hasMany(Tutoria::class);
+    }
+    public function maestria()
+    {
+        return $this->belongsTo(Maestria::class, 'maestria_id');
     }
 }

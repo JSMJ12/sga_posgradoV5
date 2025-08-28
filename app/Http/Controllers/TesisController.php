@@ -28,27 +28,30 @@ class TesisController extends Controller
         $user = auth()->user();
         $docente = Docente::where('email', $user->email)->first();
 
+        // Verifica que el docente tenga al menos una maestría asignada
         if (!$docente || !$docente->maestria()->exists()) {
             return $request->ajax()
                 ? response()->json(['error' => 'No estás asignado a ninguna maestría.'], 403)
                 : redirect()->back()->withErrors(['error' => 'No estás asignado a ninguna maestría.']);
         }
 
-        $maestria = $docente->maestria()->first();
+        // Obtiene todas las maestrías del docente
+        $maestrias = $docente->maestria()->get();
+        $maestriaIds = $maestrias->pluck('id')->toArray();
 
-        $maestriaId = $maestria->id;
-
-        $cohortes = $maestria->cohortes;
+        // Obtiene los cohortes de todas las maestrías
+        $cohortes = \App\Models\Cohorte::whereIn('maestria_id', $maestriaIds)->get();
 
         if ($request->ajax()) {
             $solicitudes = Tesis::with('alumno', 'tutor')
                 ->where('tipo', '!=', 'examen complexivo')
-                ->whereHas('alumno', function ($query) use ($maestriaId) {
-                    $query->where('maestria_id', $maestriaId);
+                ->whereHas('alumno.maestrias', function ($query) use ($maestriaIds) {
+                    $query->whereIn('maestria_id', $maestriaIds);
                 })
                 ->orderByRaw('tutor_dni IS NULL DESC')
                 ->orderBy('estado', 'asc')
                 ->get();
+
             return DataTables::of($solicitudes)
                 ->addColumn('nombre_completo', function ($tesis) {
                     return $tesis->alumno
@@ -70,7 +73,7 @@ class TesisController extends Controller
                 ->addColumn('alumno_image', function ($tesis) {
                     return $tesis->alumno && $tesis->alumno->image
                         ? asset('storage/' . $tesis->alumno->image)
-                        : 'default.jpg'; // Si no tiene imagen, usa una imagen predeterminada
+                        : 'default.jpg';
                 })
                 ->rawColumns(['acciones', 'estado'])
                 ->make(true);
@@ -120,10 +123,10 @@ class TesisController extends Controller
             $tesis->tutor_dni = $docente->dni;  // Asignar el tutor al campo correspondiente
             $tesis->save();  // Guardar la tesis con el nuevo tutor asignado
 
-            // Redirigir a la página anterior con un mensaje de éxito
+            // Redirigir a la página anterior with un mensaje de éxito
             return redirect()->back()->with('success', 'Tutor asignado correctamente.');
         } else {
-            // Redirigir a la página anterior con un mensaje de error
+            // Redirigir a la página anterior with un mensaje de error
             return redirect()->back()->with('error', 'No se encontró el tutor o el docente.');
         }
     }
@@ -144,9 +147,14 @@ class TesisController extends Controller
             return redirect()->route('tesis.create')->with('error', 'Alumno no encontrado. Verifique que su correo institucional esté registrado.');
         }
 
+        // Recibe el id de la maestría desde el formulario
+        $maestriaId = $request->input('maestria_id');
+        $maestria = $alumno->maestrias()->where('maestria_id', $maestriaId)->first();
+
         $validatedData = $request->validate([
             'tema' => 'nullable|string|max:255',
             'descripcion' => 'nullable|string',
+            'maestria_id' => 'required|exists:maestrias,id',
         ]);
 
         $hasFile = $request->hasFile('solicitud_pdf');
@@ -159,27 +167,22 @@ class TesisController extends Controller
 
         $tesis = new Tesis();
         $tesis->alumno_dni = $alumno->dni;
-        $tesis->tema = $validatedData['tema'] ?? null; // Asigna null si no está presente
-        $tesis->descripcion = $validatedData['descripcion'] ?? null; // Asigna null si no está presente
-        $tesis->solicitud_pdf = $hasFile ? $pdfPath : null; // Si no hay archivo, será null
+        $tesis->tema = $validatedData['tema'] ?? null;
+        $tesis->descripcion = $validatedData['descripcion'] ?? null;
+        $tesis->solicitud_pdf = $hasFile ? $pdfPath : null;
         $tesis->estado = 'pendiente';
+        $tesis->maestria_id = $maestriaId;
         $tesis->save();
 
-
-        // Determinar el tipo
         if (empty($validatedData['tema']) && empty($validatedData['descripcion']) && !$hasFile) {
             $tesis->tipo = 'examen complexivo';
-            // Obtener la primera matrícula del alumno
             $matricula = $alumno->matriculas()->first();
             if (!$matricula) {
                 return redirect()->back()->with('error', 'Matrícula no encontrada');
             }
 
-            // Obtener el cohorte y la maestría
             $cohorteId = $matricula->cohorte_id;
-            $maestriaId = $alumno->maestria_id;
 
-            // Buscar o crear la tasa de titulación para el cohorte y la maestría
             $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorteId)
                 ->where('maestria_id', $maestriaId)
                 ->first();
@@ -188,7 +191,6 @@ class TesisController extends Controller
                 $tasaTitulacion->examen_complexivo += 1;
                 $tasaTitulacion->save();
             } else {
-                // Si no existe, lo creamos con valores iniciales
                 TasaTitulacion::create([
                     'cohorte_id' => $cohorteId,
                     'maestria_id' => $maestriaId,
@@ -212,14 +214,21 @@ class TesisController extends Controller
     {
         $email = Auth::user()->email;
         $alumno = Alumno::where('email_institucional', $email)->first();
-        $dniAlumno = $alumno->dni;
 
-        $tesis = Tesis::where('alumno_dni', $dniAlumno)->with('tutorias')->first();
+        // Maestrías del alumno
+        $maestrias = $alumno->maestrias;
 
-        return view('titulacion.proceso', compact('tesis', 'alumno'));
+        // Filtrar maestrías donde NO tiene titulación
+        $maestriasPendientes = $maestrias->filter(function($maestria) use ($alumno) {
+            return !$alumno->titulaciones()->where('maestria_id', $maestria->id)->exists();
+        });
+        // Si ya tiene tesis en alguna maestría, la mostramos
+        $tesis = Tesis::where('alumno_dni', $alumno->dni)->with('tutorias')->first();
+
+        return view('titulacion.proceso', compact('tesis', 'alumno', 'maestriasPendientes'));
     }
 
-    public function downloadPDF()
+    public function downloadPDF(Request $request)
     {
         $alumno = Alumno::where('email_institucional', Auth::user()->email)->first();
 
@@ -227,22 +236,20 @@ class TesisController extends Controller
             abort(404, 'Alumno no encontrado');
         }
 
+        // Recibe el id de la maestría desde el request
+        $maestriaId = $request->input('maestria_id');
+        $maestria = $alumno->maestrias()->where('maestria_id', $maestriaId)->first();
+
         $filename = 'Tema_Tesis_' . $alumno->nombre1 . '_' . $alumno->apellidop . '_' . $alumno->dni . '.pdf';
-        $coordinadorDni = $alumno->maestria->coordinador;
+        $coordinadorDni = $maestria ? $maestria->coordinador : null;
 
-        // Buscar al docente utilizando el DNI
-        $coordinador = Docente::where('dni', $coordinadorDni)->first();
+        $coordinador = $coordinadorDni ? Docente::where('dni', $coordinadorDni)->first() : null;
 
-        if ($coordinador) {
-            // Acceder al nombre completo utilizando el método getFullNameAttribute
-            $nombreCompleto = $coordinador->getFullNameAttribute();
-        } else {
-            $nombreCompleto = 'Coordinador no encontrado';
-        }
+        $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
         return PDF::loadView('titulacion.solicitud', compact('alumno', 'nombreCompleto'))
             ->setPaper('A4', 'portrait')
-            ->download($filename); // Descargar directamente
+            ->download($filename);
     }
     public function show($id)
     {

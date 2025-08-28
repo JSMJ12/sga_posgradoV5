@@ -106,79 +106,81 @@ class Examen_ComplexivoController extends Controller
         }
     }
 
-    public function calificar_examen(Request $request)
-{
-    if ($request->ajax()) {
-        try {
-            $user = auth()->user();
+   public function calificar_examen(Request $request)
+    {
+        if ($request->ajax()) {
+            try {
+                $user = auth()->user();
 
-            if ($user->hasRole('Administrador')) {
-                $query = Alumno::with(['maestria', 'tesis', 'examenComplexivo'])
-                    ->whereHas('tesis', function ($query) {
-                        $query->where('tipo', 'examen complexivo');
-                    });
-            } else {
-                $secretario = Secretario::where('nombre1', $user->name)
-                    ->where('apellidop', $user->apellido)
-                    ->where('email', $user->email)
-                    ->firstOrFail();
+                if ($user->hasRole('Administrador')) {
+                    $query = Alumno::with(['maestrias', 'tesis', 'examenComplexivo'])
+                        ->whereHas('tesis', function ($query) {
+                            $query->where('tipo', 'examen complexivo');
+                        });
+                } else {
+                    $secretario = Secretario::where('nombre1', $user->name)
+                        ->where('apellidop', $user->apellido)
+                        ->where('email', $user->email)
+                        ->firstOrFail();
 
-                $maestriasIds = $secretario->seccion->maestrias->pluck('id');
+                    $maestriasIds = $secretario->seccion->maestrias->pluck('id');
 
-                $query = Alumno::with(['maestria', 'tesis', 'examenComplexivo'])
-                    ->whereIn('maestria_id', $maestriasIds)
-                    ->whereHas('tesis', function ($query) {
-                        $query->where('tipo', 'examen complexivo');
-                    });
+                    $query = Alumno::with(['maestrias', 'tesis', 'examenComplexivo'])
+                        ->whereHas('maestrias', function ($q) use ($maestriasIds) {
+                            $q->whereIn('maestrias.id', $maestriasIds);
+                        })
+                        ->whereHas('tesis', function ($query) {
+                            $query->where('tipo', 'examen complexivo');
+                        });
+                }
+
+                return datatables()->eloquent($query)
+                    ->addColumn('maestria_nombre', function ($alumno) {
+                        return $alumno->maestrias->pluck('nombre')->implode(', ') ?: 'Sin Maestría';
+                    })
+                    ->addColumn('foto', function ($alumno) {
+                        return '<img src="' . asset('storage/' . $alumno->image) . '" 
+                            alt="Foto de ' . $alumno->nombre1 . '" 
+                            class="img-thumbnail rounded-circle" 
+                            style="width: 60px; height: 60px; object-fit: cover;">';
+                    })
+                    ->addColumn('nombre_completo', function ($alumno) {
+                        return "{$alumno->nombre1}<br>{$alumno->nombre2}<br>{$alumno->apellidop}<br>{$alumno->apellidom}";
+                    })
+                    ->addColumn('tipo_tesis', function ($alumno) {
+                        return optional($alumno->tesis->first())->tipo ?? 'Sin Tesis';
+                    })
+                    ->addColumn('acciones', function ($alumno) {
+                        $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
+                        $titulacion = optional($alumno->examenComplexivo)->first();
+                        if (!$titulacion || $titulacion->nota === null) {
+                            $acciones .= '<button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" 
+                                    data-dni="' . $alumno->dni . '" 
+                                    data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '">
+                                    <i class="bi bi-pencil-square"></i> Calificar
+                                </button>';
+                        } else {
+                            $acciones .= '<span class="badge bg-secondary d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle"></i> Ya calificado
+                            </span>';
+                        }
+                        $acciones .= '</div>';
+                        return $acciones;
+                    })
+                    ->rawColumns(['foto', 'acciones', 'nombre_completo'])
+                    ->toJson();
+
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile()
+                ], 500);
             }
-
-            return datatables()->eloquent($query)
-                ->addColumn('maestria_nombre', function ($alumno) {
-                    return $alumno->maestria ? $alumno->maestria->nombre : 'Sin Maestría';
-                })
-                ->addColumn('foto', function ($alumno) {
-                    return '<img src="' . asset('storage/' . $alumno->image) . '" 
-                        alt="Foto de ' . $alumno->nombre1 . '" 
-                        class="img-thumbnail rounded-circle" 
-                        style="width: 60px; height: 60px; object-fit: cover;">';
-                })
-                ->addColumn('nombre_completo', function ($alumno) {
-                    return "{$alumno->nombre1}<br>{$alumno->nombre2}<br>{$alumno->apellidop}<br>{$alumno->apellidom}";
-                })
-                ->addColumn('tipo_tesis', function ($alumno) {
-                    return optional($alumno->tesis->first())->tipo ?? 'Sin Tesis';
-                })
-                ->addColumn('acciones', function ($alumno) {
-                    $acciones = '<div style="display: flex; gap: 10px; align-items: center;">';
-                    $titulacion = optional($alumno->examenComplexivo)->first();
-                    if (!$titulacion || $titulacion->nota === null) {
-                        $acciones .= '<button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2" 
-                                data-dni="' . $alumno->dni . '" 
-                                data-nombre="' . $alumno->nombre1 . ' ' . $alumno->apellidop . '">
-                                <i class="bi bi-pencil-square"></i> Calificar
-                            </button>';
-                    } else {
-                        $acciones .= '<span class="badge bg-secondary d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle"></i> Ya calificado
-                        </span>';
-                    }
-                    $acciones .= '</div>';
-                    return $acciones;
-                })
-                ->rawColumns(['foto', 'acciones', 'nombre_completo'])
-                ->toJson();
-
-        } catch (\Throwable $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ], 500);
         }
-    }
 
-    return view('alumnos.examen_complexivo');
-}
+        return view('alumnos.examen_complexivo');
+    }
 
 
     public function actualizarNotaYFechaGraduacion(Request $request)
@@ -206,24 +208,24 @@ class Examen_ComplexivoController extends Controller
 
         $titulacion->fecha_graduacion = $request->fecha_graduacion;
         $titulacion->save();
-        $alumnoDni = $request->alumno_dni;
-        $alumno = Alumno::where('dni', $alumnoDni)->first();
 
+        // Buscar al alumno
+        $alumno = Alumno::where('dni', $request->alumno_dni)->first();
         if (!$alumno) {
             return redirect()->back()->with('error', 'Alumno no encontrado');
         }
 
         // Obtener la primera matrícula del alumno
-        $matricula = $alumno->matriculas()->first();
+        $matricula = $alumno->matriculas()->with('cohorte')->first();
         if (!$matricula) {
             return redirect()->back()->with('error', 'Matrícula no encontrada');
         }
 
-        // Obtener el cohorte y la maestría
+        // Cohorte y maestría desde la matrícula
         $cohorteId = $matricula->cohorte_id;
-        $maestriaId = $alumno->maestria_id;
+        $maestriaId = $matricula->cohorte->maestria_id;
 
-        // Buscar o crear la tasa de titulación para el cohorte y la maestría
+        // Buscar o crear la tasa de titulación
         $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorteId)
             ->where('maestria_id', $maestriaId)
             ->first();
@@ -232,7 +234,6 @@ class Examen_ComplexivoController extends Controller
             $tasaTitulacion->graduados += 1;
             $tasaTitulacion->save();
         } else {
-            // Si no existe, lo creamos con valores iniciales
             TasaTitulacion::create([
                 'cohorte_id' => $cohorteId,
                 'maestria_id' => $maestriaId,
@@ -242,4 +243,5 @@ class Examen_ComplexivoController extends Controller
 
         return redirect()->back()->with('success', 'Datos actualizados correctamente.');
     }
+
 }

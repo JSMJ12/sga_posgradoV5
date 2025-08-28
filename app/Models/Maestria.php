@@ -67,5 +67,9 @@ class Maestria extends Model
     {
         return $this->hasMany(Pago::class);
     }
+    public function tesis()
+    {
+        return $this->hasMany(Tesis::class);
+    }
 
 }

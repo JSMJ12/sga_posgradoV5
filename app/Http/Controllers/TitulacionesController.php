@@ -32,7 +32,7 @@ class TitulacionesController extends Controller
             'alumno_dni' => $request->alumno_dni,
             'titulado' => $request->titulado,
             'fecha_graduacion' => $request->fecha_graduacion,
-            'tesis_path' => $path,
+            'tesis_path' => $path ?? null,
         ]);
         $alumnoDni = $request->alumno_dni;
         $alumno = Alumno::where('dni', $alumnoDni)->first();
@@ -47,9 +47,10 @@ class TitulacionesController extends Controller
             return redirect()->back()->with('error', 'Matrícula no encontrada');
         }
 
-        // Obtener el cohorte y la maestría
+        // Obtener el cohorte y la maestría (usando la nueva relación)
         $cohorteId = $matricula->cohorte_id;
-        $maestriaId = $alumno->maestria_id;
+        $maestria = $alumno->maestrias->first();
+        $maestriaId = $maestria ? $maestria->id : null;
 
         // Buscar o crear la tasa de titulación para el cohorte y la maestría
         $tasaTitulacion = TasaTitulacion::where('cohorte_id', $cohorteId)

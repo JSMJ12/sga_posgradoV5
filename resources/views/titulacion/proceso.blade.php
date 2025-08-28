@@ -19,17 +19,44 @@
                             id="proceso-form">
                             @csrf
 
-                            <div class="mb-4">
-                                <label for="tipo" class="form-label fw-bold ">Seleccione el tipo de proceso</label>
-                                <div class="input-group">
-                                    <select class="form-select shadow-sm" id="tipo" name="tipo" required>
-                                        <option value="" disabled selected>Seleccione una opción</option>
-                                        <option value="trabajo de titulación">Trabajo de Titulación</option>
-                                        <option value="artículo científico">Artículo Científico</option>
-                                        <option value="examen complexivo">Examen Complexivo</option>
-                                    </select>
+                            <div class="row g-4 mb-4">
+                                <!-- Tipo de Proceso -->
+                                <div class="col-md-6">
+                                    <label for="tipo" class="form-label fw-bold text-primary">
+                                        <i class="bi bi-diagram-3-fill me-1"></i> Tipo de Proceso
+                                    </label>
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-primary text-white">
+                                            <i class="bi bi-journal-text"></i>
+                                        </span>
+                                        <select class="form-select border-0" id="tipo" name="tipo" required>
+                                            <option value="" disabled selected>Seleccione una opción</option>
+                                            <option value="trabajo de titulación">Trabajo de Titulación</option>
+                                            <option value="artículo científico">Artículo Científico</option>
+                                            <option value="examen complexivo">Examen Complexivo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Maestría -->
+                                <div class="col-md-6">
+                                    <label for="maestria_id" class="form-label fw-bold text-primary">
+                                        <i class="bi bi-mortarboard-fill me-1"></i> Maestría
+                                    </label>
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-success text-white">
+                                            <i class="bi bi-award-fill"></i>
+                                        </span>
+                                        <select class="form-select border-0" id="maestria_id" name="maestria_id" required>
+                                            <option value="" disabled selected>Seleccione una maestría</option>
+                                            @foreach ($maestriasPendientes as $maestria)
+                                                <option value="{{ $maestria->id }}">{{ $maestria->nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
+
 
                             <!-- Paso 1: Información del Tema -->
                             <div class="form-step" id="step-1">
