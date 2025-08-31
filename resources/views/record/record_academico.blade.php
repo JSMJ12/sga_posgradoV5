@@ -123,31 +123,64 @@
                 <tr>
                     <th>N°</th>
                     <th>ASIGNATURA</th>
-                    <th>TOTAL HORAS</th>
-                    <th>PROMEDIO</th>
+                    <th>ACTIVIDADES</th>
+                    <th>PRÁCTICAS</th>
+                    <th>AUTÓNOMO</th>
+                    <th>EX. FINAL</th>
+                    <th>% RECUP.</th>
+                    <th>RECUPERACIÓN</th>
+                    <th>TOTAL</th>
+                    <th>FINAL</th>
                     <th>ESTADO</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($notasCompletas as $index => $nota)
+                    @php
+                        $actividades = $nota->nota_actividades ?? 0;
+                        $practicas = $nota->nota_practicas ?? 0;
+                        $autonomo = $nota->nota_autonomo ?? 0;
+                        $examen_final = $nota->examen_final ?? 0;
+                        $recuperacion = $nota->recuperacion ?? null;
+                        $porcentaje_recuperacion = $recuperacion !== null ? $recuperacion * 10 : null;
+
+                        $total = $actividades + $practicas + $autonomo + $examen_final;
+
+                        $campos = [
+                            'actividades' => $actividades,
+                            'practicas' => $practicas,
+                            'autonomo' => $autonomo,
+                            'examen_final' => $examen_final,
+                        ];
+
+                        $calificacion_final = $total;
+                        if ($recuperacion !== null && $recuperacion > 0) {
+                            $minKey = array_keys($campos, min($campos))[0];
+                            if ($recuperacion > $campos[$minKey]) {
+                                $campos[$minKey] = $recuperacion;
+                            }
+                            $calificacion_final = array_sum($campos);
+                        }
+
+                        $observacion = $calificacion_final >= 7 ? 'Aprobado' : 'Reprobado';
+                    @endphp
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $nota->asignatura->nombre }}</td>
-                        <td>{{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}</td>
-                        <td>{{ $nota->total ?? '--' }}</td>
-                        <td>
-                            @if (is_null($nota->total))
-                                --
-                            @elseif ($nota->total >= 7)
-                                APROBADO
-                            @else
-                                REPROBADO
-                            @endif
-                        </td>
+                        <td>{{ $actividades }}</td>
+                        <td>{{ $practicas }}</td>
+                        <td>{{ $autonomo }}</td>
+                        <td>{{ $examen_final }}</td>
+                        <td>{{ $porcentaje_recuperacion ?? '--' }}%</td>
+                        <td>{{ $recuperacion ?? '--' }}</td>
+                        <td>{{ $total }}</td>
+                        <td>{{ $calificacion_final }}</td>
+                        <td>{{ $observacion }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+
 
         <p>
             <strong>Total de horas:</strong> {{ $totalHoras }}<br>

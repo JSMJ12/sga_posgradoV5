@@ -24,7 +24,11 @@ class DashboardDirectorController extends Controller
     {
         $maestria = Maestria::with(['cohortes.matriculas.alumno', 'asignaturas'])->findOrFail($maestriaId);
 
-        $totalAlumnos = Alumno::where('maestria_id', $maestria->id)->count();
+        $totalAlumnos = $maestria->alumnos()->count();
+        // Si postulantes también es belongsToMany:
+        // $totalPostulantes = $maestria->postulantes()->count();
+        // Si no, mantén tu lógica anterior.
+
         $totalPostulantes = Postulante::where('maestria_id', $maestria->id)->count();
         $totalDocentes = Docente::whereHas('asignaturas', function ($query) use ($maestria) {
             $query->whereHas('maestria', function ($q) use ($maestria) {
@@ -85,4 +89,5 @@ class DashboardDirectorController extends Controller
             ],
         ]);
     }
+    
 }

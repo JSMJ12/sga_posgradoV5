@@ -63,14 +63,16 @@ class TasaTitulacionController extends Controller
         $cohorte = Cohorte::findOrFail($cohorte_id);
 
         $alumnos = Alumno::whereHas('matriculas', function ($query) use ($cohorte_id, $maestria_id) {
-            $query->where('cohorte_id', $cohorte_id)
-                ->whereHas('cohorte', function ($q) use ($maestria_id) {
-                    $q->where('maestria_id', $maestria_id);
-                });
-        })
-        ->whereHas('titulaciones') // solo alumnos con titulaciones
-        ->distinct('dni')
-        ->get();
+                $query->where('cohorte_id', $cohorte_id)
+                    ->whereHas('cohorte', function ($q) use ($maestria_id) {
+                        $q->where('maestria_id', $maestria_id);
+                    });
+            })
+            ->whereHas('tesis', function($query) use ($maestria_id) {
+                $query->where('maestria_id', $maestria_id)
+                    ->whereHas('titulaciones'); // Solo tesis con titulaciones
+            })
+            ->get();
 
         return Excel::download(new TitulacionExport($alumnos, $maestria, $cohorte), 'Graduados_SIIES.xlsx');
     }

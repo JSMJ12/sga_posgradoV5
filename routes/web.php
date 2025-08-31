@@ -326,7 +326,7 @@ Route::middleware(['auth', 'can:revisar_tesis'])->group(function () {
     Route::post('/tutorias', [TutoriaController::class, 'store'])->name('tutorias.store');
     Route::put('/tutorias/{id}/realizar', [TutoriaController::class, 'updateEstado'])->name('tutorias.realizar');
     Route::delete('tutorias/{id}', [TutoriaController::class, 'destroy'])->name('tutorias.delete');
-    Route::get('/certificar-alumno/tutor', [TesisController::class, 'certificacion'])->name('certificar.alumno');
+    Route::get('/certificar-alumno/tutor/{tesis_id}', [TesisController::class, 'certificacion'])->name('certificar.alumno');
 });
 Route::get('/tesis/{tesisId}/tutorias', [TutoriaController::class, 'listar'])->name('tutorias.listar');
 

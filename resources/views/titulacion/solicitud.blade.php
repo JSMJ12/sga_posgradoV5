@@ -14,7 +14,7 @@
             <img src="{{ public_path() . '/images/posgrado-25.png' }}" alt="University Seal" class="seal"><br>
             <span class="university-name">UNIVERSIDAD ESTATAL DEL SUR DE MANABÍ</span><br>
             <span class="institute">INSTITUTO DE POSGRADO</span><br>
-            <span class="coordinator">COORDINACIÓN DE LA {{ $alumno->maestria->nombre }}</span>
+            <span class="coordinator">COORDINACIÓN DE LA {{ $maestria->nombre }}</span>
         </div>
         <div class="divider"></div>
         <h3><strong>Solicitud de Aprobación de Tesis y Asignacion de Tutor</strong></h3>
@@ -24,7 +24,7 @@
         <div class="certificate-details">
             <p>Coordinador del Programa de Maestría: {{ $nombreCompleto }}</p>
             <p>
-                Yo, {{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }} estudiante(s) de la {{ $alumno->maestria->nombre }} me dirijo a usted con el debido respeto y, por su intermedio, a la Comisión Académica del programa de maestría, para solicitar la aprobación del tema de trabajo de titulación titulado: <strong>"Tema de Tesis"</strong>.
+                Yo, {{ $alumno->nombre1 }} {{ $alumno->nombre2 }} {{ $alumno->apellidop }} estudiante(s) de la {{ $maestria->nombre }} me dirijo a usted con el debido respeto y, por su intermedio, a la Comisión Académica del programa de maestría, para solicitar la aprobación del tema de trabajo de titulación titulado: <strong>"Tema de Tesis"</strong>.
             </p> 
             <p>Asimismo, informo que la modalidad elegida para el proceso de titulación es <strong>"Modalidad de Tesis"</strong>.</p>
             <p>Por lo expuesto, solicito se designe el tutor correspondiente para el desarrollo de dicho trabajo.</p>

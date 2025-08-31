@@ -68,38 +68,20 @@
                     let tableRows = response.cohortes.map(cohorte => {
                         let firstAsignatura = cohorte.asignaturas[0];
 
-                        let radios = '';
-                        if (!esCoordinador) {
-                            radios = `
-                                <div class="form-check form-check-inline">
-                                    <input type="radio" id="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" 
-                                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
-                                        value="1" class="form-check-input" ${firstAsignatura.editar ? 'checked' : ''}>
-                                    <label for="permiso_editar_si_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">Sí</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input type="radio" id="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" 
-                                        name="permiso_editar[${cohorte.id}][${firstAsignatura.id}]" 
-                                        value="0" class="form-check-input" ${!firstAsignatura.editar ? 'checked' : ''}>
-                                    <label for="permiso_editar_no_${cohorte.id}_${firstAsignatura.id}" class="form-check-label">No</label>
-                                </div>
-                            `;
-                        }
-
-                        let mainRow = `
-                            <tr>
-                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.maestria}</td>
-                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.nombre}</td>
-                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.modalidad}</td>
-                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.aula}</td>
-                                <td rowspan="${cohorte.asignaturas.length}">${cohorte.paralelo}</td>
-                                <td>${firstAsignatura.nombre}</td>
-                                <td>${firstAsignatura.calificado}</td>
-                                <td>${radios}</td>
+                        // Fila de encabezado para cada maestría/cohorte
+                        let headerRow = `
+                            <tr class="table-primary">
+                                <td colspan="8" class="font-weight-bold text-left">
+                                    <i class="fas fa-graduation-cap"></i> Maestría: ${cohorte.maestria} &nbsp; | &nbsp;
+                                    <i class="fas fa-users"></i> Cohorte: ${cohorte.nombre} &nbsp; | &nbsp;
+                                    <i class="fas fa-chalkboard-teacher"></i> Modalidad: ${cohorte.modalidad} &nbsp; | &nbsp;
+                                    <i class="fas fa-door-open"></i> Aula: ${cohorte.aula} &nbsp; | &nbsp;
+                                    <i class="fas fa-stream"></i> Paralelo: ${cohorte.paralelo}
+                                </td>
                             </tr>
                         `;
 
-                        let asignaturasRows = cohorte.asignaturas.slice(1).map(asignatura => {
+                        let asignaturasRows = cohorte.asignaturas.map(asignatura => {
                             let radios = '';
                             if (!esCoordinador) {
                                 radios = `
@@ -118,7 +100,7 @@
                                 `;
                             }
                             return `
-                                <tr>
+                                <tr class="bg-light">
                                     <td>${asignatura.nombre}</td>
                                     <td>${asignatura.calificado}</td>
                                     <td>${radios}</td>
@@ -126,7 +108,14 @@
                             `;
                         }).join('');
 
-                        return mainRow + asignaturasRows;
+                        // Espacio visual entre bloques de maestría
+                        let spacerRow = `
+                            <tr>
+                                <td colspan="8" style="height: 10px; background: #f8f9fa;"></td>
+                            </tr>
+                        `;
+
+                        return headerRow + asignaturasRows + spacerRow;
                     }).join('');
 
 
@@ -142,14 +131,9 @@
                             @csrf
                             <input type="hidden" name="docente_dni" value="${docenteDni}">
                             <div class="table-responsive">
-                                <table class="table table-striped table-sm">
+                                <table class="table table-bordered table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Maestría</th>
-                                            <th>Cohorte</th>
-                                            <th>Modalidad</th>
-                                            <th>Aula</th>
-                                            <th>Paralelo</th>
                                             <th>Asignatura</th>
                                             <th>Estado</th>
                                             <th>Permiso de Editar</th>

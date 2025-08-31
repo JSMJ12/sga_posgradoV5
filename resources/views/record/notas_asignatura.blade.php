@@ -22,7 +22,7 @@
             right: 0;
             bottom: 0;
             background-image: url("{{ public_path('images/fondo-pdf.jpeg') }}");
-            background-size: cover;   /* cubre toda la hoja */
+            background-size: cover;
             background-repeat: no-repeat;
             background-position: center center;
             z-index: -1;
@@ -33,7 +33,6 @@
             text-align: justify; 
             line-height: 1.5; 
         }
-
 
         .info-header {
             text-align: left;
@@ -50,7 +49,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 9pt;
-            table-layout: fixed;
+            table-layout: auto;   /* ahora se ajusta al contenido */
             word-wrap: break-word;
         }
 
@@ -63,11 +62,10 @@
             border: 1px solid #333;
             padding: 5px;
             text-align: center;
-            overflow-wrap: break-word;
         }
 
-        .student-info td:first-child,
-        .student-info th:first-child {
+        .student-info th:first-child,
+        .student-info td:first-child {
             text-align: left;
         }
 
@@ -117,50 +115,113 @@
         <table class="student-info">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Alumno</th>
-                    <th style="width: 10%;">Céd./Pas.</th>
-                    <th style="width: 10%;">Actividades</th>
-                    <th style="width: 10%;">Prácticas</th>
-                    <th style="width: 10%;">Autónomo</th>
-                    <th style="width: 10%;">Examen Final</th>
-                    <th style="width: 10%;">Total</th>
+                    <th>Apellidos</th>
+                    <th>Nombres</th>
+                    <th>Céd./Pas.</th>
+                    <th>Acti. Ap</th>
+                    <th>Práct.</th>
+                    <th>Autón.</th>
+                    <th>Ex. Final</th>
+                    <th>% Recup.</th>
+                    <th>Recup.</th>
+                    <th>Total</th>
+                    <th>Final</th>
+                    <th>Obs.</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($alumnosMatriculados->sortBy(fn($a) => $a->apellidop . ' ' . $a->nombre1) as $alumno)
                     <tr>
-                        <td>
-                            {{ $alumno->nombre1 }} {{ $alumno->nombre2 }}
-                            {{ $alumno->apellidop }} {{ $alumno->apellidom }}
-                        </td>
+                        <td>{{ $alumno->apellidop }} {{ $alumno->apellidom }}</td>
+                        <td>{{ $alumno->nombre1 }} {{ $alumno->nombre2 }}</td>
                         <td>{{ $alumno->dni }}</td>
-
                         @php
                             $nota = $alumno->notas
                                 ->where('asignatura_id', $asignatura->id)
                                 ->where('alumno_id', $alumno->id)
                                 ->where('docente_dni', $docente->dni)
                                 ->first();
+
+                            $actividades = $nota->nota_actividades ?? 0;
+                            $practicas = $nota->nota_practicas ?? 0;
+                            $autonomo = $nota->nota_autonomo ?? 0;
+                            $examen_final = $nota->examen_final ?? 0;
+                            $recuperacion = $nota->recuperacion ?? null;
+                            $porcentaje_recuperacion = $nota->porcentaje_recuperacion ?? null;
+
+                            $total = $actividades + $practicas + $autonomo + $examen_final;
+
+                            $campos = [
+                                'actividades' => $actividades,
+                                'practicas' => $practicas,
+                                'autonomo' => $autonomo,
+                                'examen_final' => $examen_final,
+                            ];
+
+                            $calificacion_final = $total;
+                            if ($recuperacion !== null && $recuperacion > 0) {
+                                $minKey = array_keys($campos, min($campos))[0];
+                                if ($recuperacion > $campos[$minKey]) {
+                                    $campos[$minKey] = $recuperacion;
+                                }
+                                $calificacion_final = array_sum($campos);
+                            }
+
+                            $observacion = $calificacion_final >= 7 ? 'Aprobado' : 'Reprobado';
                         @endphp
 
-                        <td>{{ $nota->nota_actividades ?? '--' }}</td>
-                        <td>{{ $nota->nota_practicas ?? '--' }}</td>
-                        <td>{{ $nota->nota_autonomo ?? '--' }}</td>
-                        <td>{{ $nota->examen_final ?? '--' }}</td>
-                        <td>{{ $nota->total ?? '--' }}</td>
+                        <td>{{ $actividades }}</td>
+                        <td>{{ $practicas }}</td>
+                        <td>{{ $autonomo }}</td>
+                        <td>{{ $examen_final }}</td>
+                        <td>{{ $recuperacion * 10 ?? '--' }}</td>
+                        <td>{{ $recuperacion ?? '--' }}</td>
+                        <td>{{ $total }}</td>
+                        <td>{{ $calificacion_final }}</td>
+                        <td>{{ $observacion }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
-        <div class="firma-container">
-            <div class="firma-box">
-                <div class="firma-line"></div>
-                <div class="firma-nombre">{{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}</div>
-                <div>{{ $docente->dni }}</div>
-            </div>
+        <!-- Glosario -->
+        <div style="margin-top: 30px; font-size: 7pt;">
+            <ul style="list-style: none; padding-left: 0;">
+                <li><strong>Acti. Ap:</strong> Actividades de aprendizaje en el aula (30%)</li>
+                <li><strong>Práct.:</strong> Trabajos prácticos, experimentales y pruebas escritas (20%)</li>
+                <li><strong>Autón.:</strong> Actividades de aprendizaje autónomo (10%)</li>
+                <li><strong>Ex. Final:</strong> Examen final (40%)</li>
+            </ul>
         </div>
 
+        <div class="firma-container" style="margin-top: 80px; width: 100%;">
+            <table style="width: 100%; border: none; text-align: center; font-size: 11pt;">
+                <tr>
+                    <!-- Firma Docente -->
+                    <td style="width: 50%; padding: 10px;">
+                        <div style="border-top: 1px solid black; display: inline-block; padding: 0 10px; font-size: 12pt;">
+                            <b>{{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }} {{ $docente->apellidom }}</b>
+                        </div>
+                        <br>
+                        <div style="display: inline-block; padding: 0 10px; font-size: 10pt; text-transform: uppercase; font-weight: bold;">
+                            {{ $docente->dni }}<br>
+                            FIRMA DEL DOCENTE
+                        </div>
+                    </td>
+
+                    <!-- Firma Coordinador -->
+                    <td style="width: 50%; padding: 10px;">
+                        <div style="border-top: 1px solid black; display: inline-block; padding: 0 10px; font-size: 12pt;">
+                            <b>{{ $nombreCompleto }}</b>
+                        </div>
+                        <br>
+                        <div style="display: inline-block; padding: 0 10px; font-size: 10pt; text-transform: uppercase; font-weight: bold;">
+                            COORDINADOR DEL PROGRAMA DE {{ strtoupper($maestria->nombre) }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 </body>
 </html>

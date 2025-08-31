@@ -41,6 +41,9 @@ class TitulacionExport implements FromCollection, WithMapping, WithStyles, WithE
 
     public function map($alumno): array
     {
+        $tesis = $alumno->tesis->first(); // suponiendo que solo consideras la primera tesis
+        $titulacion = $tesis?->titulaciones->sortBy('fecha_graduacion')->first();
+
         return [
             $this->maestria->codigo,
             preg_match('/[a-zA-Z]/', $alumno->dni) ? 'PASAPORTE' : 'CÉDULA',
@@ -49,8 +52,8 @@ class TitulacionExport implements FromCollection, WithMapping, WithStyles, WithE
             $alumno->email_institucional,
             $this->cohorte->fecha_inicio,
             'JIPIJAPA',
-            optional($alumno->titulaciones->sortBy('fecha_graduacion')->first())->fecha_graduacion ?? 'Sin titulación',
-            optional($alumno->tesis->sortBy('created_at')->first())->tipo ?? 'Sin tesis',
+            $titulacion->fecha_graduacion ?? 'Sin titulación',
+            $tesis->tipo ?? 'Sin tesis',
         ];
     }
 

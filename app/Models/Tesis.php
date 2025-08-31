@@ -39,4 +39,8 @@ class Tesis extends Model
     {
         return $this->belongsTo(Maestria::class, 'maestria_id');
     }
+   public function titulaciones()
+    {
+        return $this->hasMany(Titulacion::class, 'tesis_id'); 
+    }
 }

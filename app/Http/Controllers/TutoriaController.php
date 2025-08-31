@@ -16,12 +16,11 @@ class TutoriaController extends Controller
     }
     public function index(Request $request)
     {
-        // Obtener el docente autenticado usando el email del usuario actual
         $docente = Docente::where('email', auth()->user()->email)->firstOrFail();
 
         if ($request->ajax()) {
             $tesis = Tesis::where('tutor_dni', $docente->dni)
-                ->with(['alumno', 'tutorias']) // Incluir datos del alumno y tutorías
+                ->with(['alumno', 'tutorias', 'titulaciones']) 
                 ->get();
 
             return datatables()->of($tesis)
@@ -40,35 +39,36 @@ class TutoriaController extends Controller
                         $item->tutorias->where('estado', 'realizada')->count() >= 3 &&
                         $item->alumno &&
                         $item->alumno->monto_total == 0;
-                
-                    $tesis = $item->alumno ? $item->alumno->tesis()->first() : null;
-                
-                    $tesisAprobada = $tesis && $tesis->estado === 'aprobado';
-                
+
+                    $tesisAprobada = $item->estado === 'aprobado';
+
                     if ($puedeTitular && $tesisAprobada) {
                         return '
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <a href="' . route('certificar.alumno', ['alumno_dni' => $item->alumno->dni]) . '" class="btn btn-success">
+                                <a href="' . route('certificar.alumno', $item->id) . '" 
+                                    class="btn btn-success" target="_blank">
                                     <i class="fas fa-download"></i> Certificado
                                 </a>
-                                <form action="' . route('titulacion_alumno.store') . '" method="POST" id="titularForm_' . $item->alumno->dni . '">
+
+                                <form action="' . route('titulaciones_alumno.store') . '" method="POST" id="titularForm_' . $item->id . '">
                                     ' . csrf_field() . '
-                                    <input type="hidden" name="alumno_dni" value="' . $item->alumno->dni . '">
-                                    <button type="button" class="btn btn-danger btn-sm" id="titularBtn_' . $item->alumno->dni . '" onclick="confirmTitularAlumno(\'' . $item->alumno->dni . '\')">
+                                    <input type="hidden" name="tesis_id" value="' . $item->id . '">
+                                    <input type="hidden" name="titulado" value="1">
+                                    <button type="button" class="btn btn-danger btn-sm" id="titularBtn_' . $item->id . '" onclick="confirmTitularAlumno(\'' . $item->id . '\')">
                                         <i class="fas fa-user-graduate"></i> Titular Alumno
                                     </button>
                                 </form>
                             </div>
+
                             <script>
-                                function confirmTitularAlumno(dni) {
-                                    // Deshabilitar el botón al hacer clic para evitar múltiples clics
-                                    var button = document.getElementById("titularBtn_" + dni);
+                                function confirmTitularAlumno(tesisId) {
+                                    var button = document.getElementById("titularBtn_" + tesisId);
                                     button.disabled = true;
-                                    button.innerHTML = "<i class=\'fas fa-spinner fa-spin\'></i> Procesando..."; // Cambiar texto a "Procesando..."
-                                
+                                    button.innerHTML = "<i class=\'fas fa-spinner fa-spin\'></i> Procesando...";
+
                                     Swal.fire({
                                         title: "¿Estás seguro?",
-                                        text: "¿Deseas titular al alumno con DNI " + dni + "?",
+                                        text: "¿Deseas titular al alumno de esta tesis?",
                                         icon: "warning",
                                         showCancelButton: true,
                                         confirmButtonColor: "#3085d6",
@@ -77,28 +77,24 @@ class TutoriaController extends Controller
                                         cancelButtonText: "Cancelar"
                                     }).then((result) => {
                                         if (result.isConfirmed) {
-                                            document.getElementById("titularForm_" + dni).submit();
+                                            document.getElementById("titularForm_" + tesisId).submit();
                                         } else {
-                                            // Si se cancela, habilitar el botón nuevamente
                                             button.disabled = false;
-                                            button.innerHTML = "<i class=\'fas fa-user-graduate\'></i> Titular Alumno"; // Restaurar texto
+                                            button.innerHTML = "<i class=\'fas fa-user-graduate\'></i> Titular Alumno";
                                         }
                                     });
                                 }
                             </script>';
                     }
-                
-                    // Retornar las acciones normales si no se cumplen las condiciones
-                    return view('tutorias.actions', compact('item'))->render();
-                })                
 
+                    return view('tutorias.actions', compact('item'))->render();
+                })
                 ->rawColumns(['acciones', 'contacto'])
                 ->make(true);
         }
 
         return view('tutorias.index', compact('docente'));
     }
-
 
     public function create($tesisId)
     {

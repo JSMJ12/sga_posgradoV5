@@ -130,14 +130,44 @@
                     <th>ASIGNATURA</th>
                     <th>TOTAL HORAS</th>
                     <th>PROMEDIO</th>
+                    <th>RECUPERACIÓN</th>
+                    <th>% RECUPERACIÓN</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($notasCompletas as $nota)
+                    @php
+                        $actividades = $nota->nota_actividades ?? 0;
+                        $practicas = $nota->nota_practicas ?? 0;
+                        $autonomo = $nota->nota_autonomo ?? 0;
+                        $examen_final = $nota->examen_final ?? 0;
+                        $recuperacion = $nota->recuperacion ?? null;
+
+                        $campos = [
+                            'actividades' => $actividades,
+                            'practicas' => $practicas,
+                            'autonomo' => $autonomo,
+                            'examen_final' => $examen_final,
+                        ];
+
+                        $total = array_sum($campos);
+
+                        if ($recuperacion !== null && $recuperacion > 0) {
+                            $minKey = array_keys($campos, min($campos))[0];
+                            if ($recuperacion > $campos[$minKey]) {
+                                $campos[$minKey] = $recuperacion;
+                            }
+                            $total = array_sum($campos);
+                        }
+
+                        $porcentaje_recuperacion = $recuperacion !== null ? $recuperacion * 10 : null;
+                    @endphp
                     <tr>
                         <td>{{ $nota->asignatura->nombre }}</td>
                         <td>{{ $nota->asignatura->horas_duracion ?? $nota->asignatura->credito * 48 }}</td>
-                        <td>{{ $nota->total ?? '--' }}</td>
+                        <td>{{ $total ?? '--' }}</td>
+                        <td>{{ $recuperacion ?? '--' }}</td>
+                        <td>{{ $porcentaje_recuperacion !== null ? $porcentaje_recuperacion . '%' : '--' }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -156,5 +186,6 @@
 
     </div>
 </body>
+
 
 </html>

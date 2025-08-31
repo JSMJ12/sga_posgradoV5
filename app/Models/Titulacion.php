@@ -9,19 +9,17 @@ class Titulacion extends Model
 {
     use HasFactory;
 
-    // Definir el nombre de la tabla
     protected $table = 'titulaciones'; 
 
-    // Definir los campos que se pueden llenar masivamente
     protected $fillable = [
-        'alumno_dni',
+        'tesis_id',
         'titulado',
         'tesis_path',
         'fecha_graduacion'
     ];
 
-    public function alumno()
+   public function tesis()
     {
-        return $this->belongsTo(Alumno::class, 'alumno_dni', 'dni');
+        return $this->belongsTo(Tesis::class);
     }
 }

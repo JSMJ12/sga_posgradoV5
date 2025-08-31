@@ -86,10 +86,10 @@
                             <input type="number" step="0.01" class="nota" name="nota_autonomo[{{ $asignatura->id }}]" max="3.0" data-asignatura="{{ $asignatura->id }}" required>
                         </td>
                         <td>
-                            <input type="number" step="0.01" class="nota" name="examen_final[{{ $asignatura->id }}]" max="3.0" data-asignatura="{{ $asignatura->id }}" required>
+                            <input type="number" step="0.01" class="nota" name="examen_final[{{ $asignatura->id }}]" max="4.0" data-asignatura="{{ $asignatura->id }}" required>
                         </td>
                         <td>
-                            <input type="number" step="0.01" class="nota" name="recuperacion[{{ $asignatura->id }}]" max="3.0" data-asignatura="{{ $asignatura->id }}">
+                            <input type="number" step="0.01" class="nota" name="recuperacion[{{ $asignatura->id }}]" max="4.0" data-asignatura="{{ $asignatura->id }}">
                         </td>
                         <td>
                             <input type="number" step="0.01" class="total" name="total[{{ $asignatura->id }}]" max="10" readonly>
@@ -120,7 +120,7 @@
         const recuperacion = parseFloat(document.querySelector(`input[name="recuperacion[${asignaturaId}]"]`).value) || 0;
 
         // Calculamos el total sumando todas las notas
-        const total = actividades + practicas + autonomo + examen + recuperacion;
+        const total = actividades + practicas + autonomo + examen;
 
         // Establecemos el valor total en el campo correspondiente
         document.querySelector(`input[name="total[${asignaturaId}]"]`).value = total.toFixed(2);

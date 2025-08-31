@@ -218,12 +218,52 @@ class TesisController extends Controller
         // Maestrías del alumno
         $maestrias = $alumno->maestrias;
 
-        // Filtrar maestrías donde NO tiene titulación
+        // Filtrar maestrías donde NO tiene titulación y todas las notas aprobadas
         $maestriasPendientes = $maestrias->filter(function($maestria) use ($alumno) {
-            return !$alumno->titulaciones()->where('maestria_id', $maestria->id)->exists();
+
+            // Verificar si ya tiene tesis en esta maestría
+            $tesis = Tesis::where('alumno_dni', $alumno->dni)
+                ->where('maestria_id', $maestria->id)
+                ->with('titulaciones')
+                ->first();
+
+            // Si ya existe una titulación en esa tesis, se excluye
+            if ($tesis && $tesis->titulaciones->isNotEmpty()) {
+                return false;
+            }
+
+            // Obtener asignaturas y notas de esa maestría
+            $asignaturas = $maestria->asignaturas;
+            $notas = $alumno->notas->whereIn('asignatura_id', $asignaturas->pluck('id'));
+
+            // Si no tiene todas las notas, no mostrar
+            if ($notas->count() != $asignaturas->count()) return false;
+
+            // Verificar si todas las notas alcanzan >= 7 considerando recuperación
+            return $notas->every(function($nota) {
+                $campos = [
+                    'actividades'  => $nota->nota_actividades ?? 0,
+                    'practicas'    => $nota->nota_practicas ?? 0,
+                    'autonomo'     => $nota->nota_autonomo ?? 0,
+                    'examen_final' => $nota->examen_final ?? 0,
+                ];
+
+                $total = array_sum($campos);
+
+                if (!is_null($nota->recuperacion) && $nota->recuperacion > 0) {
+                    $minKey = array_keys($campos, min($campos))[0];
+                    if ($nota->recuperacion > $campos[$minKey]) {
+                        $campos[$minKey] = $nota->recuperacion;
+                    }
+                    $total = array_sum($campos);
+                }
+
+                return $total >= 7;
+            });
         });
-        // Si ya tiene tesis en alguna maestría, la mostramos
-        $tesis = Tesis::where('alumno_dni', $alumno->dni)->with('tutorias')->first();
+
+        // Traer la tesis actual del alumno con tutorías
+        $tesis = Tesis::where('alumno_dni', $alumno->dni)->with('tutorias', 'titulaciones')->first();
 
         return view('titulacion.proceso', compact('tesis', 'alumno', 'maestriasPendientes'));
     }
@@ -247,7 +287,7 @@ class TesisController extends Controller
 
         $nombreCompleto = $coordinador ? $coordinador->getFullNameAttribute() : 'Coordinador no encontrado';
 
-        return PDF::loadView('titulacion.solicitud', compact('alumno', 'nombreCompleto'))
+        return PDF::loadView('titulacion.solicitud', compact('alumno', 'nombreCompleto', 'maestria'))
             ->setPaper('A4', 'portrait')
             ->download($filename);
     }
@@ -258,7 +298,7 @@ class TesisController extends Controller
         return view('tesis.show', compact('tesis'));
     }
 
-    public function certificacion(Request $request)
+    public function certificacion($tesis_id)
     {
         $user = auth()->user();
         $docente = Docente::where('email', $user->email)->first();
@@ -267,25 +307,46 @@ class TesisController extends Controller
             return response()->json(['error' => 'No se encontró al docente asociado al usuario.'], 404);
         }
 
-        $alumnoDni = $request->input('alumno_dni');
-        $alumno = Alumno::with('tesis.tutorias')
-            ->where('dni', $alumnoDni)
-            ->first();
+        // Buscar la tesis con el id
+        $tesis = Tesis::with(['alumno', 'tutorias', 'maestria'])
+            ->find($tesis_id);
 
-        if (!$alumno) {
-            return response()->json(['error' => 'No se encontró al alumno con el DNI proporcionado.'], 404);
+        if (!$tesis) {
+            return response()->json(['error' => 'No se encontró la tesis con el ID proporcionado.'], 404);
         }
 
+        // Alumno de la tesis
+        $alumno = $tesis->alumno;
+
+        if (!$alumno) {
+            return response()->json(['error' => 'La tesis no tiene un alumno asociado.'], 404);
+        }
+
+        // Obtener la maestría directamente de la relación
+        $maestria = $tesis->maestria;
+
+        // Fecha actual en español
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
 
-        $pdfFileName = preg_replace('/[^A-Za-z0-9_\-]/', '', $docente->apellidop . $docente->nombre1 . $alumno->dni) . '_certificacion_titulacion.pdf';
+        // Nombre de archivo
+        $pdfFileName = preg_replace(
+            '/[^A-Za-z0-9_\-]/',
+            '',
+            $docente->apellidop . $docente->nombre1 . $alumno->dni
+        ) . '_certificacion_titulacion.pdf';
 
+        
+        // Generar el PDF
         return PDF::loadView('titulacion.certificado_tutor', compact(
             'alumno',
             'docente',
             'fechaActual',
+            'maestria',
+            'tesis'
         ))
             ->setPaper('A4', 'portrait')
-            ->download($pdfFileName);
-    }
+            ->stream($pdfFileName); // 👈 Esto abre en el navegador
+
+            }
+
 }

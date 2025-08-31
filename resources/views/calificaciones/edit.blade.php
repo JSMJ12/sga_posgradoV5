@@ -31,8 +31,12 @@
                                         <td><input type="number" step="0.01" class="form-control nota-input" name="nota_actividades" value="{{ $nota->nota_actividades }}" max="3.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
                                         <td><input type="number" step="0.01" class="form-control nota-input" name="nota_practicas" value="{{ $nota->nota_practicas }}" max="3.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
                                         <td><input type="number" step="0.01" class="form-control nota-input" name="nota_autonomo" value="{{ $nota->nota_autonomo }}" max="3.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
-                                        <td><input type="number" step="0.01" class="form-control nota-input" name="examen_final" value="{{ $nota->examen_final }}" max="3.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
-                                        <td><input type="number" step="0.01" class="form-control nota-input" name="recuperacion" value="{{ $nota->recuperacion }}" max="3.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
+                                        <td><input type="number" step="0.01" class="form-control nota-input" name="examen_final" value="{{ $nota->examen_final }}" max="4.0" oninput="calcularTotal(this)"><i class="fas fa-pencil-alt nota-icon"></i></td>
+                                        <td>
+                                            <input type="number" step="0.01" class="form-control" name="recuperacion" 
+                                                value="{{ $nota->recuperacion }}" max="3.0">
+                                            <i class="fas fa-pencil-alt nota-icon"></i>
+                                        </td>
                                         <td><input type="number" step="0.01" class="form-control total-input" name="total" value="{{ $nota->total }}" readonly><i class="fas fa-calculator total-icon"></i></td>
                                     </tr>
                                 </tbody>

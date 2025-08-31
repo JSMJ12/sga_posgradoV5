@@ -66,12 +66,45 @@ class RecordController extends Controller
             $notaFalsa->asignatura = $asignatura;
             $notaFalsa->docente = $asignatura->docente ?? null;
             $notaFalsa->total = null;
+            $notaFalsa->nota_actividades = 0;
+            $notaFalsa->nota_practicas = 0;
+            $notaFalsa->nota_autonomo = 0;
+            $notaFalsa->examen_final = 0;
+            $notaFalsa->recuperacion = null;
             return $notaFalsa;
         });
 
+        // Calcular la calificación final considerando recuperación
+        $calificacionesFinales = $notasCompletas->map(function($nota) {
+            $actividades = $nota->nota_actividades ?? 0;
+            $practicas = $nota->nota_practicas ?? 0;
+            $autonomo = $nota->nota_autonomo ?? 0;
+            $examen_final = $nota->examen_final ?? 0;
+            $recuperacion = $nota->recuperacion ?? null;
+
+            $campos = [
+                'actividades' => $actividades,
+                'practicas' => $practicas,
+                'autonomo' => $autonomo,
+                'examen_final' => $examen_final,
+            ];
+
+            $total = array_sum($campos);
+
+            if ($recuperacion !== null && $recuperacion > 0) {
+                $minKey = array_keys($campos, min($campos))[0];
+                if ($recuperacion > $campos[$minKey]) {
+                    $campos[$minKey] = $recuperacion;
+                }
+                $total = array_sum($campos);
+            }
+
+            return $total;
+        });
+
         $totalHoras = $notasCompletas->sum(fn($nota) => $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48));
-        $promedio = $notasCompletas->map(fn($nota) => $nota->total ?? 0)->avg();
-        $cantidadAsignaturas = $notasCompletas->filter(fn($nota) => !is_null($nota->total) && $nota->total >= 7)->count();
+        $promedio = $calificacionesFinales->avg(); // Ahora considera recuperación
+        $cantidadAsignaturas = $calificacionesFinales->filter(fn($cal) => !is_null($cal) && $cal >= 7)->count();
 
         $matricula = $this->getMatriculaPorMaestria($alumno, $maestria_id);
         $cohorte = $matricula?->cohorte;
@@ -133,15 +166,50 @@ class RecordController extends Controller
         $asignaturas = $alumno->maestrias->find($maestria_id)?->asignaturas ?? collect();
         $notasRegistradas = $alumno->notas()->with('asignatura', 'docente')->get();
 
-        $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas) {
+        $notasCompletas = $asignaturas->map(function ($asignatura) use ($notasRegistradas, $alumno) {
             $notaExistente = $notasRegistradas->firstWhere('asignatura_id', $asignatura->id);
             if ($notaExistente) return $notaExistente;
 
             $notaFalsa = new \stdClass();
             $notaFalsa->asignatura = $asignatura;
             $notaFalsa->docente = $asignatura->docente ?? null;
+            $notaFalsa->nota_actividades = 0;
+            $notaFalsa->nota_practicas = 0;
+            $notaFalsa->nota_autonomo = 0;
+            $notaFalsa->examen_final = 0;
+            $notaFalsa->recuperacion = null;
             $notaFalsa->total = null;
             return $notaFalsa;
+        });
+
+        // Calcular la calificación final considerando recuperación
+        $notasCompletas->transform(function($nota) {
+            $actividades = $nota->nota_actividades ?? 0;
+            $practicas = $nota->nota_practicas ?? 0;
+            $autonomo = $nota->nota_autonomo ?? 0;
+            $examen_final = $nota->examen_final ?? 0;
+            $recuperacion = $nota->recuperacion ?? null;
+
+            $campos = [
+                'actividades' => $actividades,
+                'practicas' => $practicas,
+                'autonomo' => $autonomo,
+                'examen_final' => $examen_final,
+            ];
+
+            $total = array_sum($campos);
+
+            if ($recuperacion !== null && $recuperacion > 0) {
+                $minKey = array_keys($campos, min($campos))[0];
+                if ($recuperacion > $campos[$minKey]) {
+                    $campos[$minKey] = $recuperacion;
+                }
+                $total = array_sum($campos);
+            }
+
+            $nota->total = $total;
+            $nota->porcentaje_recuperacion = $recuperacion !== null ? $recuperacion * 10 : null;
+            return $nota;
         });
 
         $totalHoras = $notasCompletas->sum(fn($nota) => $nota->asignatura->horas_duracion ?? ($nota->asignatura->credito * 48));

@@ -164,14 +164,101 @@ class Alumno extends Model
     {
         parent::boot();
 
+        // Asignar registro automático
         static::creating(function ($alumno) {
             if (empty($alumno->registro)) {
                 $alumno->registro = self::getNextRegistro();
             }
         });
 
+        // Cada vez que el alumno se recupera de la BD, verificar titulación
+        static::retrieved(function ($alumno) {
+            $alumno->verificarYActualizarTitulacion();
+        });
     }
 
+    public function verificarYActualizarTitulacion()
+    {
+        foreach ($this->maestrias as $maestria) {
+            $asignaturas = $maestria->asignaturas;
+            $notas = $this->notas->whereIn('asignatura_id', $asignaturas->pluck('id'));
+
+            // Verifica si tiene todas las notas considerando recuperación
+            if ($asignaturas->count() > 0 && $notas->count() == $asignaturas->count()) {
+
+                $aprobadoTodas = $notas->every(function($nota) {
+                    $campos = [
+                        'actividades' => $nota->nota_actividades ?? 0,
+                        'practicas'   => $nota->nota_practicas ?? 0,
+                        'autonomo'    => $nota->nota_autonomo ?? 0,
+                        'examen_final'=> $nota->examen_final ?? 0,
+                    ];
+
+                    $total = array_sum($campos);
+
+                    if (!is_null($nota->recuperacion) && $nota->recuperacion > 0) {
+                        $minKey = array_keys($campos, min($campos))[0];
+                        if ($nota->recuperacion > $campos[$minKey]) {
+                            $campos[$minKey] = $nota->recuperacion;
+                        }
+                        $total = array_sum($campos);
+                    }
+
+                    return $total >= 7;
+                });
+
+                if ($aprobadoTodas) {
+                    // Evitar duplicados: solo si el alumno no ha sido contado
+                    if (!$this->yaContadoEnTasa($maestria->id)) {
+
+                        // Buscar matrícula de cualquier asignatura de esta maestría
+                        $matricula = $this->matriculas()
+                            ->whereIn('asignatura_id', $asignaturas->pluck('id'))
+                            ->first();
+
+                        if ($matricula) {
+                            $cohorteId = $matricula->cohorte_id;
+                            $maestriaId = $maestria->id;
+
+                            // ✅ Actualizar o crear registro en TasaTitulacion
+                            $tasa = TasaTitulacion::firstOrNew([
+                                'cohorte_id' => $cohorteId,
+                                'maestria_id' => $maestriaId,
+                            ]);
+
+                            $tasa->numero_maestrantes_aprobados = ($tasa->numero_maestrantes_aprobados ?? 0) + 1;
+                            $tasa->save();
+
+                            // Registrar en la tabla de control
+                            $this->marcarComoAprobadoEnTasa($maestriaId);
+
+                            // Asignar rol al usuario
+                            $usuario = User::where('email', $this->email_institucional)->first();
+                            if ($usuario && !$usuario->hasRole('Titulado_proceso')) {
+                                $usuario->assignRole('Titulado_proceso');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    public function yaContadoEnTasa($maestria_id)
+    {
+        return AlumnoAprobadoTasa::where('alumno_dni', $this->dni)
+            ->where('maestria_id', $maestria_id)
+            ->exists();
+    }
+
+    public function marcarComoAprobadoEnTasa($maestria_id)
+    {
+        AlumnoAprobadoTasa::firstOrCreate([
+            'alumno_dni' => $this->dni,
+            'maestria_id' => $maestria_id
+        ]);
+    }
     private static function getNextRegistro()
     {
         // Obtiene el valor máximo del campo 'registro' en la tabla alumnos

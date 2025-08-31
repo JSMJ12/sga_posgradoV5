@@ -21,30 +21,36 @@ class NotasAsignaturaController extends Controller
 
     public function show($docenteDni, $asignaturaId, $cohorteId, $aulaId = null)
     {
+        // Fetch related data
+        $asignatura = Asignatura::with('maestria')->findOrFail($asignaturaId);
+        $maestria = $asignatura->maestria;
+
+        // Obtener coordinador desde la maestría de la asignatura
+        $coordinador = $maestria 
+            ? Docente::where('dni', $maestria->coordinador)->first() 
+            : null;
+
+        $nombreCompleto = $coordinador?->getFullNameAttribute() ?? 'Coordinador no encontrado';
+
         // Obtain enrolled students, considering optional aula
         $alumnosMatriculados = Alumno::whereHas('matriculas', function ($query) use ($asignaturaId, $cohorteId, $docenteDni) {
             $query->where('asignatura_id', $asignaturaId)
-                  ->where('cohorte_id', $cohorteId)
-                  ->where('docente_dni', $docenteDni);
+                ->where('cohorte_id', $cohorteId)
+                ->where('docente_dni', $docenteDni);
         })
         ->with(['matriculas', 'matriculas.asignatura', 'matriculas.cohorte', 'matriculas.docente'])
         ->get();
 
-        // Fetch related data
-        $asignatura = Asignatura::find($asignaturaId);
         $aula = $aulaId ? Aula::find($aulaId) : null;
         $docente = Docente::find($docenteDni);
         $cohorte = Cohorte::find($cohorteId);
         $paralelo = $aula ? $aula->paralelo : null;
         $periodo_academico = $cohorte->periodo_academico;
 
-        // Current date
         $fechaActual = Carbon::now()->locale('es')->isoFormat('LL');
+        $url = url('/');
 
-        // Generate a fake URL for QR purposes (optional)
-        $url = url('/'); // Puedes apuntar a la página principal u otro recurso
-
-        // Create PDF in memory without saving
+        // Generar PDF
         $pdf = Pdf::loadView('record.notas_asignatura', compact(
             'alumnosMatriculados',
             'asignatura',
@@ -54,16 +60,17 @@ class NotasAsignaturaController extends Controller
             'periodo_academico',
             'cohorte',
             'paralelo',
+            'coordinador',
+            'maestria',
+            'nombreCompleto'
         ))
         ->setPaper('a4')
         ->setWarnings(false);
 
-        // Generate a friendly filename
         $pdfFileName = Str::slug(
             $docente->apellidop . ' ' . $docente->nombre1 . ' ' . $cohorte->nombre . ' ' . $asignatura->nombre
         ) . '_notas.pdf';
 
-        // Stream the PDF directly
         return $pdf->stream($pdfFileName);
     }
 }
