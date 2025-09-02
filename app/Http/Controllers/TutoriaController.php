@@ -43,52 +43,12 @@ class TutoriaController extends Controller
                     $tesisAprobada = $item->estado === 'aprobado';
 
                     if ($puedeTitular && $tesisAprobada) {
-                        return '
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <a href="' . route('certificar.alumno', $item->id) . '" 
-                                    class="btn btn-success" target="_blank">
-                                    <i class="fas fa-download"></i> Certificado
-                                </a>
-
-                                <form action="' . route('titulaciones_alumno.store') . '" method="POST" id="titularForm_' . $item->id . '">
-                                    ' . csrf_field() . '
-                                    <input type="hidden" name="tesis_id" value="' . $item->id . '">
-                                    <input type="hidden" name="titulado" value="1">
-                                    <button type="button" class="btn btn-danger btn-sm" id="titularBtn_' . $item->id . '" onclick="confirmTitularAlumno(\'' . $item->id . '\')">
-                                        <i class="fas fa-user-graduate"></i> Titular Alumno
-                                    </button>
-                                </form>
-                            </div>
-
-                            <script>
-                                function confirmTitularAlumno(tesisId) {
-                                    var button = document.getElementById("titularBtn_" + tesisId);
-                                    button.disabled = true;
-                                    button.innerHTML = "<i class=\'fas fa-spinner fa-spin\'></i> Procesando...";
-
-                                    Swal.fire({
-                                        title: "¿Estás seguro?",
-                                        text: "¿Deseas titular al alumno de esta tesis?",
-                                        icon: "warning",
-                                        showCancelButton: true,
-                                        confirmButtonColor: "#3085d6",
-                                        cancelButtonColor: "#d33",
-                                        confirmButtonText: "Sí, titular",
-                                        cancelButtonText: "Cancelar"
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            document.getElementById("titularForm_" + tesisId).submit();
-                                        } else {
-                                            button.disabled = false;
-                                            button.innerHTML = "<i class=\'fas fa-user-graduate\'></i> Titular Alumno";
-                                        }
-                                    });
-                                }
-                            </script>';
+                        return view('tutorias.partials.titular_button', compact('item'))->render();
                     }
 
                     return view('tutorias.actions', compact('item'))->render();
                 })
+
                 ->rawColumns(['acciones', 'contacto'])
                 ->make(true);
         }

@@ -53,6 +53,33 @@
 
 
         });
+        
     </script>
+    <script>
+        function confirmTitularAlumno(tesisId) {
+            var button = document.getElementById("titularBtn_" + tesisId);
+            button.disabled = true;
+            button.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Procesando...";
+
+            Swal.fire({
+                title: "¿Estás seguro?",
+                text: "¿Deseas titular al alumno de esta tesis?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, titular",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById("titularForm_" + tesisId).submit();
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = "<i class='fas fa-user-graduate'></i> Titular Alumno";
+                }
+            });
+        }
+    </script>
+
 @endpush
 

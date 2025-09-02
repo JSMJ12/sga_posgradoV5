@@ -442,7 +442,7 @@ return [
             'text' => 'Tasa de Titulación',
             'route' => 'tasa_titulacion.index',
             'icon' => 'fas fa-fw fa-chart-line',
-            'can' => 'secretarios.crear'
+            'can' => ['secretarios.crear', 'dashboard_coordinador', 'dashboard_director']
         ],
 
         ['header' => 'Estudiantes', 'can' => 'dashboard_alumno'],

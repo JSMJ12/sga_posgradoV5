@@ -338,7 +338,7 @@ Route::post('/examen-complexivo/actualizarNotaYFechaGraduacion', [Examen_Complex
 
 
 //TASA TITULACION
-Route::post('/titulacion-alumno/proceso', [TitulacionAlumnoController::class, 'store'])->name('titulacion_alumno.store');
+Route::post('/titulacion-alumno/proceso', [TitulacionAlumnoController::class, 'store'])->name('titulacion_alumno.store')->middleware('can:revisar_tesis');
 Route::get('/tasa_titulacion/show/{id}', [TasaTitulacionController::class, 'show'])->name('tasa_titulacion.show');
 Route::get('/tasa_titulacion', [TasaTitulacionController::class, 'index'])->name('tasa_titulacion.index');
 Route::get('/tasa_titulacion/cohortes/{id}', [TasaTitulacionController::class, 'getCohortes'])->name('tasa_titulacion.cohortes');

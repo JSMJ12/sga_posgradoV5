@@ -123,15 +123,15 @@
                 <tr>
                     <th>N°</th>
                     <th>ASIGNATURA</th>
-                    <th>ACTIVIDADES</th>
-                    <th>PRÁCTICAS</th>
-                    <th>AUTÓNOMO</th>
-                    <th>EX. FINAL</th>
+                    <th>A.C.D. A</th>
+                    <th>A.P.E.</th>
+                    <th>A.A.</th>
+                    <th>EXM</th>
                     <th>% RECUP.</th>
-                    <th>RECUPERACIÓN</th>
+                    <th>RECUP.</th>
                     <th>TOTAL</th>
                     <th>FINAL</th>
-                    <th>ESTADO</th>
+                    <th>OBS</th>
                 </tr>
             </thead>
             <tbody>

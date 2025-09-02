@@ -189,7 +189,7 @@ class DashboardDocenteController extends Controller
                           'asignatura:id,nombre',
                           'cohorte:id,nombre,maestria_id,aula_id',
                           'cohorte.maestria:id,nombre',
-                          'docente:dni,nombres,apellidos,email',
+                          'docente:dni,nombre1,nombre2,apellidop,apellidom,email',
                       ]);
                 },
             ]);

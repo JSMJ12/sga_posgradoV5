@@ -10,6 +10,8 @@ use App\Models\Maestria;
 use App\Models\TasaTitulacion;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Docente;
+use App\Models\Secretario;
 
 class TasaTitulacionController extends Controller
 {
@@ -17,10 +19,35 @@ class TasaTitulacionController extends Controller
     {
         $this->middleware('auth');
     }
+    
     public function index()
     {
-        // Cargar maestrías con sus cohortes
-        $maestrias = Maestria::with('cohortes')->get();
+        $user = auth()->user();
+
+        if ($user->hasRole('Administrador')) {
+            // Administrador ve todas las maestrías
+            $maestrias = Maestria::all();
+        } 
+        elseif ($user->hasRole('Secretario')) {
+            // Secretario solo ve las maestrías de su sección
+            $secretario = Secretario::where('email', $user->email)->firstOrFail();
+            $maestrias = $secretario->seccion->maestrias;
+        } 
+        elseif ($user->hasRole('Coordinador')) {
+            // Coordinador solo ve su maestría asignada
+            $docente = Docente::where('email', $user->email)->firstOrFail();
+            $maestria = $docente->maestria->first();
+
+            if (!$maestria) {
+                abort(403, 'El coordinador no tiene ninguna maestría asignada.');
+            }
+
+            $maestrias = collect([$maestria]);
+        } 
+        else {
+            abort(403, 'No autorizado');
+        }
+
         return view('tasa_titulacion.index', compact('maestrias'));
     }
 

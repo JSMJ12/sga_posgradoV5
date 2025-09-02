@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Notas</title>
     <style>
-        /* Márgenes iguales en todas las páginas */
+        /* MÃ¡rgenes iguales en todas las pÃ¡ginas */
         @page {
             margin: 0px 0px 0px 0px;
         }
@@ -13,7 +13,7 @@
             padding: 115px 40px 120px 60px;
         }
 
-        /* Fondo a página completa en todas las hojas */
+        /* Fondo a pÃ¡gina completa en todas las hojas */
         body::before {
             content: "";
             position: fixed;
@@ -98,7 +98,7 @@
 
         <div class="info-header">
             <ul style="list-style: none; padding: 0; margin: 0; font-size: 11pt; line-height: 1.6;">
-                <li><strong>Maestría:</strong> {{ $cohorte->maestria->nombre }}</li>
+                <li><strong>MaestrÃ­a:</strong> {{ $cohorte->maestria->nombre }}</li>
                 <li><strong>Asignatura:</strong> {{ $asignatura->nombre }}</li>
                 @if ($aula)
                     <li><strong>Aula:</strong> {{ $aula->nombre }}</li>
@@ -108,6 +108,7 @@
                 @endif
                 <li><strong>Periodo:</strong> {{ $periodo_academico->nombre }}</li>
                 <li><strong>Cohorte:</strong> {{ $cohorte->nombre }}</li>
+		<li><strong>Modalidad:</strong> {{ \Illuminate\Support\Str::ucfirst($cohorte->modalidad) }}</li>
                 <li><strong>Docente:</strong> {{ $docente->nombre1 }} {{ $docente->nombre2 }} {{ $docente->apellidop }}</li>
             </ul>
         </div>
@@ -115,11 +116,11 @@
         <table class="student-info">
             <thead>
                 <tr>
+                    <th>Ced./Pas.</th>                  
                     <th>Apellidos</th>
                     <th>Nombres</th>
-                    <th>Céd./Pas.</th>
                     <th>Acti. Ap</th>
-                    <th>Práct.</th>
+                    <th>Pract.</th>
                     <th>Autón.</th>
                     <th>Ex. Final</th>
                     <th>% Recup.</th>
@@ -132,9 +133,9 @@
             <tbody>
                 @foreach ($alumnosMatriculados->sortBy(fn($a) => $a->apellidop . ' ' . $a->nombre1) as $alumno)
                     <tr>
-                        <td>{{ $alumno->apellidop }} {{ $alumno->apellidom }}</td>
-                        <td>{{ $alumno->nombre1 }} {{ $alumno->nombre2 }}</td>
                         <td>{{ $alumno->dni }}</td>
+			            <td>{{ $alumno->apellidop }} {{ $alumno->apellidom }}</td>
+                        <td>{{ $alumno->nombre1 }} {{ $alumno->nombre2 }}</td>
                         @php
                             $nota = $alumno->notas
                                 ->where('asignatura_id', $asignatura->id)
@@ -187,10 +188,10 @@
         <!-- Glosario -->
         <div style="margin-top: 30px; font-size: 7pt;">
             <ul style="list-style: none; padding-left: 0;">
-                <li><strong>Acti. Ap:</strong> Actividades de aprendizaje en el aula (30%)</li>
-                <li><strong>Práct.:</strong> Trabajos prácticos, experimentales y pruebas escritas (20%)</li>
-                <li><strong>Autón.:</strong> Actividades de aprendizaje autónomo (10%)</li>
-                <li><strong>Ex. Final:</strong> Examen final (40%)</li>
+                <li><strong>Acti. Ap:</strong> Actividades de aprendizaje en el aula.</li>
+                <li><strong>Práct.:</strong> Trabajos prácticos, experimentales y pruebas escritas.</li>
+                <li><strong>Autón.:</strong> Actividades de aprendizaje autónomo.</li>
+                <li><strong>Ex. Final:</strong> Examen final.</li>
             </ul>
         </div>
 
@@ -204,7 +205,7 @@
                         </div>
                         <br>
                         <div style="display: inline-block; padding: 0 10px; font-size: 10pt; text-transform: uppercase; font-weight: bold;">
-                            {{ $docente->dni }}<br>
+                            C.I. {{ $docente->dni }}<br>
                             FIRMA DEL DOCENTE
                         </div>
                     </td>

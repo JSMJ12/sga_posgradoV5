@@ -128,170 +128,128 @@
             let maestriaId = null;
             let cohorteId = null;
 
+            const cleanValue = (value) => value ?? 0; // Manejo de null o undefined
+
+            // Función para actualizar tabla y gráfico
+            function actualizarTablaYGrafico(data) {
+                let numeroMatriculados = cleanValue(data.numero_matriculados);
+                let numeroAprobados = cleanValue(data.numero_maestrantes_aprobados);
+                let retirados = cleanValue(data.retirados);
+                let graduados = cleanValue(data.graduados);
+                let noGraduados = numeroAprobados - graduados;
+
+                let porcentajeRetencion = ((numeroAprobados / numeroMatriculados) * 100).toFixed(2);
+                let porcentajeRetirados = ((retirados / numeroMatriculados) * 100).toFixed(2);
+                let porcentajeGraduados = ((graduados / numeroMatriculados) * 100).toFixed(2);
+                let porcentajeNoGraduados = ((noGraduados / numeroMatriculados) * 100).toFixed(2);
+
+                $('#table-container').show();
+                $('#tasa-data').html(`
+                    <tr>
+                        <td>${numeroMatriculados}</td>
+                        <td>${numeroAprobados}</td>
+                        <td>${retirados}</td>
+                        <td>${graduados}</td>
+                        <td>${noGraduados}</td>
+                        <td>${isNaN(porcentajeRetencion) ? '0.00%' : porcentajeRetencion + '%'}</td>
+                        <td>${isNaN(porcentajeRetirados) ? '0.00%' : porcentajeRetirados + '%'}</td>
+                        <td>${isNaN(porcentajeGraduados) ? '0.00%' : porcentajeGraduados + '%'}</td>
+                        <td>${isNaN(porcentajeNoGraduados) ? '0.00%' : porcentajeNoGraduados + '%'}</td>
+                    </tr>
+                `);
+
+                $('#titulacionChart').show();
+
+                // Crear o actualizar gráfico
+                if (chart) chart.destroy();
+
+                chart = new Chart($('#titulacionChart')[0].getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Graduados', 'No Graduados', 'Retirados'],
+                        datasets: [{
+                            data: [graduados, noGraduados, retirados],
+                            backgroundColor: ['#007bff', '#e83e8c', '#17a2b8'],
+                            hoverBackgroundColor: ['#0056b3', '#c82333', '#138496'],
+                            borderColor: ['#fff', '#fff', '#fff'],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { boxWidth: 20, font: { size: 14 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.label}: ${context.raw}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             // Cargar Cohortes al seleccionar Maestría
             $('#maestria').change(function() {
-                maestriaId = $(this).val(); // Usar la variable global maestriaId
-                let cohorteSelect = $('#cohorte');
+                maestriaId = $(this).val();
+                const cohorteSelect = $('#cohorte');
 
-                if (maestriaId) {
-                    $.ajax({
-                        url: '{{ route('tasa_titulacion.cohortes', ':id') }}'.replace(':id',
-                            maestriaId),
-                        method: 'GET',
-                        success: function(data) {
-                            cohorteSelect.prop('disabled', false);
-                            cohorteSelect.empty().append(
-                                '<option value="">-- Seleccione una Cohorte --</option>');
-                            data.forEach(cohorte => {
-                                cohorteSelect.append(
-                                    `<option value="${cohorte.id}">${cohorte.nombre}</option>`
-                                );
-                            });
-                        },
-                        error: function() {
-                            alert('Error al cargar las cohortes.');
-                        }
-                    });
-                } else {
-                    cohorteSelect.prop('disabled', true).empty().append(
-                        '<option value="">-- Seleccione una Cohorte --</option>');
-                    $('#table-container').hide();
-                    $('#titulacionChart').hide();
+                if (!maestriaId) {
+                    cohorteSelect.prop('disabled', true).html('<option value="">-- Seleccione una Cohorte --</option>');
+                    $('#table-container, #titulacionChart, #export-button-container, #export-estudiantes-button-container').hide();
+                    return;
                 }
+
+                $.ajax({
+                    url: '{{ route('tasa_titulacion.cohortes', ':id') }}'.replace(':id', maestriaId),
+                    method: 'GET',
+                    success: function(data) {
+                        cohorteSelect.prop('disabled', false).html('<option value="">-- Seleccione una Cohorte --</option>');
+                        data.forEach(c => cohorteSelect.append(`<option value="${c.id}">${c.nombre}</option>`));
+                    },
+                    error: function() { alert('Error al cargar las cohortes.'); }
+                });
             });
 
             // Mostrar tabla y gráfico al seleccionar Cohorte
             $('#cohorte').change(function() {
-                cohorteId = $(this).val(); // Usar la variable global cohorteId
+                cohorteId = $(this).val();
 
-                if (cohorteId) {
-                    $.ajax({
-                        url: '{{ route('tasa_titulacion.show', ':id') }}'.replace(':id', cohorteId),
-                        success: function(data) {
-                            if (data) {
-                                const cleanValue = (value) => value === null || value ===
-                                    undefined ? 0 : value;
-
-                                let numeroMatriculados = cleanValue(data.numero_matriculados);
-                                let numeroAprobados = cleanValue(data
-                                    .numero_maestrantes_aprobados);
-                                let retirados = cleanValue(data.retirados);
-                                let graduados = cleanValue(data.graduados);
-                                let noGraduados = numeroAprobados - graduados;
-
-                                let porcentajeRetencion = ((numeroAprobados /
-                                    numeroMatriculados) * 100).toFixed(2);
-                                let porcentajeRetirados = ((retirados / numeroMatriculados) *
-                                    100).toFixed(2);
-                                let porcentajeGraduados = ((graduados / numeroAprobados) * 100)
-                                    .toFixed(2);
-                                let porcentajeNoGraduados = ((noGraduados / numeroAprobados) *
-                                    100).toFixed(2);
-
-                                $('#table-container').show();
-
-                                let tableRow = `
-                            <tr>
-                                <td>${numeroMatriculados}</td>
-                                <td>${numeroAprobados}</td>
-                                <td>${retirados}</td>
-                                <td>${graduados}</td>
-                                <td>${noGraduados}</td>
-                                <td>${isNaN(porcentajeRetencion) ? '0.00%' : porcentajeRetencion + '%'}</td>
-                                <td>${isNaN(porcentajeRetirados) ? '0.00%' : porcentajeRetirados + '%'}</td>
-                                <td>${isNaN(porcentajeGraduados) ? '0.00%' : porcentajeGraduados + '%'}</td>
-                                <td>${isNaN(porcentajeNoGraduados) ? '0.00%' : porcentajeNoGraduados + '%'}</td>
-                            </tr>
-                        `;
-
-                                $('#tasa-data').html(tableRow);
-
-                                $('#titulacionChart').show();
-
-                                // Crear o actualizar gráfico
-                                if (chart) chart.destroy();
-
-                                let ctx = document.getElementById('titulacionChart').getContext(
-                                    '2d');
-                                chart = new Chart(ctx, {
-                                    type: 'doughnut',
-                                    data: {
-                                        labels: ['Graduados', 'No Graduados',
-                                            'Retirados'
-                                        ],
-                                        datasets: [{
-                                            data: [graduados, noGraduados,
-                                                retirados
-                                            ],
-                                            backgroundColor: ['#007bff',
-                                                '#e83e8c', '#17a2b8'
-                                            ],
-                                            hoverBackgroundColor: ['#0056b3',
-                                                '#c82333', '#138496'
-                                            ],
-                                            borderColor: ['#fff', '#fff',
-                                                '#fff'
-                                            ],
-                                            borderWidth: 2
-                                        }]
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: {
-                                                position: 'top', // Leyenda al lado derecho
-                                                labels: {
-                                                    boxWidth: 20,
-                                                    font: {
-                                                        size: 14
-                                                    }
-                                                }
-                                            },
-                                            tooltip: {
-                                                callbacks: {
-                                                    label: function(context) {
-                                                        return `${context.label}: ${context.raw}`;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        },
-                        error: function() {
-                            alert('Error al cargar los datos de la cohorte.');
-                        }
-                    });
-
-                    if (maestriaId && cohorteId) {
-                        $('#export-button-container').show(); // Mostrar el botón
-                        // Actualizar el enlace con parámetros
-                        let exportUrl =
-                            '{{ route('tasa_titulacion.export', ['maestria_id' => ':maestria', 'cohorte_id' => ':cohorte']) }}'
-                            .replace(':maestria', maestriaId)
-                            .replace(':cohorte', cohorteId);
-                        $('#export-excel').attr('href', exportUrl);
-                    } else {
-                        $('#export-button-container').hide();
-                    }
-                    if (maestriaId && cohorteId) {
-                        $('#export-estudiantes-button-container').show(); // Mostrar el botón
-                        // Actualizar el enlace con parámetros
-                        let exportUrl =
-                            '{{ route('estdiantes.export', ['maestria_id' => ':maestria', 'cohorte_id' => ':cohorte']) }}'
-                            .replace(':maestria', maestriaId)
-                            .replace(':cohorte', cohorteId);
-                        $('#export-excel-estudiantes').attr('href', exportUrl);
-                    } else {
-                        $('#export-estudiantes-button-container').hide();
-                    }
-                } else {
-                    $('#table-container').hide();
-                    $('#titulacionChart').hide();
+                if (!cohorteId) {
+                    $('#table-container, #titulacionChart, #export-button-container, #export-estudiantes-button-container').hide();
+                    return;
                 }
+
+                $.ajax({
+                    url: '{{ route('tasa_titulacion.show', ':id') }}'.replace(':id', cohorteId),
+                    success: function(data) { if (data) actualizarTablaYGrafico(data); },
+                    error: function() { alert('Error al cargar los datos de la cohorte.'); }
+                });
+
+                // Mostrar/Actualizar botones de exportación
+                const toggleExportButton = (selector, routeName) => {
+                    if (maestriaId && cohorteId) {
+                        $(selector).show();
+                        let urlTemplate = '';
+                        if(routeName === 'tasa_titulacion.export'){
+                            urlTemplate = "{{ route('tasa_titulacion.export', ['maestria_id' => ':maestria', 'cohorte_id' => ':cohorte']) }}";
+                        } else if(routeName === 'estdiantes.export'){
+                            urlTemplate = "{{ route('estdiantes.export', ['maestria_id' => ':maestria', 'cohorte_id' => ':cohorte']) }}";
+                        }
+                        $(selector + ' a').attr('href', urlTemplate.replace(':maestria', maestriaId).replace(':cohorte', cohorteId));
+                    } else {
+                        $(selector).hide();
+                    }
+                };
+
+                toggleExportButton('#export-button-container', 'tasa_titulacion.export');
+                toggleExportButton('#export-estudiantes-button-container', 'estdiantes.export');
             });
         });
     </script>
+
 @endsection

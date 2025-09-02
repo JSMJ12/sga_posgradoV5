@@ -27,12 +27,11 @@ class TitulacionesController extends Controller
 
         $tesisId = $request->tesis_id;
 
-        // Guardar los archivos (si vienen múltiples, puedes adaptar según necesidad)
+        // Guardar los archivos
         $path = null;
         if ($request->hasFile('tesis_path')) {
             foreach ($request->file('tesis_path') as $file) {
                 $path = $file->store('titulaciones', 'public');
-                // Si quieres guardar todos los paths, puedes almacenarlos en un array y luego en JSON
             }
         }
 
@@ -64,7 +63,6 @@ class TitulacionesController extends Controller
         // Obtener cohorte y maestría del alumno
         $cohorteId = $matricula->cohorte_id;
         $maestriaId = $tesis->maestria_id;
-        $maestriaId = $maestria ? $maestria->id : null;
 
         // Actualizar o crear tasa de titulación
         $tasaTitulacion = TasaTitulacion::firstOrNew([
@@ -76,5 +74,6 @@ class TitulacionesController extends Controller
 
         return redirect()->back()->with('success', 'Titulación registrada correctamente');
     }
+
 
 }
