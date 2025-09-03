@@ -151,16 +151,19 @@ class AlumnoController extends Controller
                     if ($matriculasFiltradas->count() > 0) {
                         $acciones .= '<button type="button" class="btn btn-outline-info btn-sm view-matriculas" 
                             data-id="' . $alumno->dni . '" 
-                            data-matriculas=\'' . json_encode($matriculasFiltradas->map(function($m){
-                                return [
-                                    'asignatura' => $m->asignatura->nombre ?? 'No disponible',
-                                    'docente' => $m->docente ? $m->docente->nombre1.' '.$m->docente->apellidop : 'No disponible',
-                                    'cohorte' => $m->cohorte->nombre ?? 'No disponible',
-                                    'maestria' => $m->cohorte->maestria->nombre ?? 'No disponible',
-                                    'aula' => $m->cohorte->aula->nombre ?? 'No disponible',
-                                    'paralelo' => $m->cohorte->aula->paralelo ?? 'No disponible',
-                                ];
-                            })) . '\' title="Ver Matrícula"><i class="fas fa-eye"></i></button>';
+                            data-matriculas=\'' . json_encode(
+                                $matriculasFiltradas->map(function($m){
+                                    return [
+                                        'asignatura' => $m->asignatura->nombre ?? 'No disponible',
+                                        'docente' => $m->docente ? $m->docente->nombre1.' '.$m->docente->apellidop : 'No disponible',
+                                        'cohorte' => $m->cohorte->nombre ?? 'No disponible',
+                                        'maestria' => $m->cohorte->maestria->nombre ?? 'No disponible',
+                                        'aula' => $m->cohorte->aula->nombre ?? 'No disponible',
+                                        'paralelo' => $m->cohorte->aula->paralelo ?? 'No disponible',
+                                    ];
+                                })->values()->toArray(),
+                                JSON_UNESCAPED_UNICODE
+                            ) . '\' title="Ver Matrícula"><i class="fas fa-eye"></i></button>';
                     }
 
                     // === Matricular (solo si tiene maestrías pendientes) ===
@@ -171,7 +174,10 @@ class AlumnoController extends Controller
                         if ($faltanMatriculas->count() > 0) {
                             $acciones .= '<button type="button" class="btn btn-outline-success btn-sm open-matricula-modal" 
                                 data-dni="' . $alumno->dni . '" 
-                                data-maestrias=\'' . json_encode($faltanMatriculas->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])) . '\' title="Matricular"><i class="fas fa-plus-circle"></i></button>';
+                                data-maestrias=\'' . json_encode(
+                                    $faltanMatriculas->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])->values()->toArray(),
+                                    JSON_UNESCAPED_UNICODE
+                                ) . '\' title="Matricular"><i class="fas fa-plus-circle"></i></button>';
                         }
                     }
 
@@ -180,7 +186,10 @@ class AlumnoController extends Controller
                         $acciones .= '<button type="button" class="btn btn-outline-warning btn-sm open-reportes" 
                             data-dni="' . $alumno->dni . '" 
                             data-nombre="' . $alumno->nombre1.' '.$alumno->apellidop . '" 
-                            data-maestrias=\'' . json_encode($maestriasAlumno->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])) . '\' title="Ver Reportes"><i class="fas fa-file-alt"></i></button>';
+                            data-maestrias=\'' . json_encode(
+                                $maestriasAlumno->map(fn($m) => ['id'=>$m->id,'nombre'=>$m->nombre])->values()->toArray(),
+                                JSON_UNESCAPED_UNICODE
+                            ) . '\' title="Ver Reportes"><i class="fas fa-file-alt"></i></button>';
                     }
 
                     // === Botones Admin ===

@@ -240,10 +240,10 @@ Route::get('/generar-pdf/{docenteId}/{asignaturaId}/{cohorteId}/{aulaId?}/{paral
     ->name('pdf.notas.asignatura');
 
 //PDFS RECORD ACADEMICO ADMINISTRADOR
-Route::get('/record_academico/{alumno_dni}/{maestria_id}', [RecordController::class, 'record_academico'])->name('record_academico')->middleware('can:dashboard_secretario');
-Route::get('/certificado-matricula/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware('can:dashboard_secretario');
-Route::get('/certificado/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado'])->name('certificado')->middleware('can:dashboard_secretario');
-Route::get('/certificado_culminacion/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_culminacion'])->name('certificado_culminacion')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_secretario_epsu');
+Route::get('/record_academico/{alumno_dni}/{maestria_id}', [RecordController::class, 'record_academico'])->name('record_academico')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_coordinador');
+Route::get('/certificado-matricula/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_matricula'])->name('certificado.matricula')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_coordinador');
+Route::get('/certificado/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado'])->name('certificado')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_coordinador');
+Route::get('/certificado_culminacion/{alumno_dni}/{maestria_id}', [RecordController::class, 'certificado_culminacion'])->name('certificado_culminacion')->middleware(CheckAnyPermission::class . ':dashboard_secretario,dashboard_secretario_epsu,dashboard_coordinador');
 
 //CALIFICACIONES DOCENTES
 Route::get('/calificaciones/create/{docente_id}/{asignatura_id}/{cohorte_id}', [CalificacionController::class, 'create'])->where('docente_id', '.*')->middleware('can:dashboard_docente')->name('calificaciones.create1');
